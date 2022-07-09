@@ -1,0 +1,52 @@
+# this is the url to Istio running in Kubernetes from off the cluster
+# the final url for the VirtualService is determined by both these values
+# For example:
+#   host.url: example.com
+#   host.prefix: dev
+# -> final url: dev.example.com
+host:
+  url: URL_TO_ISTIO_INGRESS
+  prefix: prod
+
+rollout:
+  autoPromotionEnabled: true
+  strategy: bluegreen
+
+# NOTE: virtualservice is required to be enabled when running a
+#       canary rollout strategy with istio traffic routing. We currently
+#       only run blue/green rollouts so this is not needed and is controlled
+#       on the service values.yaml level.
+# virtualService:
+#   isEnabled: true
+
+# auth configuration for our jwt issuers
+# NOTE: you may wish to have separate issuers for prod separately from dev
+jwt:
+  public_issuer:
+    issuer: CUSTOM_URI
+    jwksUri: CUSTOM_URI
+    audience: IDENTIFIER
+  internal_issuer:
+    issuer: CUSTOM_URI
+    jwksUri: CUSTOM_URI
+    audience: IDENTIFIER
+
+horizontalPodAutoscaler:
+  memory:
+    isEnabled: true
+    utilizationThreshold: 70
+  cpu:
+    isEnabled: true
+    utilizationThreshold: 70
+  customScaling:
+    isEnabled: true
+    scaleup:
+      percentValue: 20
+      periodSeconds: 60
+    scaledown:
+      percentValue: 20
+      periodSeconds: 60
+
+configMap:
+  resourceGroup: prod-cluster-resources
+  keyVault: prod-keyvault

@@ -1,0 +1,37 @@
+
+syntax = "proto3";
+
+package core.commandhandler.v1;
+
+option go_package = "github.com/circadence-official/galactus/api/gen/go/core/commandhandler/v1";
+
+import "validate/validate.proto";
+import "google/protobuf/timestamp.proto";
+
+service CommandHandler {
+  // this is ASYNCHRONOUS and will only return a transaction ID. the client should listen for
+  // a completed event on the notifier service
+  rpc Apply(ApplyCommandRequest) returns (ApplyCommandResponse) {}
+}
+
+// TODO: need to change this to the same pattern as Events
+message ApplyCommandRequest {
+  // the integer identifier (enum value) of the event type this command belongs to
+  // NOTE: this is simply an integer to keep the commandhandler from depending on changing types
+  int64 event_type = 1;
+  // the integer identifier (enum value) of the aggregate type this command belongs to
+  // NOTE: this is simply an integer to keep the commandhandler from depending on changing types
+  int64 aggregate_type = 2;
+  // the id of the aggregate that this event belongs to
+  string aggregate_id = 3 [(validate.rules).string.uuid = true];
+  // data representing the change to state of the system that this command encapsulates
+  // it is saved as a json string so that the eventstore can be completey agnostic to the
+  // the data structure of the system (and thus be a static service)
+  // this data MUST be able to be unmarshalled into a Proto message type
+  string command_data = 4;
+}
+
+message ApplyCommandResponse {
+  string id = 1;
+  string transaction_id = 2;
+}

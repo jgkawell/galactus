@@ -1,0 +1,6 @@
+service:
+  name: env_test
+  type: test
+  version: v1
+
+namespace: TILLER_NAMESPACE

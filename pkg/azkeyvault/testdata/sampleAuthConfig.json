@@ -1,0 +1,7 @@
+{
+  "Cloud": "AZUREPUBLICCLOUD",
+  "TenantID": "Sampletenantid124",
+  "AADClientID": "sampleaadclientid123",
+  "AADClientSecret": "sampleaadclientsecret345",
+  "SubscriptionID": "samplesubscription234"
+}

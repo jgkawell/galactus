@@ -1,0 +1,36 @@
+# this is the url to Istio running in Kubernetes from off the cluster
+# the final url for the VirtualService is determined by both these values
+# For example:
+#   host.url: example.com
+#   host.prefix: dev
+# -> final url: dev.example.com
+host:
+  url: URL_TO_ISTIO_INGRESS
+  prefix: TILLER_NAMESPACE
+
+# These values are applied by the top-level Makefile when deploying during development only.
+rollout:
+  autoPromotionEnabled: true
+  strategy: bluegreen
+  duration: 2m
+
+horizontalPodAutoscaler:
+  memory:
+    isEnabled: true
+    utilizationThreshold: 80
+  cpu:
+    isEnabled: true
+    utilizationThreshold: 80
+  customScaling:
+    isEnabled: true
+    scaleup:
+      percentValue: 20
+      periodSeconds: 60
+    scaledown:
+      percentValue: 20
+      periodSeconds: 60
+
+configMap:
+  # developer namespaces exist on the dev cluster and share the same resources (db, keyvault, etc.)
+  resourceGroup: dev-cluster-resources
+  keyVault: dev-keyvault

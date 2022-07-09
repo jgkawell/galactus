@@ -1,0 +1,89 @@
+{{- if .Values.rollout.testing.integration.isEnabled }}
+# This file contains AnalysisTemplates referenced by Rollout
+# This AnalysisTemplate will run a Kubernetes Job for backend integration/functional tests (pass/fail).
+# The metric is considered successful if the Job completes and had an exit code of zero, otherwise it is failed.
+apiVersion: "argoproj.io/v1alpha1"
+kind: AnalysisTemplate
+metadata:
+  name: "{{ .Values.service.name }}.{{ .Values.configMap.version }}.integration"
+spec:
+  metrics:
+  # warning: name must be less than 26 chars - due to argo concat other naming params (uuid)
+  # and total limit on k8s spec is 63 (2^6)
+  - name: "{{- .Values.service.name | trunc 17 | trimSuffix "-" -}}-int"
+    provider:
+      job:
+        spec:
+          # clean up job after one hour
+          ttlSecondsAfterFinished: 3600
+          # specify the number of retries before considering a Job as failed
+          backoffLimit: 2
+          template:
+            metadata:
+              annotations:
+                sidecar.istio.io/inject: "false"
+            spec:
+              restartPolicy: Never
+              containers:
+              {{- range $index, $test := .Values.rollout.testing.integration.tests }}
+              - name: "integration-{{ $test }}"
+                image: "{{ $.Values.image.repository }}-integration-{{ $test }}:{{ $.Values.image.tag }}"
+                envFrom:
+                  - secretRef:
+                      name: argo-testing
+                volumeMounts:
+                  - name: "{{ $.Values.service.name }}-volume"
+                    mountPath: /etc/values.json
+                    subPath: values.json
+                  - name: azure-config-file
+                    mountPath: /etc/kubernetes/azure.json
+                    readOnly: true
+              {{- end}}
+              volumes:
+                - name: {{ .Values.service.name }}-volume
+                  configMap:
+                    name: "{{ .Values.namespace }}-{{ .Values.service.name }}-configmap-{{ .Values.configMap.version }}"
+                - name: azure-config-file
+                  hostPath:
+                    path: /etc/kubernetes/azure.json
+                    type: File
+{{- end}}
+{{- if .Values.rollout.testing.functional.isEnabled }}
+---
+apiVersion: "argoproj.io/v1alpha1"
+kind: AnalysisTemplate
+metadata:
+  name: "{{ .Values.service.name }}.{{ .Values.configMap.version }}.functional"
+spec:
+  metrics:
+    # warning: name must be less than 26 chars - due to argo concat other naming params (uuid)
+    # and total limit on k8s spec is 63 (2^6)
+    - name: "{{- .Values.service.name | trunc 17 | trimSuffix "-" -}}-fun"
+      provider:
+        job:
+          spec:
+            # clean up job after one hour
+            ttlSecondsAfterFinished: 3600
+            # specify the number of retries before considering a Job as failed
+            backoffLimit: 2
+            template:
+              metadata:
+                annotations:
+                  # override the default and disable injection
+                  sidecar.istio.io/inject: "false"
+              spec:
+                restartPolicy: Never
+                containers:
+                  {{- range $index, $test := .Values.rollout.testing.functional.tests }}
+                  - name: "functional-{{ $test }}"
+                    image: "{{ $.Values.image.repository }}-functional-{{ $test }}:{{ $.Values.image.tag }}"
+                    env:
+                      {{- range $.Values.rollout.testing.functional.envs }}
+                      - name: {{ .key }}
+                        value: "{{ .value }}"
+                      {{- end}}
+                    envFrom:
+                      - secretRef:
+                          name: argo-testing
+                  {{- end }}
+{{- end}}

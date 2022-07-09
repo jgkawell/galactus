@@ -1,0 +1,345 @@
+package service
+
+import (
+	"context"
+	l "github.com/circadence-official/galactus/pkg/logging/v2"
+	"errors"
+	"github.com/google/uuid"
+	"github.com/stretchr/testify/require"
+	"testing"
+
+	agpb "github.com/circadence-official/galactus/api/gen/go/core/aggregates/v1"
+	espb "github.com/circadence-official/galactus/api/gen/go/core/eventstore/v1"
+	cf "github.com/circadence-official/galactus/pkg/clientfactory/mockclient"
+	ut "github.com/circadence-official/galactus/pkg/chassis/util"
+
+	"github.com/jinzhu/gorm"
+	"github.com/stretchr/testify/assert"
+	"github.com/undefinedlabs/go-mpatch"
+)
+
+func TestNewService(t *testing.T) {
+	assert.NotNil(t, NewService(&cf.MockEventStoreClient{}, nil))
+}
+
+func TestService_Create(t *testing.T) {
+	type testCase int
+	const (
+		failGetTransactionId testCase = iota
+		failCreate
+		failCreateAndSendEventWithTransactionId
+		success
+	)
+	testCases := []struct {
+		TestName string
+		TestCase testCase
+	}{
+		{"fail Get Transaction id from ctx", failGetTransactionId},
+		{"fail Create", failCreate},
+		{"fail Create and Send Event Store data", failCreateAndSendEventWithTransactionId},
+		{"success", success},
+	}
+
+	for _, tc := range testCases {
+		// Setup
+		logger, h := l.CreateNullLogger()
+		id := uuid.NewString()
+		// TODO Fill in all fields with test data
+		lab := &agpb.Lab{
+			Id: id,
+		}
+		if tc.TestCase == failGetTransactionId{
+			transactionId = ""
+		}
+		ctx := context.Background()
+		execCtx := &ut.ExecutionCtx{
+			Context:       ctx,
+			Logger:        logger,
+			TransactionID: transactionId,
+		}
+		//mock execution ctx get Transaction Id
+ 		mockExecCtx := &ut.MockExecutionContext{}
+		if tc.TestCase == failGetTransactionId{
+			mockExecCtx.On("GetTransactionID").Return(nil, errors.New(tc.TestName))
+		} else {
+			mockExecCtx.On("GetTransactionID").Return(transactionId, nil)
+		}
+		//mock get context
+		mockExecCtx.On("GetContext").Return(ctx)
+		//mock get looger
+		mockExecCtx.On("GetLogger").Return(logger)
+
+		//patch Default Create
+		p, _ := mpatch.PatchMethod(agpb.DefaultCreateLab, func(c context.Context, in *agpb.Lab, db *gorm.DB) (*agpb.Lab, error){
+			if tc.TestCase == failCreate {
+				return nil, errors.New(tc.TestName)
+			} else {
+				return lab, nil
+			}
+		} )
+		defer p.Unpatch()
+
+		//mock create and send event
+		patch, err := mpatch.PatchMethod(ut.CreateAndSendEventWithTransactionID, func(ctx context.Context, logger l.Logger, client espb.EventStoreClient, ed interface{}, aggregateID, transactionID string, at espb.AggregateType, et espb.EventType) error {
+			if tc.TestCase == failCreateAndSendEventWithTransactionId {
+				return errors.New(tc.TestName)
+			} else {
+				return nil
+			}
+		})
+		defer patch.Unpatch()
+
+		mockEventStoreClient := &cf.MockEventStoreClient{}
+		service := NewService(mockEventStoreClient, nil)
+
+		// Test
+		resp, err := service.Create(execCtx, lab)
+
+		// Verify
+		if tc.TestCase == success {
+			if assert.NotNil(t, resp, tc.TestName){
+				assert.Equal(t, kind, resp.GetKind(), tc.TestName)
+				assert.Equal(t, name, resp.GetName(), tc.TestName)
+				assert.Equal(t, description, resp.GetDescription(), tc.TestName)
+			}
+			assert.Nil(t, err, tc.TestName)
+		} else {
+			if tc.TestCase == failCreateAndSendEventWithTransactionId {
+				require.Equal(t, ErrorFailedToEmitEvent, h.LastEntry().Message)
+			} else if tc.TestCase == failGetTransactionId{
+				require.Equal(t, ErrorFailedToGrabTransactionId, h.LastEntry().Message)
+			} else { //fail create
+				require.Equal(t, FailedLabInsert, h.LastEntry().Message)
+			}
+			assert.NotNil(t, err, tc.TestName)
+			assert.Nil(t, resp, tc.TestName)
+		}
+	}
+}
+
+func TestService_Read(t *testing.T) {
+	type testCase int
+	const (
+		failRead testCase = iota
+		success
+	)
+	testCases := []struct {
+		TestName string
+		TestCase testCase
+	}{
+		{"fail Read", failRead},
+		{"success", success},
+	}
+
+	for _, tc := range testCases {
+		// Setup
+		logger, h := l.CreateNullLogger()
+		id := uuid.NewString()
+		// TODO Fill in all fields with test data
+        lab := &agpb.Lab{
+            Id: id,
+        }
+		ctx := context.Background()
+		execCtx := &ut.ExecutionCtx{
+			Context:       ctx,
+			Logger:        logger,
+			TransactionID: "",
+		}
+		//mock execution ctx get Transaction Id
+		mockExecCtx := &ut.MockExecutionContext{}
+		//mock get context
+		mockExecCtx.On("GetContext").Return(ctx)
+		//mock get looger
+		mockExecCtx.On("GetLogger").Return(logger)
+
+		//patch Default Read
+		p, _ := mpatch.PatchMethod(agpb.DefaultReadLab, func(c context.Context, in *agpb.Lab, db *gorm.DB) (*agpb.Lab, error){
+			if tc.TestCase == failRead {
+				return nil, errors.New(tc.TestName)
+			} else {
+				return lab, nil
+			}
+		})
+		defer p.Unpatch()
+		mockEventStoreClient := &cf.MockEventStoreClient{}
+		service := NewService(mockEventStoreClient, nil)
+
+		// Test
+		resp, err := service.Read(execCtx, id)
+
+		// Verify
+		if tc.TestCase == success {
+			if assert.NotNil(t, resp, tc.TestName){
+				assert.Equal(t, kind, resp.GetKind(), tc.TestName)
+				assert.Equal(t, name, resp.GetName(), tc.TestName)
+				assert.Equal(t, description, resp.GetDescription(), tc.TestName)
+			}
+			assert.Nil(t, err, tc.TestName)
+		} else {
+			require.Equal(t, FailedLabRead, h.LastEntry().Message)
+			assert.NotNil(t, err, tc.TestName)
+			assert.Nil(t, resp, tc.TestName)
+		}
+	}
+}
+
+func TestService_Update(t *testing.T) {
+	type testCase int
+	const (
+		failGetTransactionId testCase = iota
+		failUpdate
+		failCreateAndSendEventWithTransactionId
+		success
+	)
+	testCases := []struct {
+		TestName string
+		TestCase testCase
+	}{
+		{"fail Get Transaction id from ctx", failGetTransactionId},
+		{"fail Update", failUpdate},
+		{"fail Create and Send Event Store data", failCreateAndSendEventWithTransactionId},
+		{"success", success},
+	}
+
+	for _, tc := range testCases {
+		// Setup
+		logger, h := l.CreateNullLogger()
+		id := uuid.NewString()
+		// TODO Fill in all fields with test data
+        lab := &agpb.Lab{
+            Id: id,
+        }
+		if tc.TestCase == failGetTransactionId{
+			transactionId = ""
+		}
+		ctx := context.Background()
+		execCtx := &ut.ExecutionCtx{
+			Context:       ctx,
+			Logger:        logger,
+			TransactionID: transactionId,
+		}
+		//mock execution ctx get Transaction Id
+		mockExecCtx := &ut.MockExecutionContext{}
+		if tc.TestCase == failGetTransactionId{
+			mockExecCtx.On("GetTransactionID").Return(nil, errors.New(tc.TestName))
+		} else {
+			mockExecCtx.On("GetTransactionID").Return(transactionId, nil)
+		}
+		//mock get context
+		mockExecCtx.On("GetContext").Return(ctx)
+		//mock get looger
+		mockExecCtx.On("GetLogger").Return(logger)
+
+		//patch Default Update
+		p, _ := mpatch.PatchMethod(agpb.DefaultStrictUpdateLab, func(c context.Context, in *agpb.Lab, db *gorm.DB) (*agpb.Lab, error){
+			if tc.TestCase == failUpdate {
+				return nil, errors.New(tc.TestName)
+			} else {
+				return lab, nil
+			}
+		})
+		defer p.Unpatch()
+
+		//mock create and send event
+		patch, _ := mpatch.PatchMethod(ut.CreateAndSendEventWithTransactionID, func(ctx context.Context, logger l.Logger, client espb.EventStoreClient, ed interface{}, aggregateID, transactionID string, at espb.AggregateType, et espb.EventType) error {
+			if tc.TestCase == failCreateAndSendEventWithTransactionId {
+				return errors.New(tc.TestName)
+			} else {
+				return nil
+			}
+		})
+		defer patch.Unpatch()
+
+		mockEventStoreClient := &cf.MockEventStoreClient{}
+		service := NewService(mockEventStoreClient, nil)
+
+		// Test
+		resp, err := service.Update(execCtx, lab)
+
+		// Verify
+		if tc.TestCase == success {
+			if assert.NotNil(t, resp, tc.TestName){
+				assert.Equal(t, kind, resp.GetKind(), tc.TestName)
+				assert.Equal(t, name, resp.GetName(), tc.TestName)
+				assert.Equal(t, description, resp.GetDescription(), tc.TestName)
+			}
+			assert.Nil(t, err, tc.TestName)
+		} else {
+			if tc.TestCase == failCreateAndSendEventWithTransactionId {
+				require.Equal(t, ErrorFailedToEmitEvent, h.LastEntry().Message)
+			} else if tc.TestCase == failGetTransactionId{
+				require.Equal(t, ErrorFailedToGrabTransactionId, h.LastEntry().Message)
+			} else { //fail Update
+				require.Equal(t, FailedLabUpdate, h.LastEntry().Message)
+			}
+			assert.NotNil(t, err, tc.TestName)
+			assert.Nil(t, resp, tc.TestName)
+		}
+	}
+}
+
+func TestService_List(t *testing.T) {
+	type testCase int
+	const (
+		failList testCase = iota
+		success
+	)
+	testCases := []struct {
+		TestName string
+		TestCase testCase
+	}{
+		{"fail List", failList},
+		{"success", success},
+	}
+
+	for _, tc := range testCases {
+		// Setup
+		logger, h := l.CreateNullLogger()
+		id := uuid.NewString()
+		// TODO Fill in all fields with test data
+        lab := &agpb.Lab{
+            Id: id,
+        }
+		labs := []*agpb.Lab{lab}
+		ctx := context.Background()
+		execCtx := &ut.ExecutionCtx{
+			Context:       ctx,
+			Logger:        logger,
+			TransactionID: "",
+		}
+		//mock execution ctx get Transaction Id
+		mockExecCtx := &ut.MockExecutionContext{}
+		//mock get context
+		mockExecCtx.On("GetContext").Return(ctx)
+		//mock get looger
+		mockExecCtx.On("GetLogger").Return(logger)
+
+		//patch Default List
+		p, _:= mpatch.PatchMethod(agpb.DefaultListLab, func(c context.Context, db *gorm.DB) ([]*agpb.Lab, error){
+			if tc.TestCase == failList {
+				return nil, errors.New(tc.TestName)
+			} else {
+				return labs, nil
+			}
+		})
+		defer p.Unpatch()
+		mockEventStoreClient := &cf.MockEventStoreClient{}
+		service := NewService(mockEventStoreClient, nil)
+
+		// Test
+		resp, err := service.List(execCtx)
+
+		// Verify
+		if tc.TestCase == success {
+			assert.NotNil(t, resp, tc.TestName)
+			assert.Nil(t, err, tc.TestName)
+		} else {
+			require.Equal(t, FailedLabList, h.LastEntry().Message)
+			assert.NotNil(t, err, tc.TestName)
+			assert.Nil(t, resp, tc.TestName)
+		}
+	}
+}
+
+
+

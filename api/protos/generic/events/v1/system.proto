@@ -1,0 +1,22 @@
+
+syntax = "proto3";
+
+package generic.events.v1;
+
+option go_package = "github.com/circadence-official/galactus/api/gen/go/generic/events/v1";
+
+enum SystemEventCode {
+  UNKOWN_SYSTEM_EVENT = 0;
+  SYSTEM_ERROR = 1;
+}
+
+message SystemError {
+  SystemErrorCode code = 1;
+}
+
+enum SystemErrorCode {
+  INVALID_SYSTEM_MESSAGE_DATA = 0;
+  FAILED_EVENT_PUBLISH = 1;
+  FAILED_EVENT_SAVED = 2;
+  FAILED_EVENT_FORWARD = 3;
+}

@@ -1,0 +1,36 @@
+# directories not needed for docker builds
+client/
+data/
+deployments/
+docs/
+examples/
+functions/
+infrastructure/
+pipelines/
+scripts/
+tools/
+
+# top level repo files
+.dockerignore
+.git
+.gitignore
+.gitmodules
+LICENSE.txt
+Makefile
+README.md
+
+# ignore these config files
+**/azure-pipelines.yml
+**/Dockerfile
+**/local.yaml
+**/README.md
+**/values.yaml
+**/VERSION
+
+# local configs
+.idea
+.vscode
+
+# typescript
+**node_modules/
+**dist/

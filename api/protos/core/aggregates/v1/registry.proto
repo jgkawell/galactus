@@ -1,0 +1,92 @@
+syntax = "proto3";
+
+package core.aggregates.v1;
+
+option go_package = "github.com/circadence-official/galactus/api/gen/go/core/aggregates/v1";
+
+import "validate/validate.proto";
+import "options/gorm.proto";
+import "google/protobuf/timestamp.proto";
+
+message Registration {
+    option (gorm.opts).ormable = true;
+
+    // the table primary key
+    string id = 1 [(validate.rules).string.uuid = true, (gorm.field).tag = {type: "uuid" primary_key: true}];
+    // NOTE: name + version must be unique
+    // the service name
+    string name = 2 [(validate.rules).string = {min_len: 1, max_len: 255}];
+    // the service version
+    string version = 3 [(validate.rules).string = {min_len: 1, max_len: 255}];
+    // plain text description of the service
+    string description = 4 [(validate.rules).string = {min_len: 1, max_len: 255}];
+    // the service address in the environment. e.g. "http://localhost:8080" when local or "eventstore:8090" when remote
+    string address = 5 [(validate.rules).string = {min_len: 1, max_len: 255}];
+    // the service current status
+    ServiceStatus status = 6 [(validate.rules).enum.defined_only = true];
+    // the protocols this service exposes
+    repeated Protocol protocols = 7;
+    // the producer configuration of the service
+    repeated Producer producers = 8;
+    // the consumer configuration of the service
+    repeated Consumer consumers = 9;
+}
+
+// deregister vs unregister reference: https://grammarhow.com/unregister-vs-deregister/
+enum ServiceStatus {
+    SERVICE_STATUS_INVALID = 0;
+    SERVICE_STATUS_REGISTERED = 1;
+    SERVICE_STATUS_DEREGISTERED = 2;
+    SERVICE_STATUS_HEALTHY = 3;
+    SERVICE_STATUS_UNHEALTHY = 4;
+}
+
+message Protocol {
+    option (gorm.opts).ormable = true;
+
+    // the table primary key
+    string id = 1 [(validate.rules).string.uuid = true, (gorm.field).tag = {type: "uuid" primary_key: true}];
+    // the api kind
+    ProtocolKind kind = 2 [(validate.rules).enum.defined_only = true];
+    // the api version (e.g. "v1" or "v2")
+    string version = 3 [(validate.rules).string = {min_len: 1, max_len: 255}];
+    // the api port (e.g. 8080 or 8090)
+    int32 port = 4 [(validate.rules).int32 = {gt: 1, lt: 65535}];
+}
+
+enum ProtocolKind {
+    PROTOCOL_KIND_INVALID = 0;
+    PROTOCOL_KIND_GRPC = 1;
+    PROTOCOL_KIND_HTTP = 2;
+  }
+
+message Producer {
+    option (gorm.opts).ormable = true;
+
+    // the table primary key
+    string id = 1 [(validate.rules).string.uuid = true, (gorm.field).tag = {type: "uuid" primary_key: true}];
+    // exchange name (this should match with an aggregate type)
+    string exchange = 2 [(validate.rules).string = {min_len: 1, max_len: 255}];
+    // TODO: do we need to add the exchange kind? (e.g. direct, topic, fanout, etc.)
+}
+
+message Consumer {
+    option (gorm.opts).ormable = true;
+
+    // the table primary key
+    string id = 1 [(validate.rules).string.uuid = true, (gorm.field).tag = {type: "uuid" primary_key: true}];
+    // exchange name (this should match with an aggregate type)
+    string exchange = 2 [(validate.rules).string = {min_len: 1, max_len: 255}];
+    // routing key (this should match with an event type on the above aggregate)
+    string routing_key = 3 [(validate.rules).string = {min_len: 1, max_len: 255}];
+    // consumer kind is whether the consumer is a queue (unicast - 1:N queue to consumer) or topic (multicast - 1:1 queue to consumer)
+    ConsumerKind kind = 4 [(validate.rules).enum.defined_only = true];
+    // queue name (this will be set by the registry and returned to the calling client)
+    string queue = 5 [(validate.rules).string = {min_len: 1, max_len: 255}];
+}
+
+enum ConsumerKind {
+    CONSUMER_KIND_INVALID = 0;
+    CONSUMER_KIND_QUEUE = 1;
+    CONSUMER_KIND_TOPIC = 2;
+}

@@ -1,0 +1,44 @@
+{{- if .Values.horizontalPodAutoscaler.isEnabled }}
+apiVersion: autoscaling/v2beta2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ .Values.service.name }}
+  namespace: {{ .Values.namespace }}
+spec:
+  scaleTargetRef:
+    apiVersion: {{ .Values.horizontalPodAutoscaler.targetApiVersion }}
+    kind: {{ .Values.horizontalPodAutoscaler.targetKind }}
+    name: {{ .Values.service.name }}
+  minReplicas: {{ .Values.horizontalPodAutoscaler.minreplicas }}
+  maxReplicas: {{ .Values.horizontalPodAutoscaler.maxreplicas }}
+  metrics:
+  {{- if .Values.horizontalPodAutoscaler.memory.isEnabled }}
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: {{ .Values.horizontalPodAutoscaler.memory.utilizationThreshold }}
+  {{- end}}
+  {{- if .Values.horizontalPodAutoscaler.cpu.isEnabled }}
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: {{ .Values.horizontalPodAutoscaler.cpu.utilizationThreshold }}
+  {{- end}}
+  {{- if .Values.horizontalPodAutoscaler.customScaling.isEnabled }}
+  behavior:
+    scaleUp:
+      policies:
+      - type: Percent
+        value: {{ .Values.horizontalPodAutoscaler.customScaling.scaleup.percentValue }}
+        periodSeconds: {{ .Values.horizontalPodAutoscaler.customScaling.scaleup.periodSeconds }}
+    scaleDown:
+      policies:
+      - type: Percent
+        value: {{ .Values.horizontalPodAutoscaler.customScaling.scaledown.percentValue }}
+        periodSeconds: {{ .Values.horizontalPodAutoscaler.customScaling.scaledown.periodSeconds }}
+  {{- end}}
+{{- end}}

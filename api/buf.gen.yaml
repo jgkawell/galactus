@@ -1,0 +1,53 @@
+version: v1beta1
+plugins:
+  - name: go
+    out: gen/go
+    opt:
+      - paths=source_relative
+
+  - name: go-grpc
+    out: gen/go
+    opt:
+      - paths=source_relative
+      - require_unimplemented_servers=false
+
+  - name: grpc-gateway
+    out: gen/go
+    opt:
+      - paths=source_relative
+      - generate_unbound_methods=false
+
+  - name: openapiv2
+    out: gen/openapiv2
+
+  - name: validate
+    out: gen/go
+    opt:
+      - paths=source_relative
+      - lang=go
+
+  - name: gorm
+    out: gen/go
+    opt:
+      - paths=source_relative,engine=postgres
+
+  - name: js
+    out: ./gen/web
+    opt:
+      - import_style=commonjs
+
+  - name: grpc-web
+    out: ./gen/web
+    opt:
+      - mode=grpcwebtext
+      - import_style=commonjs+dts
+
+  - name: doc
+    out: ./gen/docs/
+    opt: html,index.html
+    strategy: all
+
+  - name: doc
+    out: ./gen/docs/
+    opt: markdown,docs.md
+    strategy: all

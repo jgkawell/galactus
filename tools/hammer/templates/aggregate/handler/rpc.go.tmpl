@@ -1,0 +1,143 @@
+// Package handler contains the API entrypoints for the {{.GetLower}} service.
+package handler
+
+// TODO: The data modification functions of an Aggregate (Create/Update) can EITHER be be ASYNC or SYNC 
+//		 depending on the use case of the aggregate. For example, if the aggregate is Payments, you may want
+//		 it to be ASYNC as processing a Payment.Create() call may require multiple calls to external services.
+//		 However, if the aggregate is a User, you may want it to be SYNC as processing a User.Create() call
+//		 may simply be a write to a single DB.
+//
+// 		 The decision is up to the developer of the Aggregate so the TODO here is to decide whether Create/Update
+//   	 should be ASYNC or SYNC and then modify the code accordingly. If you decide on ASYNC, you will need to 
+//  	 remove the Create/Update functions from the `handler/rpc.go` file and only use the calls within the Handle()
+// 	 	 function within `handler.consumer.go`. If you decide on SYNC, you will need to completely remove the `handler/consumer.go`
+// 		 file and only use the Create/Update functions in the `handler/rpc.go` file.
+
+import (
+	"context"
+	"errors"
+
+	s "{{.GetLower}}/service"
+
+	pb "github.com/circadence-official/galactus/api/gen/go/core/{{.GetLower}}/v1"
+	l "github.com/circadence-official/galactus/pkg/logging/v2"
+	ut "github.com/circadence-official/galactus/pkg/chassis/util"
+)
+
+// handler is the struct which handles gRPC requests and implements the protobuf interface pb.{{.GetTitle}}Server
+type handler struct {
+	logger  l.Logger
+	service s.Service
+}
+
+// New{{.GetTitle}}RPCHandler is the constructor for the gRPC request handler of the service
+func New{{.GetTitle}}RPCHandler(logger l.Logger, service s.Service) pb.{{.GetTitle}}Server {
+	return &handler{
+		logger:  logger,
+		service: service,
+	}
+}
+
+// Create handles gRPC request to create a {{.GetTitle}}
+func (h *handler) Create(ctx context.Context, req *pb.Create{{.GetTitle}}Request) (*pb.Create{{.GetTitle}}Response, error) {
+	// build execution context, with request context that contains `transaction_id` in metadata
+	logger := h.logger.WithRPCContext(ctx)
+	execCtx, err := ut.NewExecutionContextFromContextWithMetadata(ctx, logger)
+	if err != nil {
+		logger.WithError(err).Error("failed to create execution context from current context")
+		return nil, err
+	}
+
+	// input/req validation
+	{{.GetLower}} := req.GetPayload()
+	if err := {{.GetLower}}.Validate(); err != nil {
+		logger.WithError(err).Error("input validation failed")
+		// this will return an `INVALID_ARGUMENT` grpc code
+		return nil, err
+	}
+
+	// call to service layer
+	new{{.GetTitle}}, err := h.service.Create(execCtx, {{.GetLower}})
+	if err != nil {
+		logger.WithError(err).Error("failed trying to perform db creat of {{.GetLower}}")
+		return nil, err
+	}
+
+	return &pb.Create{{.GetTitle}}Response{
+		Result: new{{.GetTitle}},
+	}, nil
+}
+
+// Read handles gRPC request to read a {{.GetTitle}}
+func (h *handler) Read(ctx context.Context, req *pb.Read{{.GetTitle}}Request) (*pb.Read{{.GetTitle}}Response, error) {
+	// no transaction id in this request since it does not alter data (read only)
+	logger := h.logger.WithRPCContext(ctx)
+	execCtx := ut.NewExecutionContextWithoutTransactionID(ctx, logger)
+
+	// validate input
+	id := req.GetId()
+	if id == "" {
+		err := errors.New("empty string for {{.GetLower}} id")
+		logger.WithError(err).Error("failed to validate {{.GetLower}} id")
+		return nil, err
+	}
+
+	// call to service layer
+	new{{.GetTitle}}, err := h.service.Read(execCtx, id)
+	if err != nil {
+		logger.WithError(err).Error("failed trying to perform db read of {{.GetLower}}")
+		return nil, err
+	}
+
+	return &pb.Read{{.GetTitle}}Response{
+		Result: new{{.GetTitle}},
+	}, nil
+}
+
+// Update handles gRPC request to update a {{.GetTitle}}
+func (h *handler) Update(ctx context.Context, req *pb.Update{{.GetTitle}}Request) (*pb.Update{{.GetTitle}}Response, error) {
+	// build execution context, with request context that contains `transaction_id` in metadata
+	logger := h.logger.WithRPCContext(ctx)
+	execCtx, err := ut.NewExecutionContextFromContextWithMetadata(ctx, logger)
+	if err != nil {
+		logger.WithError(err).Error("failed to create execution context from current request context")
+		return nil, err
+	}
+
+	// input/req validation
+	{{.GetLower}} := req.GetPayload()
+	if err := {{.GetLower}}.Validate(); err != nil {
+		logger.WithError(err).Error("input validation failed")
+		// this will return an `INVALID_ARGUMENT` grpc code
+		return nil, err
+	}
+
+	// call to service layer
+	new{{.GetTitle}}, err := h.service.Update(execCtx, {{.GetLower}})
+	if err != nil {
+		logger.WithError(err).Error("failed trying to perfrom db update of {{.GetLower}}")
+		return nil, err
+	}
+
+	return &pb.Update{{.GetTitle}}Response{
+		Result: new{{.GetTitle}},
+	}, nil
+}
+
+// List handles gRPC request to list {{.GetTitle}}
+func (h *handler) List(ctx context.Context, req *pb.List{{.GetTitle}}Request) (*pb.List{{.GetTitle}}Response, error) {
+	// no transaction id in this request since it does not alter data (read only)
+	logger := h.logger.WithRPCContext(ctx)
+	execCtx := ut.NewExecutionContextWithoutTransactionID(ctx, logger)
+
+	// call to service layer
+	{{.GetLower}}List, err := h.service.List(execCtx)
+	if err != nil {
+		logger.WithError(err).Error("failed trying to perform db list of {{.GetLower}}")
+		return nil, err
+	}
+
+	return &pb.List{{.GetTitle}}Response{
+		Result: {{.GetLower}}List,
+	}, nil
+}

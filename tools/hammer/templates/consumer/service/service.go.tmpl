@@ -1,0 +1,54 @@
+// Package service contains the business logic for the {{.GetLower}} service
+package service
+
+import (
+	agpb "github.com/circadence-official/galactus/api/gen/go/core/aggregates/v1"
+	espb "github.com/circadence-official/galactus/api/gen/go/core/eventstore/v1"
+
+	ut "github.com/circadence-official/galactus/pkg/chassis/util"
+
+	"github.com/jinzhu/gorm"
+)
+
+const (
+	ErrorFailedToEmitEvent		   = "failed to emit event"
+	ErrorFailedToGrabTransactionId = "failed to grab transaction id"
+)
+
+// Service is an interface that defines the service layer functionality
+// TODO: Modify this interface as needed. You may want to add new functions.
+type Service interface {
+	{{.GetCommandTitle}}Command(ut.ExecutionContext, *agpb.{{.GetAggregateTitle}}) (*agpb.{{.GetAggregateTitle}}, error)
+}
+
+// NOTE: the service layer does NOT get it's own logger. this is passed down through the ExectionContext
+type service struct {
+	eventStoreClient espb.EventStoreClient
+	db               *gorm.DB
+}
+
+// NewService is the constructor for a new {{.GetTitle}} service
+func NewService(espb espb.EventStoreClient, db *gorm.DB) Service {
+	return &service{
+		db:               db,
+		eventStoreClient: espb,
+	}
+}
+
+// {{.GetCommandTitle}}Command runs the business logic for the {{.GetCommandTitle}} command against the {{.GetAggregateTitle}} aggregate
+func (s *service) {{.GetCommandTitle}}Command(ctx ut.ExecutionContext, {{.GetAggregateLower}} *agpb.{{.GetAggregateTitle}}) (error) {
+	logger := ctx.GetLogger().WithField("{{.GetAggregateLower}}", {{.GetAggregateLower}})
+
+	// TODO: add business logic here
+	model := DO_SOMTHING_HERE
+
+  	// send completed event to eventstore
+	evt := espb.EventType{Code: &espb.EventType_{{.GetAggregateTitle}}EventCode{ {{.GetAggregateTitle}}EventCode: espb.{{.GetAggregateTitle}}EventCode_{{.GetCommandUpper}}_COMPLETED}}
+	if err := ut.CreateAndSendEventWithTransactionID(ctx.GetContext(), logger, s.eventStoreClient, model, {{.GetAggregateLower}}.GetId(), ctx.GetTransactionID(), espb.AggregateType_{{.GetAggregateTitle}}, evt); err != nil {
+	  logger.WithError(err).Error(ErrorFailedToEmitEvent)
+	  // NOTE: return an error here because it might mean that the future processing of events critical to the business logic is not happening
+	  return err
+	}
+
+	return nil
+}

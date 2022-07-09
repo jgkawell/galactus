@@ -1,0 +1,6 @@
+[submodule "third_party/shawarma"]
+	path = third_party/shawarma
+	url = https://github.com/circadence-official/shawarma.git
+[submodule "third_party/shawarma-webhook"]
+	path = third_party/shawarma-webhook
+	url = https://github.com/circadence-official/shawarma-webhook.git

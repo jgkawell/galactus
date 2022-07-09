@@ -1,0 +1,106 @@
+# Default values for Helm deployments.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+horizontalPodAutoscaler:
+  isEnabled: true
+  minreplicas: 1
+  maxreplicas: 5
+
+namespace: ""
+
+terminationGracePeriodSeconds: 10
+
+# specify how many old ReplicaSets for this Deployment to retain. The rest will be
+# garbage-collected in the background. By default, it is 10. Explicitly setting this field to 1,
+# since rollbacks will now be managed by Argo
+revisionHistoryLimit: 1
+
+# Argo Rollouts
+rollout:
+  testing:
+    integration:
+      isEnabled: false
+    functional:
+      isEnabled: false
+
+image:
+  repository: REPLACE_ME/{{.GetLower}}
+  tag: latest
+  pullPolicy: IfNotPresent
+
+service:
+  name: {{.GetLower}}
+  type: ClusterIP
+
+datadog:
+  logKey: ad.datadoghq.com/{{.GetLower}}.logs
+  logValue: '''[{"source":"{{.GetLower}}","service":"{{.GetLower}}"}]'''
+
+resources:
+  limits:
+    cpu: 100m
+    memory: 256Mi
+  requests:
+    cpu: 80m
+    memory: 128Mi
+
+# configure virtual service traffic
+virtualService:
+  name: {{.GetLower}}
+  isEnabled: false
+
+livenessProbe:
+  initialDelaySeconds: 15
+  periodSeconds: 10
+  successThreshold: 1
+  timeoutSeconds: 3
+  path: /health
+
+readinessProbe:
+  initialDelaySeconds: 20
+  periodSeconds: 10
+  successThreshold: 1
+  timeoutSeconds: 3
+  path: /readiness
+
+# configMaps are set as defaults for local development
+configMap:
+  # service values
+  traceName: {{.GetLower}}
+  version: 0.0.0
+  enable: true
+  isDevMode: true
+  # TODO: update these local values to not conflict with existing services
+  httpPort: 8085
+  grpcPort: 36000
+  # sql database values
+  sqlDbUser: admin
+  sqlDbSecret: admin
+  sqlDbName: dev
+  sqlDbPort: 5432
+  sqlDbHost: localhost
+  sqlDbSchema: management
+  # nosql database values
+  dbAddress: localhost
+  dbName: galactus
+  dbCollection: {{.GetLower}}
+  # other service connections
+  eventstoreAddress: localhost:35004
+  # messagebus values
+  MessageBusUser: "guest"
+  MessageBusPassword: "guest"
+  MessageBusIPs: "localhost:5672"
+  MessageBusScheme: "http"
+  QueueDelayIncrementSeconds: 1
+  QueueDedupe: 0
+  # TODO: make sure to copy this configuration over to the `internal/eventstore/values.yaml` file
+  #       and add the registration to `internal/eventstore/main.go`
+  #       NOTE: if this is an rpc ONLY service, you should remove this block.
+  Topics:
+    {{.GetLower}}:
+      Exchange: "{{.GetLower}}"
+      RoutingKey: "{{.GetLower}}"
+      ContextKey: "event"
+      TTLMinutes: 30
+      MaxDeliveryCount: 0

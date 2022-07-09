@@ -1,0 +1,121 @@
+{{- if .Values.virtualService.isPublic }}
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: {{ .Values.service.name }}
+  namespace: {{ .Values.namespace }}
+spec:
+  mtls:
+    # TODO: Need to look into the implications of this and possible scream test setting to STRICT.
+    #       As is, PERMISSIVE allows non-TLS traffic between services in the same namespace.
+    mode: PERMISSIVE
+---
+apiVersion: security.istio.io/v1beta1
+kind: RequestAuthentication
+metadata:
+  name: {{ .Values.service.name }}
+  namespace: {{ .Values.namespace }}
+spec:
+  selector:
+    matchLabels:
+      app: {{ .Values.service.name }}
+  jwtRules:
+    - issuer: {{ .Values.jwt.public_issuer.issuer }}
+      jwksUri: {{ .Values.jwt.public_issuer.jwksUri }}
+      audiences:
+        - {{ .Values.jwt.public_issuer.audience }}
+      forwardOriginalToken: true
+    - issuer: {{ .Values.jwt.internal_issuer.issuer }}
+      jwksUri: {{ .Values.jwt.internal_issuer.jwksUri }}
+      audiences:
+        - {{ .Values.jwt.internal_issuer.audience }}
+      forwardOriginalToken: true
+---
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: {{ .Values.service.name }}
+  namespace: {{ .Values.namespace }}
+spec:
+  # only allows requests if they match a below rule
+  action: ALLOW
+  selector:
+    matchLabels:
+      app: {{ .Values.service.name }}
+  rules:
+    # allow all calls from the same namespace (that are using mTLS)
+    # this actually only allows interservice calls
+    - from:
+        - source:
+            namespaces: ["{{ .Values.namespace }}"]
+    {{- if .Values.virtualService.rules.open }}
+    # OPEN: these routes do not require authentication of any kind
+    - to:
+        - operation:
+            methods:
+            {{- range .Values.virtualService.rules.open.methods }}
+            - {{ . | quote }}
+            {{- end }}
+            paths:
+            {{- range .Values.virtualService.rules.open.paths }}
+            - {{ . | quote }}
+            {{- end }}
+            ports:
+            {{- if has "http" .Values.virtualService.rules.open.protocols }}
+            - "{{ .Values.service.ports.http }}"
+            {{- end }}
+            {{- if has "grpc" .Values.virtualService.rules.open.protocols }}
+            - "{{ .Values.service.ports.grpc }}"
+            {{- end }}
+    {{- end }}
+    {{- if .Values.virtualService.rules.token }}
+    # TOKEN: these routes require a valid jwt token from any issuer
+    - from:
+        - source:
+            requestPrincipals: ["*"]
+      to:
+        - operation:
+            methods:
+            {{- range .Values.virtualService.rules.token.methods }}
+            - {{ . | quote }}
+            {{- end }}
+            paths:
+            {{- range .Values.virtualService.rules.token.paths }}
+            - {{ . | quote }}
+            {{- end }}
+            ports:
+            {{- if has "http" .Values.virtualService.rules.token.protocols }}
+            - "{{ .Values.service.ports.http }}"
+            {{- end }}
+            {{- if has "grpc" .Values.virtualService.rules.token.protocols }}
+            - "{{ .Values.service.ports.grpc }}"
+            {{- end }}
+    {{- end }}
+    {{- if .Values.virtualService.rules.internal }}
+    # INTERNAL: these routes require a jwt token from the internal issuer
+    - from:
+        - source:
+            # requires a jwt that matches the above RequestAuthentication issuers/audiences
+            requestPrincipals: ["*"]
+    - to:
+        - operation:
+            methods:
+            {{- range .Values.virtualService.rules.internal.methods }}
+            - {{ . | quote }}
+            {{- end }}
+            paths:
+            {{- range .Values.virtualService.rules.internal.paths }}
+            - {{ . | quote }}
+            {{- end }}
+            ports:
+            {{- if has "http" .Values.virtualService.rules.internal.protocols }}
+            - "{{ .Values.service.ports.http }}"
+            {{- end }}
+            {{- if has "grpc" .Values.virtualService.rules.internal.protocols }}
+            - "{{ .Values.service.ports.grpc }}"
+            {{- end }}
+      when:
+        - key: request.auth.claims[aud]
+          values: ["{{ .Values.jwt.internal_issuer.audience }}"]
+    {{- end }}
+  {{- end}}

@@ -1,0 +1,57 @@
+// Package handler contains the API entrypoints for the {{.GetLower}} service.
+package handler
+
+import (
+	"context"
+
+	s "{{.GetLower}}/service"
+
+	pb "github.com/circadence-official/galactus/api/gen/go/core/{{.GetLower}}/v1"
+	l "github.com/circadence-official/galactus/pkg/logging/v2"
+	ut "github.com/circadence-official/galactus/pkg/chassis/util"
+)
+
+// handler is the struct which handles gRPC requests and implements the protobuf interface pb.{{.GetTitle}}Server
+type handler struct {
+	logger  l.Logger
+	service s.Service
+}
+
+// New{{.GetTitle}}RPCHandler is the constructor for the gRPC request handler of the service
+func New{{.GetTitle}}RPCHandler(logger l.Logger, service s.Service) pb.{{.GetTitle}}Server {
+	return &handler{
+		logger:  logger,
+		service: service,
+	}
+}
+
+// {{.GetCommandTitle}}Command handles gRPC request to process a {{.GetCommandTitle}} command applied to a {{.GetAggregateTitle}} aggregate
+// TODO: this function name must match the name of the function name in the proto definition
+func (h *handler) {{.GetCommandTitle}}Command(ctx context.Context, req *pb.{{.GetCommandTitle}}CommandRequest) (*pb.{{.GetCommandTitle}}CommandResponse, error) {
+	// build execution context, with request context that contains `transaction_id` in metadata
+	logger := h.logger.WithRPCContext(ctx)
+	execCtx, err := ut.NewExecutionContextFromContextWithMetadata(ctx, logger)
+	if err != nil {
+		logger.WithError(err).Error("failed to create execution context from current context")
+		return nil, err
+	}
+
+	// input/req validation
+	{{.GetAggregateLower}} := req.GetPayload()
+	if err := {{.GetAggregateLower}}.Validate(); err != nil {
+		logger.WithError(err).Error("input validation failed")
+		// this will return an `INVALID_ARGUMENT` grpc code
+		return nil, err
+	}
+
+	// call to service layer
+	result, err := h.service.{{.GetCommandTitle}}Command(execCtx, {{.GetAggregateLower}})
+	if err != nil {
+		logger.WithError(err).Error("failed to process command")
+		return nil, err
+	}
+
+	return &pb.{{.GetCommandTitle}}CommandResponse{
+		Result: result,
+	}, nil
+}

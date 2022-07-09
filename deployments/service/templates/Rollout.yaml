@@ -1,0 +1,177 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: {{ .Values.service.name }}
+  namespace: {{ .Values.namespace }}
+  labels:
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}"
+    tags.datadoghq.com/env: {{ .Values.namespace }}
+    tags.datadoghq.com/service: {{ .Values.service.name }}
+    tags.datadoghq.com/version: {{ .Values.configMap.version }}
+spec:
+  revisionHistoryLimit: {{ .Values.revisionHistoryLimit }}
+  selector:
+    matchLabels:
+      app: {{ .Values.service.name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.service.name }}
+        version: {{ .Values.configMap.version }}
+        tags.datadoghq.com/env: {{ .Values.namespace }}
+        tags.datadoghq.com/service: {{ .Values.service.name }}
+        tags.datadoghq.com/version: {{ .Values.configMap.version }}
+      annotations:
+        {{ .Values.datadog.logKey }}: {{ .Values.datadog.logValue }}
+        # this value is used by the shawarma sidecar to query all services related to this rollout
+        shawarma.centeredge.io/service-label: "{{ .Values.service.name }}"
+        # overrides the default log level of warn
+        shawarma.centeredge.io/log-level: info
+        # overrides the default POST url
+        shawarma.centeredge.io/state-url: "http://localhost:{{ .Values.service.ports.http }}/applicationstate"
+    spec:
+      serviceAccountName: {{ .Values.service.name }}
+      containers:
+      - name: {{ .Values.service.name }}
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        {{- if .Values.image.stdin }}
+        stdin: true
+        tty: true
+        {{- end }}
+        ports:
+        - containerPort: {{ .Values.service.ports.grpc }}
+          name: grpc-web-port
+        - containerPort: {{ .Values.service.ports.http }}
+          name: http-web-port
+        volumeMounts:
+        - name: service-volume
+          mountPath: /etc/values.json
+          subPath: values.json
+        {{- if .Values.includeArm }}
+        - name: {{ .Chart.Name }}-arm-volume
+          mountPath: /etc/kubernetes/arm.json
+          subPath: arm.json
+        {{- end }}
+        - name: azure-config-file
+          mountPath: /etc/kubernetes/azure.json
+          readOnly: true
+        livenessProbe:
+          httpGet:
+            path: {{ .Values.livenessProbe.path }}
+            port: {{ .Values.service.ports.http }}
+          initialDelaySeconds: {{ .Values.livenessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.livenessProbe.periodSeconds }}
+          successThreshold: {{ .Values.livenessProbe.successThreshold }}
+          timeoutSeconds: {{ .Values.livenessProbe.timeoutSeconds }}
+        readinessProbe:
+          httpGet:
+            path: {{ .Values.readinessProbe.path }}
+            port: {{ .Values.service.ports.http }}
+          initialDelaySeconds: {{ .Values.readinessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.readinessProbe.periodSeconds }}
+          successThreshold: {{ .Values.readinessProbe.successThreshold }}
+          timeoutSeconds: {{ .Values.readinessProbe.timeoutSeconds }}
+        env:
+          - name: DD_ENV
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.labels['tags.datadoghq.com/env']
+          - name: DD_SERVICE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.labels['tags.datadoghq.com/service']
+          - name: DD_VERSION
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.labels['tags.datadoghq.com/version']
+          # this allows the pod to send APM metrics to Datadog: https://docs.datadoghq.com/agent/kubernetes/apm/?tab=tcp
+          - name: DD_AGENT_HOST
+            valueFrom:
+              fieldRef:
+                fieldPath: status.hostIP
+        resources:
+{{ toYaml .Values.resources | indent 12 }}
+      terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds }}
+      volumes:
+        - name: {{ .Chart.Name }}-volume
+          configMap:
+            name: "{{ .Values.namespace }}-{{ .Values.service.name }}-configmap-{{ .Values.configMap.version }}"
+        {{- if .Values.includeArm }}
+        - name: {{ .Chart.Name }}-arm-volume
+          configMap:
+            name: "{{ .Values.namespace }}-{{ .Values.service.name }}-configmap-{{ .Values.configMap.version }}"
+        {{- end }}
+        - name: azure-config-file
+          hostPath:
+            path: /etc/kubernetes/azure.json
+            type: File
+  strategy:
+  {{- if eq .Values.rollout.strategy "bluegreen" }}
+    blueGreen:
+      activeService: {{ .Values.service.name }}
+      scaleDownDelaySeconds: 10
+      {{- if or (eq .Values.rollout.testing.integration.isEnabled true) (eq .Values.rollout.testing.functional.isEnabled true) }}
+      {{- if .Values.rollout.testing.integration.isEnabled }}
+      prePromotionAnalysis:
+        templates:
+          - templateName: {{ .Values.service.name }}.{{ .Values.configMap.version }}.integration
+      {{- end }}
+      {{- if .Values.rollout.testing.functional.isEnabled }}
+      postPromotionAnalysis:
+        templates:
+          - templateName: {{ .Values.service.name }}.{{ .Values.configMap.version }}.functional
+      {{- end }}
+      autoPromotionEnabled: {{ .Values.rollout.autoPromotionEnabled | default false }}
+      scaleDownDelayRevisionLimit: 0
+    {{- end }}
+    {{- else }}
+    canary:
+      canaryService: {{ .Values.service.name }}-canary
+      stableService: {{ .Values.service.name }}
+      steps:
+        {{- if or (eq .Values.rollout.testing.integration.isEnabled true) (eq .Values.rollout.testing.functional.isEnabled true) }}
+        - experiment:
+            duration: {{ .Values.rollout.duration }} # time for integration tests to complete
+            templates:
+              - name: {{ .Values.service.name }}-preview
+                specRef: canary
+                selector:
+                  matchLabels:
+                    app: {{ .Values.service.name }}-preview
+                metadata:
+                  labels:
+                    app: {{ .Values.service.name }}-preview
+            analysis:
+              {{- if .Values.rollout.testing.integration.isEnabled }}
+              - name: integration
+                templateName: {{ .Values.service.name }}.{{ .Values.configMap.version }}.integration
+              {{- end }}
+              {{- if .Values.rollout.testing.functional.isEnabled }}
+              - name: functional
+                templateName: {{ .Values.service.name }}.{{ .Values.configMap.version }}.functional
+              {{- end }}
+        {{- end }}
+        # steps demonstrating incremental traffic promotion
+        - setWeight: 25
+        - pause: { duration: 10s }
+        - analysis:
+            templates:
+            - templateName: {{ .Values.rollout.prometheus.happyAnalysis }}
+            args:
+            - name: namespace
+              value: {{ .Values.namespace }}
+        - setWeight: 50
+        - pause: { duration: 10s }
+        - setWeight: 75
+        - pause: { duration: 10s }
+        - setWeight: 100
+      trafficRouting:
+        istio:
+          virtualService:
+            name: {{ .Values.service.name }}
+            routes:
+            {{- range .Values.virtualService.routes }}
+            - {{ .name }}
+            {{- end }}
+  {{- end }}

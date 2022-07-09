@@ -1,0 +1,76 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "core/notifier/v1/notifier.proto",
+    "version": "version not set"
+  },
+  "tags": [
+    {
+      "name": "Notifier"
+    }
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {},
+  "definitions": {
+    "protobufAny": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "rpcStatus": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/protobufAny"
+          }
+        }
+      }
+    },
+    "v1Notification": {
+      "type": "object",
+      "properties": {
+        "notificationType": {
+          "$ref": "#/definitions/v1NotificationType",
+          "description": "notification type is the name of the type that is sent in the data value. This is recommended\ngiven the `web-client` may want to check the message type and perform specific actions."
+        },
+        "data": {
+          "type": "string",
+          "title": "Data for each notification will be a message found in this package that\nis json encoded as a struct type. This main advantage to this is we will not need to\nredeploy the server, and client when a new notification is added, the `struct` type\nin javascript is an object"
+        },
+        "transactionId": {
+          "type": "string",
+          "title": "UUID providing traceability all the way through the system to client"
+        }
+      },
+      "title": "A notification send to the web client"
+    },
+    "v1NotificationType": {
+      "type": "string",
+      "enum": [
+        "INVALID",
+        "HEARTBEAT",
+        "TODO_CREATED"
+      ],
+      "default": "INVALID",
+      "title": "NotificationType - A code that communicates to a integrated client the message type that is being sent.\nTODO: check to see if you can add to this enum without having to redeploy the notifier service"
+    }
+  }
+}

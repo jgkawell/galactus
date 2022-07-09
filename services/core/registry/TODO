@@ -1,0 +1,3 @@
+# TODOs
+
+- test producer (eventstore) and consumer (todo) on new messagebus

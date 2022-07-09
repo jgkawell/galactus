@@ -1,0 +1,14 @@
+{{- if .Values.configMap.enable }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: "{{ .Values.namespace }}-{{ .Values.service.name }}-{{ .Values.configMap.version }}-configmap"
+  namespace: {{ .Values.namespace }}
+data:
+  values.json: |
+{{ toPrettyJson .Values.configMap | indent 4 }}
+  {{- if .Values.includeArm }}
+  arm.json: |
+{{ toPrettyJson .Values.arm | indent 4 }}
+  {{- end }}
+{{- end }}

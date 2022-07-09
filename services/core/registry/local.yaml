@@ -1,0 +1,23 @@
+# local development values
+configMap:
+  isDevMode: true
+  disableTracer: true
+  version: v0.0.0
+  env: local
+  # sql database connection values
+  sqlDbUser: admin
+  sqlDbSecret: admin
+  sqlDbName: dev
+  sqlDbPort: 5432
+  sqlDbHost: localhost
+  sqlDbSchema: local
+  dbAddress: localhost
+  # registry is the only services which defines ports in local.yaml
+  # all other services request ports from the registry service itself
+  httpPort: 35000
+  grpcPort: 35001
+  # messagebus values
+  MessageBusUser: 'guest'
+  MessageBusPassword: 'guest'
+  MessageBusIPs: 'localhost:5672'
+  MessageBusScheme: 'http'

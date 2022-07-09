@@ -1,0 +1,97 @@
+# Default values for Helm deployments.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+horizontalPodAutoscaler:
+  isEnabled: true
+  minreplicas: 1
+  maxreplicas: 5
+
+namespace: ""
+
+terminationGracePeriodSeconds: 10
+
+# specify how many old ReplicaSets for this Deployment to retain. The rest will be
+# garbage-collected in the background. By default, it is 10. Explicitly setting this field to 1,
+# since rollbacks will now be managed by Argo
+revisionHistoryLimit: 1
+
+# Argo Rollouts
+rollout:
+  testing:
+    integration:
+      isEnabled: true
+      tests:
+        - commandhandler
+    functional:
+      isEnabled: false
+
+image:
+  repository: REPLACE_ME/commandhandler
+  tag: latest
+  pullPolicy: IfNotPresent
+
+service:
+  name: commandhandler
+  type: ClusterIP
+
+datadog:
+  logKey: ad.datadoghq.com/commandhandler.logs
+  logValue: '''[{"source":"commandhandler","service":"commandhandler"}]'''
+
+resources:
+  limits:
+    cpu: 100m
+    memory: 256Mi
+  requests:
+    cpu: 80m
+    memory: 128Mi
+
+# configure virtual service traffic
+virtualService:
+  name: commandhandler
+  isEnabled: true
+  isPublic: true
+  routes:
+    - isGrpc: true
+      isEnabled: true
+      prefix: /atlas.commandhandler.v1.CommandHandler
+      port: 8090
+      name: commandhandler-grpc
+  rules:
+    open: []
+    token:
+      paths:
+        - /atlas.commandhandler.v1.CommandHandler*
+      methods: ['POST']
+      protocols: ['grpc']
+    internal: []
+
+livenessProbe:
+  initialDelaySeconds: 15
+  periodSeconds: 10
+  successThreshold: 1
+  timeoutSeconds: 3
+  path: /health
+
+readinessProbe:
+  initialDelaySeconds: 20
+  periodSeconds: 10
+  successThreshold: 1
+  timeoutSeconds: 3
+  path: /readiness
+
+# configMaps are set as defaults for local development
+configMap:
+  enable: true
+  grpcPort: 35000
+  httpPort: 8080
+  isDevMode: true
+  traceName: commandhandler
+  version: 0.0.0
+  containerName: commandhandler
+  eventstoreAddress: localhost:35004
+  labAddress: localhost:35008
+  objectiveAddress: localhost:36002
+  objectiveCompletedAddress: localhost:36003
+  milestoneAddress: localhost:36004

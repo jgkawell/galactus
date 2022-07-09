@@ -1,0 +1,106 @@
+// Package main is the core of the {{.GetLower}} service.
+// It typically only has main.go within it and all supporting
+// code should be in the handler, service, and/or dao packages.
+package main
+
+import (
+	h "{{.GetLower}}/handler"
+	s "{{.GetLower}}/service"
+
+	cf "github.com/circadence-official/galactus/pkg/clientfactory"
+	mb "github.com/circadence-official/galactus/pkg/chassis"
+
+	agpb "github.com/circadence-official/galactus/api/gen/go/core/aggregates/v1"
+	espb "github.com/circadence-official/galactus/api/gen/go/core/eventstore/v1"
+
+	pb "github.com/circadence-official/galactus/api/gen/go/core/{{.GetLower}}/v1"
+
+	"google.golang.org/grpc"
+)
+
+func main() {
+	// define these globally scoped so they can be used in different sections of the NewMainbuilder configuration
+	// (for example, the `svc` is initialized in the ServiceLayerConfig but is used in the HandlerLayerConfig)
+	var esc espb.EventStoreClient
+	var svc s.Service
+
+	b := mb.NewMainBuilder(&mb.MainBuilderConfig{
+		// NOTE: this is the value you will see in datadog and kubernetes as the name of the service
+		ApplicationName: "{{.GetLower}}",
+		// NOTE: this is the keyvault configuration so we can pull secrets from a secure data store
+		KeyVaultConfig: &mb.KeyVaultConfig{
+			RequireKeyVault:               func(b mb.MainBuilder) bool { return !b.GetConfig().GetBool("isDevMode") },
+			KeyVaultResourceGroupVariable: "resourceGroup",
+			KeyVaultNameVariable:          "keyVault",
+			KeyVaultOverridesVariable:     "keyVaultOverrides",
+		},
+		// NOTE: this is empty because all services usually use the defaults
+		MessageBusConfig: &mb.MessageBusConfig{},
+		// NOTE: these shouldn't change from the defaults
+		SqlConfig: &mb.SqlConfig{
+			SqlDbHost:   "sqlDbHost",
+			SqlDbPort:   "sqlDbPort",
+			SqlDbName:   "sqlDbName",
+			SqlDbUser:   "sqlDbUser",
+			SqlDbSecret: "sqlDbSecret",
+			SqlDbSchema: "sqlDbSchema",
+		},
+		// NOTE: configure specific things for the dao layer here if custom dao is needed
+		DaoLayerConfig: &mb.DaoLayerConfig{
+			CreateDaoLayer: func(b mb.MainBuilder) {
+				db := b.GetSqlClient()
+				db.AutoMigrate(&agpb.{{.GetTitle}}ORM{})
+			},
+		},
+		// NOTE: add more service-to-service clients here as needed
+		GatewayLayerConfig: &mb.GatewayLayerConfig{
+			CreateInternalClients: func(b mb.MainBuilder, clientFactory cf.ClientFactory) []*grpc.ClientConn {
+				var (
+					conn        *grpc.ClientConn
+					err         error
+					connections []*grpc.ClientConn
+				)
+
+				// create an rpc client to the eventstore service so we can publish events to it anywhere during runtime
+				esc, conn, err = clientFactory.CreateEventStoreClient(b.GetConfig().GetString("eventstoreaddress"))
+				if err != nil {
+					b.GetLogger().WithError(err).Panic("failed to connect to eventstore service")
+				}
+				connections = append(connections, conn)
+
+				return connections
+			},
+		},
+		// NOTE: shouldn't need to change anything here unless multiple service layers are required (SHOULD BE VERY RARE)
+		ServiceLayerConfig: &mb.ServiceLayerConfig{
+			CreateServiceLayer: func(b mb.MainBuilder) {
+				svc = s.NewService(esc, b.GetSqlClient())
+			},
+		},
+		// NOTE: shouldn't need to change anything here as all functionality should (usually) be under the single rpc handler and single queue handler
+		HandlerLayerConfig: &mb.HandlerLayerConfig{
+			HttpPortVariable: "httpPort",
+			RpcPortVariable:  "grpcPort",
+			// register the grpc server handler
+			CreateRpcHandlers: func(b mb.MainBuilder) {
+				pb.Register{{.GetTitle}}Server(b.GetRpcServer(), h.New{{.GetTitle}}RPCHandler(b.GetLogger(), svc))
+			},
+			// define the configuration for the consumer (listener to queues on rabbitmq/messagebus)
+			CreateBrokerConfig: func(b mb.MainBuilder) mb.BrokerConfig {
+				return mb.BrokerConfig{
+					QueueConfigs: []mb.HandlerConfig{
+						{
+							// this queue is defined in the values.yaml
+							Name:    "{{.GetLower}}",
+							Handler: h.NewConsumer(b.GetLogger(), svc),
+						},
+					},
+				}
+			},
+		},
+	})
+
+	defer b.Close()
+
+	b.Run()
+}

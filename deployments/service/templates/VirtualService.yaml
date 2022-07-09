@@ -1,0 +1,121 @@
+{{- if .Values.virtualService.isEnabled }}
+apiVersion: "networking.istio.io/v1alpha3"
+kind: VirtualService
+metadata:
+  name: {{ .Values.service.name }}
+  namespace: {{ .Values.namespace }}
+spec:
+  hosts:
+{{- if .Values.virtualService.isPublic | default false }}
+    - "{{ .Values.host.prefix }}.{{ .Values.host.url }}"
+{{- else }}
+    - "{{ .Values.service.name }}.{{ .Values.namespace }}.svc.cluster.local"
+{{- end }}
+  gateways:
+    - {{ .Values.gateway }}
+  http:
+  {{- range .Values.virtualService.routes }}
+  {{- if .isEnabled}}
+    - name: {{ .name }}
+    {{- if .isGrpc}}
+    # if route is grpc
+      match:
+        - uri:
+            prefix: {{ .prefix }}
+      route:
+        - destination:
+            host: {{ $.Values.service.name }}
+            port:
+              number: {{ .port }}
+          weight: 100
+        - destination:
+            {{- if eq $.Values.rollout.strategy "bluegreen" }}
+            host: {{ $.Values.service.name }}-preview
+            {{- else }}
+            host: {{ $.Values.service.name }}-canary
+            {{- end }}
+            port:
+              number: {{.port}}
+          weight: 0
+      corsPolicy:
+        allowOrigin:
+          {{- range $.Values.virtualService.allowOrigin }}
+          - {{ . | quote }}
+          {{- end }}
+        allowMethods:
+          # grpc only uses POST
+          - POST
+        allowHeaders:
+          - grpc-timeout
+          - content-type
+          - keep-alive
+          - user-agent
+          - cache-control
+          - content-type
+          - content-transfer-encoding
+          - custom-header-1
+          - x-accept-content-transfer-encoding
+          - x-accept-response-streaming
+          - x-user-agent
+          - x-grpc-web
+          - authorization
+        maxAge: 1728s
+        exposeHeaders:
+          - grpc-status
+          - grpc-message
+        allowCredentials: true
+    {{- else }}
+    # if route is NOT grpc (e.g. http)
+      match:
+      - uri:
+        {{- if .prefix }}
+          prefix: {{ .prefix }}
+        {{- end }}
+        {{- if .regex }}
+          regex: {{ .regex }}
+        {{- end }}
+        {{- if .exact }}
+          exact: {{ .exact }}
+        {{- end }}
+      {{- if .rewrite }}
+      rewrite:
+        uri: {{.rewrite}}
+      {{- end }}
+      route:
+        - destination:
+            host: {{ $.Values.service.name}}
+            port:
+              number: {{.port}}
+          weight: 100
+        - destination:
+            {{- if eq $.Values.rollout.strategy "bluegreen" }}
+            host: {{ $.Values.service.name }}-preview
+            {{- else }}
+            host: {{ $.Values.service.name }}-canary
+            {{- end }}
+            port:
+              number: {{.port}}
+          weight: 0
+      corsPolicy:
+        allowOrigin:
+          {{- range $.Values.virtualService.allowOrigin }}
+            - {{ . | quote }}
+          {{- end }}
+        allowMethods:
+          - POST
+          - GET
+          - OPTIONS
+          - PUT
+          - DELETE
+        allowHeaders:
+          - content-type
+          - keep-alive
+          - user-agent
+          - cache-control
+          - content-type
+          - content-transfer-encoding
+          - authorization
+    {{- end }}
+  {{- end }}
+  {{- end }}
+{{- end }}

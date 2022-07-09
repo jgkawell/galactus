@@ -1,0 +1,48 @@
+parameters:
+  - name: goVersion
+    type: string
+    default: '1.17'
+  - name: projectName
+    type: string
+    default: 'pkg/azkeyvault'
+  - name: sonarqubeProjectKey
+    type: string
+    default: 'galactus:azkeyvault'
+  - name: sonarqubeProjectName
+    type: string
+    default: 'Galactus-AzKeyVault'
+  - name: workingDirectory
+    type: string
+    default: 'galactus/pkg/azkeyvault'
+
+trigger:
+  branches:
+    include:
+      - main
+  paths:
+    include:
+      - pkg/azkeyvault
+
+variables:
+  - group: 'Versioning-AzKeyVault'
+
+pr:
+  branches:
+    include:
+      - main
+
+resources:
+  repositories:
+    - repository: phoenix # The name used to reference this repository in the checkout step
+      type: git
+      name: Commercial/phoenix
+      ref: refs/tags/0.1.131
+
+stages:
+  - template: pipelines/build/go_modules/go-module-CI.yaml@phoenix
+    parameters:
+      goVersion: '${{ parameters.goVersion }}'
+      workingDirectory: '${{ parameters.workingDirectory }}'
+      projectName: '${{ parameters.projectName }}'
+      sonarqubeProjectKey: '${{ parameters.sonarqubeProjectKey }}'
+      sonarqubeProjectName: '${{ parameters.sonarqubeProjectName }}'

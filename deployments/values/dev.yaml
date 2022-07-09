@@ -1,0 +1,33 @@
+# this is the url to Istio running in Kubernetes from off the cluster
+# the final url for the VirtualService is determined by both these values
+# For example:
+#   host.url: example.com
+#   host.prefix: dev
+# -> final url: dev.example.com
+host:
+  url: URL_TO_ISTIO_INGRESS
+  prefix: dev
+
+rollout:
+  autoPromotionEnabled: true
+  strategy: bluegreen
+
+horizontalPodAutoscaler:
+  memory:
+    isEnabled: true
+    utilizationThreshold: 80
+  cpu:
+    isEnabled: true
+    utilizationThreshold: 80
+  customScaling:
+    isEnabled: true
+    scaleup:
+      percentValue: 20
+      periodSeconds: 60
+    scaledown:
+      percentValue: 20
+      periodSeconds: 60
+
+configMap:
+  resourceGroup: dev-cluster-resources
+  keyVault: dev-keyvault

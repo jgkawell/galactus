@@ -1,0 +1,67 @@
+# enable routing for all http traffic on 80
+gateway: istio-system/default-gateway
+
+# auth configuration for our jwt issuers
+jwt:
+  public_issuer:
+    issuer: CUSTOM_URI
+    jwksUri: CUSTOM_URI
+    audience: IDENTIFIER
+  internal_issuer:
+    issuer: CUSTOM_URI
+    jwksUri: CUSTOM_URI
+    audience: IDENTIFIER
+
+rollout:
+  duration: 10m
+  testing:
+    integration: {}
+    functional:
+      envs:
+        - key: CUSTOM_VARIABLE
+          value: "CHANGEME"
+
+horizontalPodAutoscaler:
+  targetApiVersion: argoproj.io/v1alpha1
+  targetKind: Rollout
+
+service:
+  ports:
+    http: 8080
+    grpc: 8090
+
+virtualService:
+  # TODO: you probably want to set this to a whitelist of allowed origins for your specific application
+  allowOrigin:
+    - "*"
+
+# These values will be applied to ALL deployments.
+# NOTE: do not add keyVaultOverrides in this config file.
+# Add them in the config file for the target namespace.
+# Overrides are additive, so overriding values at the top level could cause unwanted behavior.
+configMap:
+  isDevMode: false
+  registryAddress: registry:8090
+
+  # these keyvault values are read from the environment-specific keyvault
+  keyVaultOverrides:
+    cacheAddress: redisAddress
+    cachePassword: redisPassword
+    noSqlDbAddress: mongoAddress
+    noSqlDbName: mongoDbName
+    brokerUser: rabbitMqUser
+    brokerPassword: rabbitMqPassword
+    brokerIPs: rabbitMqIps
+    sqlDbUser: postgresUser
+    sqlDbSecret: postgresSecret
+    sqlDbHost: postgresHost
+    sqlDbName: postgresDbName
+
+  # TODO: do we need these?
+  sqlDbPort: 5432
+  softDelete: false
+  daoTimeoutSeconds: 10
+  enforceCustomerIdCheck: true
+  allowUpsert: false
+  MessageBusTimeout: 10
+  gormDebug: false

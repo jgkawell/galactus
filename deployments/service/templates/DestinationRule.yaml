@@ -1,0 +1,17 @@
+{{- if .Values.virtualService.isEnabled}}
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: {{ .Values.service.name }}
+  namespace: {{ .Values.namespace }}
+spec:
+  host: {{ .Values.service.name }}.{{ .Values.namespace }}.svc.cluster.local
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: {{ .Values.service.name }}-{{ .Values.rollout.isBlueGreen | default false | ternary "preview" "canary" }}
+  namespace: {{ .Values.namespace }}
+spec:
+  host: {{ .Values.service.name }}-{{ .Values.rollout.isBlueGreen | default false | ternary "preview" "canary" }}.{{ .Values.namespace }}.svc.cluster.local
+{{- end}}

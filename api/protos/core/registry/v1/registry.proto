@@ -1,0 +1,60 @@
+
+syntax = "proto3";
+
+package core.registry.v1;
+
+option go_package = "github.com/circadence-official/galactus/api/gen/go/core/registry/v1";
+
+import "core/aggregates/v1/registry.proto";
+
+service Registry {
+  // Register registers a new microservice with the registry.
+  rpc Register(RegisterRequest) returns (RegisterResponse) {}
+  // Deregister deregisters a microservice from the registry.
+  // rpc Deregister(DeregisterRequest) returns (DeregisterResponse) {}
+
+  // Connection returns the connection info for a microservice.
+  // Example: Service A wishes to call Service B, A calls registry.Connection(B)
+  //          which returns the connection info for B. If B is not available or
+  //          not registered, an error will be returned.
+  rpc Connection(ConnectionRequest) returns (ConnectionResponse) {}
+}
+
+message RegisterRequest {
+  string name = 1;
+  string domain = 2; // this needs to match the k8s namespace for remote deployments
+  // address = domain.name:port
+  string version = 3; // should be semver
+  string description = 4;
+
+  repeated Protocol protocols = 5;
+  repeated core.aggregates.v1.Producer producers = 6;
+  repeated core.aggregates.v1.Consumer consumers = 7;
+}
+
+message Protocol {
+  core.aggregates.v1.ProtocolKind kind = 1;
+}
+
+message RegisterResponse {
+  core.aggregates.v1.Registration registration = 1;
+}
+
+message ConnectionRequest {
+  string name = 1;
+  // TODO: do we want to support multiple versions of the same service? Or require a new service for each version?
+  string version = 2;
+  core.aggregates.v1.ProtocolKind type = 3;
+}
+
+message ConnectionResponse {
+  string address = 1;
+  int32 port = 2;
+  ServiceStatus status = 3;
+}
+
+enum ServiceStatus {
+  SERVICE_STATUS_INVALID = 0;
+  SERVICE_STATUS_HEALTHY = 1;
+  SERVICE_STATUS_UNHEALTHY = 2;
+}

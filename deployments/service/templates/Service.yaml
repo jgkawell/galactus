@@ -1,0 +1,83 @@
+# primary service
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.service.name }}
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: {{ .Values.service.name }}
+    service: {{ .Values.service.name }}
+    # this value is used by the shawarma sidecar to query all services related to this rollout
+    shawarma.centeredge.io/service-label: {{ .Values.service.name }}
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}"
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - port: {{ .Values.service.ports.grpc }}
+      targetPort: {{ .Values.service.ports.grpc }}
+      protocol: TCP
+      name: grpc-web-port
+    - port: {{ .Values.service.ports.http }}
+      targetPort: {{ .Values.service.ports.http }}
+      protocol: TCP
+      name: http-web-port
+  selector:
+    app: {{ .Values.service.name }}
+---
+# preview service (for blue/green)
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.service.name }}-preview
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: {{ .Values.service.name }}-preview
+    service: {{ .Values.service.name }}-preview
+    # this value is used by the shawarma sidecar to query all services related to this rollout
+    shawarma.centeredge.io/service-label: {{ .Values.service.name }}
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}"
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - port: {{ .Values.service.ports.grpc }}
+      targetPort: {{ .Values.service.ports.grpc }}
+      protocol: TCP
+      name: grpc-web-port
+    - port: {{ .Values.service.ports.http }}
+      targetPort: {{ .Values.service.ports.http }}
+      protocol: TCP
+      name: http-web-port
+  selector:
+    {{- if eq .Values.rollout.strategy "bluegreen" }}
+    app: {{ .Values.service.name }}
+    {{- else }}
+    app: {{ .Values.service.name }}-preview
+    {{- end }}
+{{- if eq .Values.rollout.strategy "canary" }}
+---
+# canary service (for canary)
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.service.name }}-canary
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: {{ .Values.service.name }}-canary
+    service: {{ .Values.service.name }}-canary
+    # this value is used by the shawarma sidecar to query all services related to this rollout
+    shawarma.centeredge.io/service-label: {{ .Values.service.name }}
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}"
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - port: {{ .Values.service.ports.grpc }}
+      targetPort: {{ .Values.service.ports.grpc }}
+      protocol: TCP
+      name: grpc-web-port
+    - port: {{ .Values.service.ports.http }}
+      targetPort: {{ .Values.service.ports.http }}
+      protocol: TCP
+      name: http-web-port
+  selector:
+    app: {{ .Values.service.name }}
+{{- end }}

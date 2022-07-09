@@ -1,0 +1,113 @@
+# Default values for Helm deployments.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+horizontalPodAutoscaler:
+  isEnabled: true
+  minreplicas: 1
+  maxreplicas: 5
+
+namespace: ""
+
+terminationGracePeriodSeconds: 10
+
+# specify how many old ReplicaSets for this Deployment to retain. The rest will be
+# garbage-collected in the background. By default, it is 10. Explicitly setting this field to 1,
+# since rollbacks will now be managed by Argo
+revisionHistoryLimit: 1
+
+# Argo Rollouts
+rollout:
+  testing:
+    integration:
+      isEnabled: false
+    functional:
+      isEnabled: false
+
+image:
+  repository: REPLACE_ME/notifier
+  tag: latest
+  pullPolicy: IfNotPresent
+
+service:
+  name: notifier
+  type: ClusterIP
+  version: v1
+
+datadog:
+  logKey: ad.datadoghq.com/notifier.logs
+  logValue: '''[{"source":"notifier","service":"notifier"}]'''
+
+resources:
+  limits:
+    cpu: 2000m
+    memory: 4Gi
+  requests:
+    cpu: 80m
+    memory: 128Mi
+
+# configure virtual service traffic
+virtualService:
+  name: notifier
+  isEnabled: true
+  isPublic: true
+  routes:
+    - isGrpc: true
+      isEnabled: true
+      prefix: /atlas.notifier.v1.Notifier
+      port: 8090
+      name: notifier-grpc
+  rules:
+    open: []
+    token:
+      paths:
+        - /atlas.notifier.v1.Notifier*
+      methods: ['POST']
+      protocols: ['grpc']
+    internal: []
+
+livenessProbe:
+  initialDelaySeconds: 15
+  periodSeconds: 10
+  successThreshold: 1
+  timeoutSeconds: 3
+  path: /health
+
+readinessProbe:
+  initialDelaySeconds: 20
+  periodSeconds: 10
+  successThreshold: 1
+  timeoutSeconds: 3
+  path: /readiness
+
+# configMaps are set as defaults for local development
+configMap:
+  # disable tracer becuase it will cause a memory leak in grpc when reusing the goroutine for each
+  # connected user.
+  disableTracer: true
+  isHeartbeatEnabled: true
+  heartbeatTimer: 5
+  traceName: notifier
+  containerName: notifier
+  version: v1
+  enable: true
+  # this consumer uses postgres
+  dbAddress: localhost
+  grpcPort: 35006
+  sqlDbAddress: localhost:5432
+  httpPort: 8086
+  eventstoreAddress: localhost:35004
+  isDevMode: true
+  MessageBusUser: 'guest'
+  MessageBusPassword: 'guest'
+  MessageBusIPs: 'localhost:5672'
+  MessageBusScheme: 'http'
+  QueueDelayIncrementSeconds: 1
+  QueueDedupe: 0
+  Topics:
+    Notifier:
+      Exchange: 'notification'
+      RoutingKey: 'notification'
+      ContextKey: 'status'
+      TTLMinutes: 30
+      MaxDeliveryCount: 0

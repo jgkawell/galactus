@@ -1,0 +1,95 @@
+// Package handler contains the API entrypoints for the {{.GetLower}} service.
+package handler
+
+// TODO: The data modification functions of an Aggregate (Create/Update) can EITHER be be ASYNC or SYNC 
+//		 depending on the use case of the aggregate. For example, if the aggregate is Payments, you may want
+//		 it to be ASYNC as processing a Payment.Create() call may require multiple calls to external services.
+//		 However, if the aggregate is a User, you may want it to be SYNC as processing a User.Create() call
+//		 may simply be a write to a single DB.
+//
+// 		 The decision is up to the developer of the Aggregate so the TODO here is to decide whether Create/Update
+//   	 should be ASYNC or SYNC and then modify the code accordingly. If you decide on ASYNC, you will need to 
+//  	 remove the Create/Update functions from the `handler/rpc.go` file and only use the calls within the Handle()
+// 	 	 function within `handler.consumer.go`. If you decide on SYNC, you will need to completely remove the `handler/consumer.go`
+// 		 file and only use the Create/Update functions in the `handler/rpc.go` file.
+
+import (
+	"context"
+
+	s "{{.GetLower}}/service"
+
+	es "github.com/circadence-official/galactus/api/gen/go/core/eventstore/v1"
+
+	l "github.com/circadence-official/galactus/pkg/logging/v2"
+	mb "github.com/circadence-official/galactus/pkg/messagebus/v2"
+	ut "github.com/circadence-official/galactus/pkg/chassis/util"
+)
+
+type consumer struct {
+	logger  l.Logger
+	service s.Service
+}
+
+// NewConsumer is the constructor for the messagebus consumer
+// NOTE: it owns a copy of the logger from main.go and passes it (with fields) to the service layer through the ExecutionContext
+func NewConsumer(logger l.Logger, service s.Service) mb.ClientMessageHandler {
+	return &consumer{
+		logger, service,
+	}
+}
+
+var (
+	// generic errors for event/message parsing
+	ErrorFailedMessageData = "failed to get message data from queued message"
+	ErrorFailedUnmarshal   = "failed to unmarshal request"
+	ErrorMsgNotProcessed   = "messages not processed"
+
+	// session specific errors
+	IncomingQueuedMessage = "handler_incoming_queued_message"
+
+	// TODO: Add {{.GetTitle}} specific errors
+)
+
+// Handle is the callback function that is called by the messagebus package when a message arrives on a queue/topic
+func (c *consumer) Handle(ctx context.Context, msg mb.QueuedMessage) error {
+	// include the message in all subsequent logs
+	logger := c.logger.WithField(IncomingQueuedMessage, msg)
+
+	// build execution context, with event that contains a transaction id
+	execCtx, err := ut.NewExecutionContextFromEvent(ctx, logger)
+	if err != nil {
+		logger.WithError(err).Error("failed to create execution context from event")
+		return nil
+	}
+
+	// extract message data and body from queued message into event type and body
+	evt, data, err := ut.GetEventAndMessageData(ctx, logger, msg)
+	if err != nil {
+		logger.WithError(err).Error(ErrorFailedMessageData)
+		return nil
+	}
+
+	switch evt.GetEventType().Get{{.GetTitle}}EventCode() {
+	// default create and update events (not query/list since those are not async)
+    case es.{{.GetTitle}}EventCode_{{.GetTitle}}_CREATE_REQUESTED:
+	    c.service.Create(execCtx, data)
+        logger.Debug("{{.GetTitle}} created")
+    case es.{{.GetTitle}}EventCode_{{.GetTitle}}_UPDATE_REQUESTED:
+		c.service.Update(execCtx, data)
+        logger.Debug("{{.GetTitle}} updated")
+	/* TODO: Add more event types here
+	case es.{{.GetTitle}}EventCode_{{.GetTitle}}_COMMAND_NAME_HERE:
+		c.service.HandleCommandNameHere(execCtx, data)
+		logger.Debug("{{.GetTitle}} command name here")
+	*/
+	// don't do anything (other than log) for unhandled and invalid events as nothing has broken in the service, but we still need to see a log about the anomaly
+    case es.{{.GetTitle}}EventCode_INVALID_{{.GetTitle}}_EVENT_CODE:
+		logger.Warn("invalid event code")
+        fallthrough
+    default:
+		logger.Error("unhandled event code")
+        msg.Reject()
+	}
+
+	return nil
+}

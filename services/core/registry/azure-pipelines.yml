@@ -1,0 +1,36 @@
+parameters:
+  - name: serviceName
+    type: string
+    default: registry
+  - name: integrationTests
+    type: object
+    default: {}
+  - name: functionalTests
+    type: object
+    default: {}
+
+trigger:
+  branches:
+    include:
+      - main
+  paths:
+    include:
+      # deployment configuration
+      - deployments/service
+      - deployments/values
+      # service code
+      - internal/registry
+
+resources:
+  repositories:
+  - repository: phoenix # The name used to reference this repository in the checkout step
+    type: git
+    name: Commercial/phoenix
+    ref: refs/tags/0.1.131
+
+stages:
+  - template: /pipelines/deployments/galactus/galactus-pipeline.yml@phoenix
+    parameters:
+      serviceName: ${{ parameters.serviceName }}
+      integrationTests: ${{ parameters.integrationTests }}
+      functionalTests: ${{ parameters.functionalTests }}

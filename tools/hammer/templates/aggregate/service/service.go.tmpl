@@ -1,0 +1,117 @@
+// Package service contains the business logic for the {{.GetLower}} service
+package service
+
+import (
+	agpb "github.com/circadence-official/galactus/api/gen/go/core/aggregates/v1"
+	espb "github.com/circadence-official/galactus/api/gen/go/core/eventstore/v1"
+
+	ut "github.com/circadence-official/galactus/pkg/chassis/util"
+
+	"github.com/jinzhu/gorm"
+)
+
+const (
+	Failed{{.GetTitle}}Insert                = "failed to insert {{.GetLower}} into database"
+	Failed{{.GetTitle}}Read                  = "failed to read {{.GetLower}} from database"
+	Failed{{.GetTitle}}List                  = "failed to list {{.GetLower}} from database"
+	Failed{{.GetTitle}}Update                = "failed to update {{.GetLower}} in database"
+	ErrorFailedToEmitEvent         = "failed to emit event"
+	ErrorFailedToGrabTransactionId = "failed to grab transaction id"
+)
+
+// Service is an interface that defines the service layer functionality
+type Service interface {
+	Create(ut.ExecutionContext, *agpb.{{.GetTitle}}) (*agpb.{{.GetTitle}}, error)
+	Read(ut.ExecutionContextWithoutTransactionID, string) (*agpb.{{.GetTitle}}, error)
+	Update(ut.ExecutionContext, *agpb.{{.GetTitle}}) (*agpb.{{.GetTitle}}, error)
+	List(ut.ExecutionContextWithoutTransactionID) ([]*agpb.{{.GetTitle}}, error)
+}
+
+// NOTE: the service layer does NOT get it's own logger. this is passed down through the ExectionContext
+type service struct {
+	eventStoreClient espb.EventStoreClient
+	db               *gorm.DB
+}
+
+// NewService is the constructor for a new {{.GetTitle}} service
+func NewService(espb espb.EventStoreClient, db *gorm.DB) Service {
+	return &service{
+		db:               db,
+		eventStoreClient: espb,
+	}
+}
+
+// Create sends the create calls to the database to create a {{.GetTitle}}
+func (s *service) Create(ctx ut.ExecutionContext, {{.GetLower}} *agpb.{{.GetTitle}}) (*agpb.{{.GetTitle}}, error) {
+	logger := ctx.GetLogger().WithField("{{.GetLower}}", {{.GetLower}})
+
+	// use `DefaultCreate{{.GetTitle}}()` to insert a `{{.GetTitle}}`
+	model, err := agpb.DefaultCreate{{.GetTitle}}(ctx.GetContext(), {{.GetLower}}, s.db)
+	if err != nil {
+		logger.WithError(err).Error(Failed{{.GetTitle}}Insert)
+		return nil, err
+	}
+
+  	// send create event to eventstore
+	evt := espb.EventType{Code: &espb.EventType_{{.GetTitle}}EventCode{ {{.GetTitle}}EventCode: espb.{{.GetTitle}}EventCode_{{.GetUpper}}_CREATED}}
+	if err := ut.CreateAndSendEventWithTransactionID(ctx.GetContext(), logger, s.eventStoreClient, model, {{.GetLower}}.GetId(), ctx.GetTransactionID(), espb.AggregateType_{{.GetUpper}}, evt); err != nil {
+	  logger.WithError(err).Error(ErrorFailedToEmitEvent)
+	  // NOTE: return an error here because it might mean that the future processing of events critical to the business logic is not happening
+	  return nil, err
+	}
+
+	return model, nil
+}
+
+// Read queries the database for a {{.GetTitle}} by its id
+func (s *service) Read(ctx ut.ExecutionContextWithoutTransactionID, id string) (*agpb.{{.GetTitle}}, error) {
+	logger := ctx.GetLogger().WithField("{{.GetLower}}_id",  id)
+
+	// create empty object with just id to use as a query
+	query := &agpb.{{.GetTitle}}{
+		Id: id,
+	}
+
+	// use `DefaultRead{{.GetTitle}}()` to read a `{{.GetTitle}}` by its id
+	model, err := agpb.DefaultRead{{.GetTitle}}(ctx.GetContext(), query, s.db)
+	if err != nil {
+		logger.WithError(err).Error(Failed{{.GetTitle}}Read)
+		return nil, err
+	}
+
+	return model, nil
+}
+
+// Update sends the update calls to the database to update a {{.GetTitle}}
+func (s *service) Update(ctx ut.ExecutionContext, {{.GetLower}} *agpb.{{.GetTitle}}) (*agpb.{{.GetTitle}}, error) {
+	logger := ctx.GetLogger().WithField("{{.GetLower}}", {{.GetLower}})
+
+	// use `DefaultStrictUpdate{{.GetTitle}}()` to update a `{{.GetTitle}}`
+	model, err := agpb.DefaultStrictUpdate{{.GetTitle}}(ctx.GetContext(), {{.GetLower}}, s.db)
+	if err != nil {
+		logger.WithError(err).Error(Failed{{.GetTitle}}Update)
+		return nil, err
+	}
+
+    // send update event to eventstore
+	evt := espb.EventType{Code: &espb.EventType_{{.GetTitle}}EventCode{ {{.GetTitle}}EventCode: espb.{{.GetTitle}}EventCode_{{.GetUpper}}_UPDATED}}
+	if err := ut.CreateAndSendEventWithTransactionID(ctx.GetContext(), logger, s.eventStoreClient, model, {{.GetLower}}.GetId(), ctx.GetTransactionID(), espb.AggregateType_{{.GetUpper}}, evt); err != nil {
+	  logger.WithError(err).Error(ErrorFailedToEmitEvent)
+	  return nil, err
+	}
+
+	return model, nil
+}
+
+// List queries the database for all {{.GetTitle}} entries in the db
+func (s *service) List(ctx ut.ExecutionContextWithoutTransactionID) ([]*agpb.{{.GetTitle}}, error) {
+	logger := ctx.GetLogger()
+	// use `DefaultList{{.GetTitle}}()` to list `{{.GetTitle}}`
+	model, err := agpb.DefaultList{{.GetTitle}}(ctx.GetContext(), s.db)
+	if err != nil {
+		logger.WithError(err).Error(Failed{{.GetTitle}}List)
+		return nil, err
+	}
+
+	return model, nil
+}

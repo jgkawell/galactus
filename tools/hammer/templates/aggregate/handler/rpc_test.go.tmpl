@@ -1,0 +1,352 @@
+package handler
+
+import (
+	"context"
+	"errors"
+	"testing"
+
+	s "{{.GetLower}}/service"
+
+	agpb "github.com/circadence-official/galactus/api/gen/go/core/aggregates/v1"
+	lbpb "github.com/circadence-official/galactus/api/gen/go/core/lab/v1"
+	l "github.com/circadence-official/galactus/pkg/logging/v2"
+	ut "github.com/circadence-official/galactus/pkg/chassis/util"
+
+	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+	"github.com/undefinedlabs/go-mpatch"
+	"google.golang.org/grpc/metadata"
+)
+
+
+func TestNewLabRPCHandler(t *testing.T) {
+	logger, _ := l.CreateNullLogger()
+	assert.NotNil(t, NewLabRPCHandler(logger, &s.MockService{}))
+}
+
+func TestLabRPCHandler_Create(t *testing.T){
+	type testCase int
+	const (
+		failValidation testCase = iota
+		failCreate
+		failContext
+		success
+	)
+	testCases := []struct {
+		TestName string
+		TestCase testCase
+	}{
+		{"fail vailidation on create", failValidation},
+		{"fail to create", failCreate},
+		{"fail to build application context", failContext},
+		{"success", success},
+	}
+	for _, tc := range testCases {
+		//setup
+		logger, hook := l.CreateNullLogger()
+		id := uuid.New().String()
+		transactionId := uuid.New().String()
+		 // TODO Fill in all fields with test data
+		lab := &agpb.Lab{
+			Id: id,
+		}
+		// new request context
+		ctx := context.Background()
+		md := metadata.MD{ "transaction_id": []string{string(transactionId)} }
+		if tc.TestCase == failContext{
+			md = metadata.MD{}
+		}
+		// add key-value pairs of metadata to context
+		ctx = metadata.NewIncomingContext(ctx, md)
+        req := &lbpb.CreateLabRequest{Payload: lab}
+		logger = logger.WithContext(ctx).WithField("transaction_id", transactionId)
+		appCtx := &ut.ExecutionCtx{
+			Context: ctx,
+			Logger:  logger,
+			TransactionID: transactionId,
+		}
+
+		//mock util Application Context
+		mockCtx := &ut.MockExecutionContext{}
+		mFunc := mockCtx.On("NewExecutionContextFromContextWithMetadata", ctx, mock.IsType(logger))
+		if tc.TestCase == failContext {
+			mFunc.Return(nil, errors.New(tc.TestName))
+		} else {
+			mFunc.Return(appCtx, nil)
+		}
+
+		if tc.TestCase == failValidation{
+			lab.Id = ""
+		}
+		//spy validate lab
+		mpatch.PatchMethod(lab.Validate,
+			func() error{
+				if tc.TestCase == failValidation{
+					return errors.New(tc.TestName)
+				}
+				return nil
+			})
+
+		mockService := &s.MockService{}
+		mockFunc := mockService.On("Create", appCtx, lab)
+		if tc.TestCase == failCreate{
+			mockFunc.Return(nil, errors.New(tc.TestName))
+		} else{
+			mockFunc.Return(lab, nil)
+		}
+
+		h := NewLabRPCHandler(logger, mockService)
+
+		//test
+		result, err := h.Create(ctx, req)
+
+		//verify
+		if tc.TestCase == success {
+			if assert.NotNil(t, result, tc.TestName){
+				assert.Equal(t, id, result.GetResult().GetId(), tc.TestName)
+			}
+			assert.Nil(t, err, tc.TestName)
+		} else { //failCreate or failValidation
+			assert.NotNil(t, err, tc.TestName)
+			assert.Nil(t, result, tc.TestName)
+			if assert.True(t, len(hook.Entries) > 0, tc.TestName) {
+				assert.Equal(t, "error", hook.LastEntry().Level.String(), tc.TestName)
+			}
+		}
+
+	}// end testCases
+}// end TestLabRPCHandler_Create
+
+func TestLabRPCHandler_Read(t *testing.T){
+	type testCase int
+	const(
+		failRead testCase = iota
+		failValidateId
+		success
+	)
+	testCases := []struct {
+		TestName string
+		TestCase testCase
+	}{
+		{"fail Read", failRead},
+		{"fail validate id Read", failValidateId},
+		{"success", success},
+	}
+
+	for _, tc := range testCases {
+		//setup
+		logger, hook := l.CreateNullLogger()
+		id := uuid.New().String()
+        // TODO Fill in all fields with test data
+		lab := &agpb.Lab{
+			Id: id,
+		}
+		// new request context
+		ctx := context.Background()
+		appCtx := &ut.ExecutionCtx{
+			Context: ctx,
+			Logger:  logger,
+		}
+
+		if tc.TestCase == failValidateId{
+			id = ""
+		}
+		req := &lbpb.ReadLabRequest{Id: id}
+
+		//mock Context
+		mockCtx := &ut.MockExecutionContextWithoutTransactionID{}
+		mFunc := mockCtx.On("NewExecutionContextWithoutTransactionID", ctx, mock.IsType(logger))
+		mFunc.Return(appCtx, nil)
+
+		//spy validate id
+		mpatch.PatchMethod(req.GetId,
+			func() string {
+				return id
+			})
+
+		// mock Service
+		mockService := &s.MockService{}
+		mockFunc := mockService.On("Read", appCtx, id)
+		if tc.TestCase == failRead{
+			mockFunc.Return(nil, errors.New(tc.TestName))
+		} else {
+			mockFunc.Return(lab, nil)
+		}
+
+		h := NewLabRPCHandler(logger, mockService)
+		//test
+		result, err := h.Read(context.Background(), &lbpb.ReadLabRequest{Id: id})
+
+		//verify
+		if tc.TestCase == success {
+			if assert.NotNil(t, result, tc.TestName){
+				assert.Equal(t, id, result.GetResult().GetId(), tc.TestName)
+			}
+			assert.Nil(t, err, tc.TestName)
+		} else { //failRead
+			assert.NotNil(t, err, tc.TestName)
+			assert.Nil(t, result, tc.TestName)
+			if assert.True(t, len(hook.Entries) > 0, tc.TestName) {
+				assert.Equal(t, "error", hook.LastEntry().Level.String(), tc.TestName)
+			}
+		}
+	}
+}
+
+func TestLabRPCHandler_Update(t *testing.T){
+	type testCase int
+	const (
+		failValidation testCase = iota
+		failUpdate
+		failContext
+		success
+	)
+	testCases := []struct {
+		TestName string
+		TestCase testCase
+	}{
+		{"fail validation on update", failValidation},
+		{"fail to uddate", failUpdate},
+		{"fail to build application context", failContext},
+		{"success", success},
+	}
+	for _, tc := range testCases {
+		//setup
+		logger, hook := l.CreateNullLogger()
+		id := uuid.New().String()
+		transactionId := uuid.New().String()
+		 // TODO Fill in all fields with test data
+		lab := &agpb.Lab{
+			Id: id,
+		}
+		// new request context
+		ctx := context.Background()
+		md := metadata.MD{ "transaction_id": []string{string(transactionId)} }
+		if tc.TestCase == failContext{
+			md = metadata.MD{}
+		}
+		// add key-value pairs of metadata to context
+		ctx = metadata.NewIncomingContext(ctx, md)
+		req := &lbpb.UpdateLabRequest{Payload: lab}
+		logger = logger.WithContext(ctx).WithField("transaction_id", transactionId)
+		appCtx := &ut.ExecutionCtx{
+			Context: ctx,
+			Logger:  logger,
+			TransactionID: transactionId,
+		}
+		e := errors.New(tc.TestName)
+
+		// mock util Application Context
+		mockCtx := &ut.MockExecutionContext{}
+		mFunc := mockCtx.On("NewExecutionContextFromContextWithMetadata", ctx, mock.IsType(logger))
+		if tc.TestCase == failContext {
+			mFunc.Return(nil, e)
+		} else {
+			mFunc.Return(appCtx, nil)
+		}
+
+		if tc.TestCase == failValidation{
+			lab.Id = ""
+		}
+		//spy validate lab
+		mpatch.PatchMethod(lab.Validate,
+		func() error{
+			if tc.TestCase == failValidation{
+				return e
+			}
+			return nil
+		})
+
+		//mock service
+		mockService := &s.MockService{}
+		mockF := mockService.On("Update", appCtx, lab)
+		if tc.TestCase == failUpdate{
+			mockF.Return(nil, e)
+		} else{
+			mockF.Return(lab, nil)
+		}
+
+		h := NewLabRPCHandler(logger, mockService)
+
+		//test
+		result, err := h.Update(ctx, req)
+
+		//verify
+		if tc.TestCase == success {
+			if assert.NotNil(t, result, tc.TestName){
+				assert.Equal(t, id, result.GetResult().GetId(), tc.TestName)
+			}
+			assert.Nil(t, err, tc.TestName)
+		} else { //failContext, failUpdate or failValidation
+			assert.NotNil(t, err, tc.TestName)
+			assert.Nil(t, result, tc.TestName)
+			if assert.True(t, len(hook.Entries) > 0, tc.TestName) {
+				assert.Equal(t, "error", hook.LastEntry().Level.String(), tc.TestName)
+			}
+		}
+
+	}// end testCases
+}
+
+func TestLabRPCHandler_List(t *testing.T){
+	type testCase int
+	const(
+		failList testCase = iota
+		success
+	)
+	testCases := []struct {
+		TestName string
+		TestCase testCase
+	}{
+		{"fail Read", failList},
+		{"success", success},
+	}
+	for _, tc := range testCases {
+		//setup
+		logger, hook := l.CreateNullLogger()
+		id := uuid.New().String()
+        // TODO Fill in all fields with test data
+		lab := &agpb.Lab{
+			Id: id,
+		}
+		labs := []*agpb.Lab{lab}
+		// new request context
+		ctx := context.Background()
+		appCtx := &ut.ExecutionCtx{
+			Context: ctx,
+			Logger:  logger,
+		}
+		req := &lbpb.ListLabRequest{}
+		//mock Context
+		mockCtx := &ut.MockExecutionContextWithoutTransactionID{}
+		mFunc := mockCtx.On("NewExecutionContextWithoutTransactionID", ctx, logger)
+		mFunc.Return(mockCtx, nil)
+
+		// mock Service
+		mockService := &s.MockService{}
+		mockFunc := mockService.On("List", appCtx)
+		if tc.TestCase == failList{
+			mockFunc.Return(nil, errors.New(tc.TestName))
+		} else {
+			mockFunc.Return(labs, nil)
+		}
+
+		h := NewLabRPCHandler(logger, mockService)
+
+		//test
+		result, err := h.List(ctx, req)
+
+		//verify
+		if tc.TestCase == success {
+			assert.NotNil(t, result, tc.TestName)
+			assert.Nil(t, err, tc.TestName)
+		} else { //failRead
+			assert.NotNil(t, err, tc.TestName)
+			assert.Nil(t, result, tc.TestName)
+			if assert.True(t, len(hook.Entries) > 0, tc.TestName) {
+				assert.Equal(t, "error", hook.LastEntry().Level.String(), tc.TestName)
+			}
+		}
+	}
+}

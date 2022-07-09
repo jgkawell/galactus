@@ -1,0 +1,19 @@
+# Local values that will be read when you run this service using `go run main.go`
+# This is a YAML-formatted file.
+
+configMap:
+  disableTracer: true
+  isDevMode: true
+  version: 0.0.0
+  # noSQL database values
+  dbAddress: localhost
+  dbName: galactus
+  dbCollection: eventstore
+  dbTimeout: 10
+  # other service values
+  registryServiceAddress: localhost:35001
+  # messagebus values
+  MessageBusUser: 'guest'
+  MessageBusPassword: 'guest'
+  MessageBusIPs: 'localhost:5672'
+  MessageBusScheme: 'http'

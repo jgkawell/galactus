@@ -1,0 +1,38 @@
+
+syntax = "proto3";
+
+package generic.events.v1;
+
+option go_package = "github.com/circadence-official/galactus/api/gen/go/generic/events/v1";
+
+import "core/notifier/v1/notifier.proto";
+
+enum NotificationEventCode {
+  INVALID_NOTIFICATION_EVENT_CODE = 0;
+
+  NOTIFICATION_DELIVERY_REQUESTED = 1;
+  NOTIFICATION_DELIVERED = 2;
+}
+
+// NotificationDeliveryRequested is an event used to send a message to an actor connected the `notifier` service.
+// `Multicast`, is the default delivery type and a `actor_id` is required. If `Unicast` is desired (i.e Sending a notification
+// to only one client) Then a `client_id` should also be provided.
+//    {
+//      "actor_id": "cffbbfa8-1a7e-4b64-af2e-345654b37aa7",
+//      "client_id": "07925e22-3eee-4931-aea9-19fc621fd825",
+//      "notification": "<NOTIFICATION_MESSAGE>"
+//    }
+message NotificationDeliveryRequested {
+  // `actor_id` is the identifier of a actor, a message should be sent to (think phone number). For example, if it's a user connected to the notifier service with the web-client then `actor_id`
+  // is equal to the `user_id` if it's `MinionD` connected to the `notifier` service then the `actor_id` is equal to the `instance_id`.
+  // Using the `actor_id` instead of a specific `user_id` field allows for many differnt types of client connections to the notifier and gives the system a common way
+  // to send data to those connected clients whitout having to change the underlying datastructure when adding new clients.
+  string actor_id = 1;
+  // optional, specify only if `unicast` to one client is desired.
+  string client_id = 2;
+
+  // notification is the data payload that will be sent the client.
+  core.notifier.v1.Notification notification = 3;
+}
+
+message NotificationDelivered {}
