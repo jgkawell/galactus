@@ -75,6 +75,8 @@ type MainBuilder interface {
 	GetHttpRouter() *gin.Engine
 	// GetBroker exposes the message bus.
 	GetBroker() messagebus.MessageBus
+	// GetRegistryClient exposes the registry client.
+	GetRegistryClient() rgpb.RegistryClient
 	// GetRpcServer exposes the grpc server.
 	GetRpcServer() *grpc.Server
 	// GetAzureKeyVaultClient exposes the azure key vault client.
@@ -254,29 +256,37 @@ type MainBuilderConfig struct {
 }
 
 type mainBuilder struct {
+	logger l.Logger
+
+	// basic configuration
 	applicationName string
-	// cacheClient is the redis client which is configured with CacheSecret and CacheAddress
-	cacheClient          *redis.Client
-	logger               l.Logger
-	bus                  messagebus.MessageBus
-	isDevMode            bool
-	noSqlClient          *mongo.Client
-	httpPort             string
-	httpServer           *http.Server
-	httpRouter           *gin.Engine
-	rpcPort              string
-	rpcServer            *grpc.Server
-	rpcConnections       []*grpc.ClientConn
-	sqlClient            *gorm.DB
-	azureKeyVaultClient  azkeyvault.KeyVaultClient
-	onRun                func(b MainBuilder)
-	onStop               func(b MainBuilder)
+	isDevMode       bool
+	httpPort        string
+	rpcPort         string
+
+	// http/grpc
+	httpServer     *http.Server
+	httpRouter     *gin.Engine
+	rpcServer      *grpc.Server
+	rpcConnections []*grpc.ClientConn
+
+	// clients/servers
+	azureKeyVaultClient azkeyvault.KeyVaultClient
+	bus                 messagebus.MessageBus
+	cacheClient         *redis.Client
+	noSqlClient         *mongo.Client
+	registryClient      rgpb.RegistryClient
+	sqlClient           *gorm.DB
+
+	// functions
+	onRun  func(b MainBuilder)
+	onStop func(b MainBuilder)
+
+	// configs
+	consumerConfig       ConsumerConfig
 	readinessCheckConfig *CheckConfig
 	wellnessCheckConfig  *CheckConfig
 	viper                *viper.Viper
-	queueDefinitions     map[string]*broker.BrokerDefinition
-	topicDefinitions     map[string]*broker.BrokerDefinition
-	consumerConfig       ConsumerConfig
 }
 
 // PUBLIC METHODS
@@ -352,96 +362,14 @@ func NewMainBuilder(mbc *MainBuilderConfig) MainBuilder {
 		mbc.InitializeConfig.OnInitialize(b)
 	}
 
-	// Setup the broker configuration
-	if mbc.HandlerLayerConfig.CreateBrokerConfig != nil {
-		b.consumerConfig = mbc.HandlerLayerConfig.CreateBrokerConfig(b)
-	}
-
-	// register the service with the service registry
 	if !mbc.DoNotRegisterService {
-		// Register the service
 		clientFactory := cf.NewClientFactory(b.logger)
 		registryClient, registryConnection, err := clientFactory.CreateRegistryClient(b.viper.GetString("registryServiceAddress"))
+		b.registryClient = registryClient
 		if err != nil {
 			b.logger.WithError(err).Fatal("failed to create registry client")
 		}
 		defer clientFactory.CloseConnection(registryConnection)
-
-		// set protocols based on the chassis configuration
-		protocols := []*rgpb.Protocol{}
-		if mbc.HandlerLayerConfig.CreateRpcHandlers != nil {
-			protocols = append(protocols, &rgpb.Protocol{Kind: agpb.ProtocolKind_PROTOCOL_KIND_GRPC})
-		}
-		// NOTE: all services have an http handler that handles health checks. this handler can optionally be extended for other uses.
-		protocols = append(protocols, &rgpb.Protocol{Kind: agpb.ProtocolKind_PROTOCOL_KIND_HTTP})
-
-		// TODO: pull together producers, and consumers from mainbuilder config
-		consumers := []*agpb.Consumer{}
-		for _, c := range b.consumerConfig.Configs {
-
-			// map the messagebus kind to the consumer kind
-			var protoKind agpb.ConsumerKind
-			switch c.ConsumerKind {
-			case messagebus.ExchangeKindTopic:
-				protoKind = agpb.ConsumerKind_CONSUMER_KIND_TOPIC
-			case messagebus.ExchangeKindDirect:
-				protoKind = agpb.ConsumerKind_CONSUMER_KIND_QUEUE
-			default:
-				b.logger.WithField("kind", c.ConsumerKind).Fatal("unsupported messagebus kind")
-			}
-
-			consumers = append(consumers, &agpb.Consumer{
-				Exchange:   c.AggregateType,
-				RoutingKey: c.EventType,
-				Kind:       protoKind,
-			})
-		}
-
-		ctx, err := ct.NewExecutionContext(context.Background(), b.logger, uuid.NewString())
-		if err != nil {
-			b.logger.WithError(err).Fatal("failed to create execution context for call to registry")
-			return nil
-		}
-		registerResponse, err := registryClient.Register(ctx.GetContextWithTransactionID(), &rgpb.RegisterRequest{
-			Name:        mbc.ApplicationName,
-			Domain:      "", // TODO: how do we manage this?
-			Version:     b.viper.GetString("version"),
-			Description: b.viper.GetString("description"),
-			Protocols:   protocols,
-			Producers:   []*agpb.Producer{},
-			Consumers:   consumers,
-		})
-		if err != nil {
-			b.logger.WithError(err).Fatal("failed to register the service")
-		}
-
-		// set server ports based on registration values
-		for _, p := range registerResponse.GetRegistration().GetProtocols() {
-			if p.GetKind() == agpb.ProtocolKind_PROTOCOL_KIND_GRPC {
-				b.rpcPort = fmt.Sprint(p.GetPort())
-			}
-			if p.GetKind() == agpb.ProtocolKind_PROTOCOL_KIND_HTTP {
-				b.httpPort = fmt.Sprint(p.GetPort())
-			}
-		}
-
-		// set consumer configs based on registration values
-		for _, registryConsumer := range registerResponse.GetRegistration().GetConsumers() {
-			for j, configConsumer := range b.consumerConfig.Configs {
-				// remove the environment prefix from exchange value
-				exchange := strings.Split(registryConsumer.GetExchange(), ".")[1]
-				if configConsumer.AggregateType == exchange && configConsumer.EventType == registryConsumer.GetRoutingKey() {
-					b.logger.WithField("queue_name", registryConsumer.GetQueue()).Info("setting queue name")
-					b.consumerConfig.Configs[j].QueueName = registryConsumer.GetQueue()
-				}
-			}
-		}
-	}
-
-	// if the service is not supposed to be registered, set ports from config
-	if mbc.DoNotRegisterService {
-		b.rpcPort = b.viper.GetString(mbc.HandlerLayerConfig.RpcPortVariable)
-		b.httpPort = b.viper.GetString(mbc.HandlerLayerConfig.HttpPortVariable)
 	}
 
 	// Setup the message bus
@@ -537,6 +465,91 @@ func NewMainBuilder(mbc *MainBuilderConfig) MainBuilder {
 	// Setup the Service layer
 	if mbc.ServiceLayerConfig != nil {
 		mbc.ServiceLayerConfig.CreateServiceLayer(b)
+	}
+
+	// Setup the broker configuration
+	if mbc.HandlerLayerConfig.CreateBrokerConfig != nil {
+		b.consumerConfig = mbc.HandlerLayerConfig.CreateBrokerConfig(b)
+	}
+
+	// register the service with the service registry
+	if !mbc.DoNotRegisterService {
+		// set protocols based on the chassis configuration
+		protocols := []*rgpb.Protocol{}
+		if mbc.HandlerLayerConfig.CreateRpcHandlers != nil {
+			protocols = append(protocols, &rgpb.Protocol{Kind: agpb.ProtocolKind_PROTOCOL_KIND_GRPC})
+		}
+		// NOTE: all services have an http handler that handles health checks. this handler can optionally be extended for other uses.
+		protocols = append(protocols, &rgpb.Protocol{Kind: agpb.ProtocolKind_PROTOCOL_KIND_HTTP})
+
+		// TODO: pull together producers, and consumers from mainbuilder config
+		consumers := []*agpb.Consumer{}
+		for _, c := range b.consumerConfig.Configs {
+
+			// map the messagebus kind to the consumer kind
+			var protoKind agpb.ConsumerKind
+			switch c.ConsumerKind {
+			case messagebus.ExchangeKindTopic:
+				protoKind = agpb.ConsumerKind_CONSUMER_KIND_TOPIC
+			case messagebus.ExchangeKindDirect:
+				protoKind = agpb.ConsumerKind_CONSUMER_KIND_QUEUE
+			default:
+				b.logger.WithField("kind", c.ConsumerKind).Fatal("unsupported messagebus kind")
+			}
+
+			consumers = append(consumers, &agpb.Consumer{
+				Exchange:   c.AggregateType,
+				RoutingKey: c.EventType,
+				Kind:       protoKind,
+			})
+		}
+
+		var err error
+		ctx, err := ct.NewExecutionContext(context.Background(), b.logger, uuid.NewString())
+		if err != nil {
+			b.logger.WithError(err).Fatal("failed to create execution context for call to registry")
+			return nil
+		}
+		registerResponse, err := b.registryClient.Register(ctx.GetContextWithTransactionID(), &rgpb.RegisterRequest{
+			Name:        mbc.ApplicationName,
+			Domain:      "", // TODO: how do we manage this?
+			Version:     b.viper.GetString("version"),
+			Description: b.viper.GetString("description"),
+			Protocols:   protocols,
+			Producers:   []*agpb.Producer{},
+			Consumers:   consumers,
+		})
+		if err != nil {
+			b.logger.WithError(err).Fatal("failed to register the service")
+		}
+
+		// set server ports based on registration values
+		for _, p := range registerResponse.GetRegistration().GetProtocols() {
+			if p.GetKind() == agpb.ProtocolKind_PROTOCOL_KIND_GRPC {
+				b.rpcPort = fmt.Sprint(p.GetPort())
+			}
+			if p.GetKind() == agpb.ProtocolKind_PROTOCOL_KIND_HTTP {
+				b.httpPort = fmt.Sprint(p.GetPort())
+			}
+		}
+
+		// set consumer configs based on registration values
+		for _, registryConsumer := range registerResponse.GetRegistration().GetConsumers() {
+			for j, configConsumer := range b.consumerConfig.Configs {
+				// remove the environment prefix from exchange value
+				exchange := strings.Split(registryConsumer.GetExchange(), ".")[1]
+				if configConsumer.AggregateType == exchange && configConsumer.EventType == registryConsumer.GetRoutingKey() {
+					b.logger.WithField("queue_name", registryConsumer.GetQueue()).Info("setting queue name")
+					b.consumerConfig.Configs[j].QueueName = registryConsumer.GetQueue()
+				}
+			}
+		}
+	}
+
+	// if the service is not supposed to be registered, set ports from config
+	if mbc.DoNotRegisterService {
+		b.rpcPort = b.viper.GetString(mbc.HandlerLayerConfig.RpcPortVariable)
+		b.httpPort = b.viper.GetString(mbc.HandlerLayerConfig.HttpPortVariable)
 	}
 
 	// Setup the Handler layer
@@ -764,6 +777,10 @@ func (b *mainBuilder) GetLogger() l.Logger {
 
 func (b *mainBuilder) GetMongoClient() *mongo.Client {
 	return b.noSqlClient
+}
+
+func (b *mainBuilder) GetRegistryClient() rgpb.RegistryClient {
+	return b.registryClient
 }
 
 func (b *mainBuilder) GetRpcServer() *grpc.Server {

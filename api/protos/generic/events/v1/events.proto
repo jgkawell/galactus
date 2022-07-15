@@ -8,15 +8,6 @@ import "generic/events/v1/notification.proto";
 import "generic/events/v1/system.proto";
 import "generic/events/v1/todo.proto";
 
-// map of all event types, add to it as more event types are added to the application
-message EventType {
-    oneof code {
-        generic.events.v1.SystemEventCode system_code = 1;
-        generic.events.v1.NotificationEventCode notification_code = 2;
-        generic.events.v1.TodoEventCode todo_event_code = 3;
-    }
-}
-
 // map of all aggregate types, add to it as more aggregates are added to the application
 // WARNING: DO NOTE CHANGE THE ORDER OF THIS ENUM
 enum AggregateType {
@@ -24,4 +15,13 @@ enum AggregateType {
     AGGREGATE_TYPE_SYSTEM = 1;
     AGGREGATE_TYPE_NOTIFICATION = 2;
     AGGREGATE_TYPE_TODO = 3;
+}
+
+// map of all event types, add to it as more event types are added to the application
+message EventType {
+    oneof code {
+        generic.events.v1.SystemEventCode system_code = 1;
+        generic.events.v1.NotificationEventCode notification_code = 2;
+        generic.events.v1.TodoEventCode todo_event_code = 3;
+    }
 }

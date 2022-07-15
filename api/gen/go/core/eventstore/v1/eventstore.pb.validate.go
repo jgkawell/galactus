@@ -296,17 +296,7 @@ func (m *Event) validate(all bool) error {
 
 	var errors []error
 
-	if err := m._validateUuid(m.GetEventId()); err != nil {
-		err = EventValidationError{
-			field:  "EventId",
-			reason: "value must be a valid UUID",
-			cause:  err,
-		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
-	}
+	// no validation rules for EventId
 
 	if all {
 		switch v := interface{}(m.GetReceivedDate()).(type) {

@@ -14,3 +14,6 @@ configMap:
   MessageBusPassword: 'guest'
   MessageBusIPs: 'localhost:5672'
   MessageBusScheme: 'http'
+  # notifier values
+  isHeartbeatEnabled: true
+  heartbeatTimer: 5

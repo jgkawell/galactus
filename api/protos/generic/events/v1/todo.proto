@@ -10,6 +10,7 @@ import "todo/aggregates/v1/todo.proto";
 enum TodoEventCode {
     INVALID_TODO_EVENT_CODE = 0;
     TODO_CREATED = 1;
+    TODO_DELETED = 2;
 }
 
 message TodoCreated {

@@ -30,7 +30,7 @@ message Event {
   // METADATA
 
   // uuid generated in the grpc handler
-  string event_id = 1 [(validate.rules).string.uuid = true];
+  string event_id = 1;
   // the time the event create request was received
   google.protobuf.Timestamp received_date = 2;
   // the time the event was been published to it's respective topic/queue

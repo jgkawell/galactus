@@ -11,52 +11,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestRegisterQueueSender(t *testing.T) {
-	testCases := []struct {
-		testName string
-		err      error
-	}{
-		{testName: "without errors"},
-		{testName: "with errors", err: errors.New("err")},
-	}
-	for _, tt := range testCases {
-		log, _ := logging.CreateNullLogger()
-		bus := &messagebus.MockMessageBus{}
-		definition := &BrokerDefinition{}
-		t.Run(tt.testName, func(t *testing.T) {
-			bus.On("RegisterQueue", mock.Anything, mock.Anything).Return(tt.err).Once()
-			if tt.err != nil {
-				require.Panics(t, func() { RegisterQueueSender(log, bus, definition) })
-			} else {
-				require.NotPanics(t, func() { RegisterQueueSender(log, bus, definition) })
-			}
-		})
-	}
-}
-
-func TestRegisterTopicSender(t *testing.T) {
-	testCases := []struct {
-		testName string
-		err      error
-	}{
-		{testName: "without errors"},
-		{testName: "with errors", err: errors.New("err")},
-	}
-	for _, tt := range testCases {
-		log, _ := logging.CreateNullLogger()
-		bus := &messagebus.MockMessageBus{}
-		definition := &BrokerDefinition{}
-		t.Run(tt.testName, func(t *testing.T) {
-			bus.On("RegisterTopic", mock.Anything, mock.Anything).Return(tt.err).Once()
-			if tt.err != nil {
-				require.Panics(t, func() { RegisterTopicSender(log, bus, definition) })
-			} else {
-				require.NotPanics(t, func() { RegisterTopicSender(log, bus, definition) })
-			}
-		})
-	}
-}
-
 func TestRegisterQueueListener(t *testing.T) {
 	testCases := []struct {
 		testName string

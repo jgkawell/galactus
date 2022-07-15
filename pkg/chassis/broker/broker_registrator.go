@@ -2,27 +2,16 @@ package broker
 
 import (
 	"context"
-	"time"
 
 	"github.com/circadence-official/galactus/pkg/chassis/messagebus"
 
 	l "github.com/circadence-official/galactus/pkg/logging/v2"
 )
 
-func RegisterQueueSender(logger l.Logger, bus messagebus.MessageBus, definition *BrokerDefinition) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	if err := bus.RegisterQueue(ctx, definition.QueueName, definition.Exchange, definition.RoutingKey); err != nil {
-		logger.WithError(err).Panic("failed to register queue sender")
-	}
-}
-
-func RegisterTopicSender(logger l.Logger, bus messagebus.MessageBus, definition *BrokerDefinition) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	if err := bus.RegisterTopic(ctx, definition.QueueName, definition.Exchange, definition.RoutingKey); err != nil {
-		logger.WithError(err).Panic("failed to register topic sender")
-	}
+type BrokerDefinition struct {
+	Exchange         string `mapstructure:"exchange"`
+	RoutingKey       string `mapstructure:"routingkey"`
+	QueueName        string `mapstructure:"queuename"`
 }
 
 func RegisterConsumer(logger l.Logger, bus messagebus.MessageBus, listener messagebus.ClientHandler, definition *BrokerDefinition) {

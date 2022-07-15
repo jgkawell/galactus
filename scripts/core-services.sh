@@ -1,15 +1,26 @@
 #!/bin/bash
 
 command=$1
+version=$2
+
+# if command unset, use start
+if [ -z "$command" ]; then
+  command="start"
+fi
+
+# if version unset, use v1
+if [ -z "$version" ]; then
+  version="v1"
+fi
 
 if [ "$command" == "start" ]; then
     echo "Starting core services"
 
-    cd ./services/core/registry || exit 1
+    cd ./services/core/registry/$version || exit 1
     echo "Starting registry"
     go run main.go &
     REGISTRY_PID=$!
-    cd ../../..
+    cd ../../../../
 
     # wait until registry returns a 200 OK on it's health endpoint before starting other services
     while true; do
@@ -21,23 +32,23 @@ if [ "$command" == "start" ]; then
         sleep 1
     done
 
-    cd ./services/core/commandhandler || exit 1
+    cd ./services/core/commandhandler/$version || exit 1
     echo "Starting commandhandler"
     go run main.go &
     COMMANDHANDLER_PID=$!
-    cd ../../..
+    cd ../../../../
 
-    cd ./services/core/eventstore || exit 1
+    cd ./services/core/eventstore/$version || exit 1
     echo "Starting eventstore"
     go run main.go &
     EVENTSTORE_PID=$!
-    cd ../../..
+    cd ../../../../
 
-    cd ./services/core/notifier || exit 1
+    cd ./services/core/notifier/$version || exit 1
     echo "Starting notifier"
     go run main.go &
     NOTIFIER_PID=$!
-    cd ../../..
+    cd ../../../../
 
     # TODO: run Hasura (queryhandler) locally
 

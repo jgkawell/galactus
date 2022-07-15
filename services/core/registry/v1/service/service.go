@@ -176,7 +176,7 @@ func (s *service) Connection(ctx ct.ExecutionContext, req *pb.ConnectionRequest)
 	})
 
 	result := &agpb.RegistrationORM{}
-	err := s.db.Model(&agpb.RegistrationORM{}).Where("name = ? && version = ?", req.GetName(), req.GetVersion()).Find(result).Error
+	err := s.db.Model(&agpb.RegistrationORM{}).Where("name = ? AND version = ?", req.GetName(), req.GetVersion()).Preload("Protocols").Find(result).Error
 	if err != nil {
 		return nil, logger.WrapError(l.NewError(err, "failed to find registration"))
 	}

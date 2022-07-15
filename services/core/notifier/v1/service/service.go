@@ -252,6 +252,7 @@ func (s *service) NewConnectionKey(actorID, clientID string) (*ConnectionKey, er
 // and send the message to the go routine maintaining the user's notificationChannel.action. When the message has been sent to
 // the users notificationChannel.action a notification_delivered event is published.
 func (s *service) Deliver(ctx context.Context, logger l.Logger, event *espb.Event) l.Error {
+	logger.Info("attempting notification delivery")
 	data := []byte(event.GetEventData())
 	var req evpb.NotificationDeliveryRequested
 	if err := json.Unmarshal(data, &req); err != nil {

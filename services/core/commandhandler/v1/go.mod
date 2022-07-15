@@ -1,24 +1,20 @@
-module eventstore
+module commandhandler
 
 go 1.17
 
-replace github.com/circadence-official/galactus/api/gen/go v0.0.0 => ../../../api/gen/go
+replace github.com/circadence-official/galactus/api/gen/go v0.0.0 => ../../../../api/gen/go
 
-replace github.com/circadence-official/galactus/pkg/logging/v2 v2.0.0 => ../../../pkg/logging
+replace github.com/circadence-official/galactus/pkg/logging/v2 v2.0.0 => ../../../../pkg/logging
 
-replace github.com/circadence-official/galactus/pkg/chassis v0.0.0 => ../../../pkg/chassis
+replace github.com/circadence-official/galactus/pkg/chassis v0.0.0 => ../../../../pkg/chassis
 
-replace github.com/circadence-official/galactus/pkg/azkeyvault v0.0.0 => ../../../pkg/azkeyvault
+replace github.com/circadence-official/galactus/pkg/azkeyvault v0.0.0 => ../../../../pkg/azkeyvault
 
 require (
-	bou.ke/monkey v1.0.2
 	github.com/circadence-official/galactus/api/gen/go v0.0.0
 	github.com/circadence-official/galactus/pkg/chassis v0.0.0
 	github.com/circadence-official/galactus/pkg/logging/v2 v2.0.0
 	github.com/google/uuid v1.3.0
-	github.com/sirupsen/logrus v1.8.0
-	github.com/stretchr/testify v1.7.0
-	go.mongodb.org/mongo-driver v1.3.3
 	google.golang.org/grpc v1.45.0
 )
 
@@ -93,17 +89,20 @@ require (
 	github.com/prometheus/procfs v0.0.8 // indirect
 	github.com/rabbitmq/amqp091-go v1.3.4 // indirect
 	github.com/satori/go.uuid v1.2.0 // indirect
+	github.com/sirupsen/logrus v1.8.0 // indirect
 	github.com/spf13/afero v1.6.0 // indirect
 	github.com/spf13/cast v1.3.0 // indirect
 	github.com/spf13/jwalterweatherman v1.0.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/spf13/viper v1.7.0 // indirect
 	github.com/stretchr/objx v0.2.0 // indirect
+	github.com/stretchr/testify v1.7.0 // indirect
 	github.com/subosito/gotenv v1.2.0 // indirect
 	github.com/tinylib/msgp v1.1.2 // indirect
 	github.com/ugorji/go/codec v1.1.7 // indirect
 	github.com/xdg/scram v0.0.0-20180814205039-7eeb5667e42c // indirect
 	github.com/xdg/stringprep v0.0.0-20180714160509-73f8eece6fdc // indirect
+	go.mongodb.org/mongo-driver v1.3.3 // indirect
 	go.opentelemetry.io/otel v0.20.0 // indirect
 	go.opentelemetry.io/otel/metric v0.20.0 // indirect
 	go.opentelemetry.io/otel/trace v0.20.0 // indirect

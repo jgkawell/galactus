@@ -15,27 +15,28 @@ import (
 )
 
 var (
-	errInvalidAggregateType  = errors.New("invalid aggregate type in event")
-	errInvalidEventType      = errors.New("invalid event type in event")
+	errInvalidAggregateType = errors.New("invalid aggregate type in event")
+	errInvalidEventType     = errors.New("invalid event type in event")
 )
 
 type EventStoreService interface {
 	Create(ctx context.Context, log l.Logger, event *es.Event) (string, bool, l.Error)
 }
 
-type eventStoreService struct {
+type service struct {
 	dao db.CrudDao
 	mb  messagebus.MessageBus
+	env string
 }
 
-func NewService(dao db.CrudDao, mb messagebus.MessageBus) EventStoreService {
-	return &eventStoreService{
-		dao, mb,
+func NewService(dao db.CrudDao, mb messagebus.MessageBus, env string) EventStoreService {
+	return &service{
+		dao, mb, env,
 	}
 }
 
 // Create - Create a new event that will be stored, published to an exchange (if requested), and updated with its published timestamp
-func (e *eventStoreService) Create(ctx context.Context, logger l.Logger, event *es.Event) (string, bool, l.Error) {
+func (s *service) Create(ctx context.Context, logger l.Logger, event *es.Event) (string, bool, l.Error) {
 	logger = logger.WithFields(l.Fields{
 		"event_type":     event.GetEventType(),
 		"aggregate_id":   event.GetAggregateId(),
@@ -78,7 +79,12 @@ func (e *eventStoreService) Create(ctx context.Context, logger l.Logger, event *
 		// put the message on the messagebus with the mapping:
 		// 	 - aggregate_type = exchange
 		// 	 - event_type     = routing_key
-		err := e.mb.SendMessage(ctx, fmt.Sprint(event.GetAggregateType()), fmt.Sprint(event.GetEventType()), event)
+		logger.WithFields(l.Fields{
+			"exchange":    fmt.Sprint(event.GetAggregateType()),
+			"routing_key": fmt.Sprint(event.GetEventType()),
+			"event":       event,
+		}).Debug("publishing event")
+		err := s.mb.SendMessage(ctx, fmt.Sprintf("%s.%d", s.env, event.GetAggregateType()), fmt.Sprint(event.GetEventType()), event)
 		if err != nil {
 			return "", false, logger.WrapError(err)
 		}
@@ -89,7 +95,7 @@ func (e *eventStoreService) Create(ctx context.Context, logger l.Logger, event *
 
 	// save the event to the db asynchronously since it's not a critical operation and if it fails the event creation is still successful
 	go func() {
-		id, err := e.dao.Create(ctx, logger, event)
+		id, err := s.dao.Create(ctx, logger, event)
 		if err != nil {
 			logger.WithError(err).Error("failed to store the event after it's been published")
 		}

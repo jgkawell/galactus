@@ -51,7 +51,7 @@ func main() {
 		},
 		ServiceLayerConfig: &chassis.ServiceLayerConfig{
 			CreateServiceLayer: func(b chassis.MainBuilder) {
-				svc = s.NewService(dao, b.GetBroker())
+				svc = s.NewService(dao, b.GetBroker(), b.GetConfig().GetString("env"))
 			},
 		},
 		HandlerLayerConfig: &chassis.HandlerLayerConfig{

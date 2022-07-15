@@ -2,13 +2,13 @@ module registry
 
 go 1.17
 
-replace github.com/circadence-official/galactus/api/gen/go v0.0.0 => ../../../api/gen/go
+replace github.com/circadence-official/galactus/api/gen/go v0.0.0 => ../../../../api/gen/go
 
-replace github.com/circadence-official/galactus/pkg/chassis v0.0.0 => ../../../pkg/chassis
+replace github.com/circadence-official/galactus/pkg/chassis v0.0.0 => ../../../../pkg/chassis
 
-replace github.com/circadence-official/galactus/pkg/logging/v2 v2.0.0 => ../../../pkg/logging
+replace github.com/circadence-official/galactus/pkg/logging/v2 v2.0.0 => ../../../../pkg/logging
 
-replace github.com/circadence-official/galactus/pkg/azkeyvault v0.0.0 => ../../../pkg/azkeyvault
+replace github.com/circadence-official/galactus/pkg/azkeyvault v0.0.0 => ../../../../pkg/azkeyvault
 
 require (
 	github.com/circadence-official/galactus/api/gen/go v0.0.0

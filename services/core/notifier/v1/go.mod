@@ -1,20 +1,21 @@
-module commandhandler
+module notifier
 
 go 1.17
 
-replace github.com/circadence-official/galactus/api/gen/go v0.0.0 => ../../../api/gen/go
+replace github.com/circadence-official/galactus/api/gen/go v0.0.0 => ../../../../api/gen/go
 
-replace github.com/circadence-official/galactus/pkg/logging/v2 v2.0.0 => ../../../pkg/logging
+replace github.com/circadence-official/galactus/pkg/azkeyvault v0.0.0 => ../../../../pkg/azkeyvault
 
-replace github.com/circadence-official/galactus/pkg/chassis v0.0.0 => ../../../pkg/chassis
+replace github.com/circadence-official/galactus/pkg/chassis v0.0.0 => ../../../../pkg/chassis
 
-replace github.com/circadence-official/galactus/pkg/azkeyvault v0.0.0 => ../../../pkg/azkeyvault
+replace github.com/circadence-official/galactus/pkg/logging/v2 v2.0.0 => ../../../../pkg/logging
 
 require (
+	bou.ke/monkey v1.0.2
 	github.com/circadence-official/galactus/api/gen/go v0.0.0
 	github.com/circadence-official/galactus/pkg/chassis v0.0.0
 	github.com/circadence-official/galactus/pkg/logging/v2 v2.0.0
-	github.com/google/uuid v1.3.0
+	github.com/stretchr/testify v1.7.0
 	google.golang.org/grpc v1.45.0
 )
 
@@ -50,6 +51,7 @@ require (
 	github.com/go-stack/stack v1.8.0 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/golang/snappy v0.0.1 // indirect
+	github.com/google/uuid v1.3.0 // indirect
 	github.com/grpc-ecosystem/go-grpc-middleware v1.2.2 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.10.0 // indirect
 	github.com/hashicorp/golang-lru v0.5.4 // indirect
@@ -96,7 +98,6 @@ require (
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/spf13/viper v1.7.0 // indirect
 	github.com/stretchr/objx v0.2.0 // indirect
-	github.com/stretchr/testify v1.7.0 // indirect
 	github.com/subosito/gotenv v1.2.0 // indirect
 	github.com/tinylib/msgp v1.1.2 // indirect
 	github.com/ugorji/go/codec v1.1.7 // indirect

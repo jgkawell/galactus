@@ -59,6 +59,8 @@ func (c *consumer) Handle(ctx context.Context, msg mb.Message) error {
 }
 
 func (c *consumer) DeliverNotification(ctx context.Context, event *es.Event) error {
+	c.logger.WithField("event", event).Info("delivering notification")
+	c.logger.WithField("service", c.service).Info("delivering notification (service)")
 	if err := c.service.Deliver(ctx, c.logger, event); err != nil {
 		c.logger.WithError(err).Error(ErrorFailedToDeliverNotification)
 		return errors.New(ErrorFailedToDeliverNotification)
