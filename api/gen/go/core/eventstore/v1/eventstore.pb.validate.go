@@ -296,7 +296,21 @@ func (m *Event) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for EventId
+	if m.GetEventId() != "" {
+
+		if err := m._validateUuid(m.GetEventId()); err != nil {
+			err = EventValidationError{
+				field:  "EventId",
+				reason: "value must be a valid UUID",
+				cause:  err,
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+	}
 
 	if all {
 		switch v := interface{}(m.GetReceivedDate()).(type) {
@@ -356,13 +370,23 @@ func (m *Event) validate(all bool) error {
 		}
 	}
 
-	// no validation rules for TransactionId
+	if err := m._validateUuid(m.GetTransactionId()); err != nil {
+		err = EventValidationError{
+			field:  "TransactionId",
+			reason: "value must be a valid UUID",
+			cause:  err,
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for Publish
 
-	// no validation rules for EventType
-
 	// no validation rules for AggregateType
+
+	// no validation rules for EventType
 
 	if err := m._validateUuid(m.GetAggregateId()); err != nil {
 		err = EventValidationError{

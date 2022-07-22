@@ -173,18 +173,18 @@ proto.generic.events.v1.SystemError.prototype.setCode = function(value) {
  * @enum {number}
  */
 proto.generic.events.v1.SystemEventCode = {
-  UNKOWN_SYSTEM_EVENT: 0,
-  SYSTEM_ERROR: 1
+  SYSTEM_EVENT_CODE_INVALID: 0,
+  SYSTEM_EVENT_CODE_ERROR: 1
 };
 
 /**
  * @enum {number}
  */
 proto.generic.events.v1.SystemErrorCode = {
-  INVALID_SYSTEM_MESSAGE_DATA: 0,
-  FAILED_EVENT_PUBLISH: 1,
-  FAILED_EVENT_SAVED: 2,
-  FAILED_EVENT_FORWARD: 3
+  SYSTEM_ERROR_CODE_INVALID: 0,
+  SYSTEM_ERROR_CODE_FAILED_EVENT_PUBLISH: 1,
+  SYSTEM_ERROR_CODE_FAILED_EVENT_SAVED: 2,
+  SYSTEM_ERROR_CODE_FAILED_EVENT_FORWARD: 3
 };
 
 goog.object.extend(exports, proto.generic.events.v1);

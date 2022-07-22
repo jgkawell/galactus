@@ -5,13 +5,13 @@ MAKEFILES := $(shell ls -d ./${OUTPUT_ROOT}/*)
 # make sure to run as user (not root which is default on linux)
 USER := $(shell whoami)
 OS := $(shell uname)
-BUILDER_IMAGE = bufbuilder
+BUILDER_IMAGE = proto-builder
 
 .PHONY: build clean docker-build docker-clean
 .SILENT: build clean docker-build docker-clean
 
 # build all generated files (according to the build targets in the sub-folders)
-build: run-bufbuilder
+build: run-proto-builder
 	$(foreach mf,$(MAKEFILES),$(MAKE) --no-print-directory -C $(mf);)
 
 # clean all generated files (according to the clean targets in the sub-folders)
@@ -27,10 +27,10 @@ docker-build:
 docker-clean:
 	docker rmi `docker images '$(BUILDER_IMAGE)' -a -q`
 
-run-bufbuilder:
+run-proto-builder:
 	@echo "Running the protobuf builder"
-	@docker run --rm --name bufbuilder --volume $(PWD):/workspace --workdir /workspace bufbuilder:v1 mod update
-	@docker run --rm --name bufbuilder --volume $(PWD):/workspace --workdir /workspace bufbuilder:v1 generate
+	@docker run --rm --name $(BUILDER_IMAGE) --volume $(PWD):/workspace --workdir /workspace $(BUILDER_IMAGE):v1 mod update
+	@docker run --rm --name $(BUILDER_IMAGE) --volume $(PWD):/workspace --workdir /workspace $(BUILDER_IMAGE):v1 generate
 	@if [ "$(OS)" = "Linux" ]; then\
 		sudo chown -R $(USER):$(USER) $(PWD);\
 	fi

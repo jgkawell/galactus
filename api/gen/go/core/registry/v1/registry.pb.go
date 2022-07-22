@@ -266,7 +266,7 @@ type ConnectionRequest struct {
 	unknownFields protoimpl.UnknownFields
 
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	// TODO: do we want to support multiple versions of the same service? Or require a new service for each version?
+	// this is the major version of the service to connect to (v1, v2, etc.)
 	Version string          `protobuf:"bytes,2,opt,name=version,proto3" json:"version,omitempty"`
 	Type    v1.ProtocolKind `protobuf:"varint,3,opt,name=type,proto3,enum=core.aggregates.v1.ProtocolKind" json:"type,omitempty"`
 }

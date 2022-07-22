@@ -66,11 +66,11 @@ export class Event extends jspb.Message {
   getPublish(): boolean;
   setPublish(value: boolean): Event;
 
-  getEventType(): number;
-  setEventType(value: number): Event;
-
   getAggregateType(): number;
   setAggregateType(value: number): Event;
+
+  getEventType(): number;
+  setEventType(value: number): Event;
 
   getAggregateId(): string;
   setAggregateId(value: string): Event;
@@ -93,8 +93,8 @@ export namespace Event {
     publishedDate?: google_protobuf_timestamp_pb.Timestamp.AsObject,
     transactionId: string,
     publish: boolean,
-    eventType: number,
     aggregateType: number,
+    eventType: number,
     aggregateId: string,
     eventData: string,
   }
