@@ -431,8 +431,8 @@ proto.core.eventstore.v1.Event.toObject = function(includeInstance, msg) {
     publishedDate: (f = msg.getPublishedDate()) && google_protobuf_timestamp_pb.Timestamp.toObject(includeInstance, f),
     transactionId: jspb.Message.getFieldWithDefault(msg, 4, ""),
     publish: jspb.Message.getBooleanFieldWithDefault(msg, 5, false),
-    eventType: jspb.Message.getFieldWithDefault(msg, 17, 0),
-    aggregateType: jspb.Message.getFieldWithDefault(msg, 18, 0),
+    aggregateType: jspb.Message.getFieldWithDefault(msg, 17, 0),
+    eventType: jspb.Message.getFieldWithDefault(msg, 18, 0),
     aggregateId: jspb.Message.getFieldWithDefault(msg, 19, ""),
     eventData: jspb.Message.getFieldWithDefault(msg, 20, "")
   };
@@ -495,11 +495,11 @@ proto.core.eventstore.v1.Event.deserializeBinaryFromReader = function(msg, reade
       break;
     case 17:
       var value = /** @type {number} */ (reader.readInt64());
-      msg.setEventType(value);
+      msg.setAggregateType(value);
       break;
     case 18:
       var value = /** @type {number} */ (reader.readInt64());
-      msg.setAggregateType(value);
+      msg.setEventType(value);
       break;
     case 19:
       var value = /** @type {string} */ (reader.readString());
@@ -575,14 +575,14 @@ proto.core.eventstore.v1.Event.serializeBinaryToWriter = function(message, write
       f
     );
   }
-  f = message.getEventType();
+  f = message.getAggregateType();
   if (f !== 0) {
     writer.writeInt64(
       17,
       f
     );
   }
-  f = message.getAggregateType();
+  f = message.getEventType();
   if (f !== 0) {
     writer.writeInt64(
       18,
@@ -735,10 +735,10 @@ proto.core.eventstore.v1.Event.prototype.setPublish = function(value) {
 
 
 /**
- * optional int64 event_type = 17;
+ * optional int64 aggregate_type = 17;
  * @return {number}
  */
-proto.core.eventstore.v1.Event.prototype.getEventType = function() {
+proto.core.eventstore.v1.Event.prototype.getAggregateType = function() {
   return /** @type {number} */ (jspb.Message.getFieldWithDefault(this, 17, 0));
 };
 
@@ -747,16 +747,16 @@ proto.core.eventstore.v1.Event.prototype.getEventType = function() {
  * @param {number} value
  * @return {!proto.core.eventstore.v1.Event} returns this
  */
-proto.core.eventstore.v1.Event.prototype.setEventType = function(value) {
+proto.core.eventstore.v1.Event.prototype.setAggregateType = function(value) {
   return jspb.Message.setProto3IntField(this, 17, value);
 };
 
 
 /**
- * optional int64 aggregate_type = 18;
+ * optional int64 event_type = 18;
  * @return {number}
  */
-proto.core.eventstore.v1.Event.prototype.getAggregateType = function() {
+proto.core.eventstore.v1.Event.prototype.getEventType = function() {
   return /** @type {number} */ (jspb.Message.getFieldWithDefault(this, 18, 0));
 };
 
@@ -765,7 +765,7 @@ proto.core.eventstore.v1.Event.prototype.getAggregateType = function() {
  * @param {number} value
  * @return {!proto.core.eventstore.v1.Event} returns this
  */
-proto.core.eventstore.v1.Event.prototype.setAggregateType = function(value) {
+proto.core.eventstore.v1.Event.prototype.setEventType = function(value) {
   return jspb.Message.setProto3IntField(this, 18, value);
 };
 

@@ -1,4 +1,4 @@
-// source: generic/events/v1/notification.proto
+// source: generic/events/v1/notifications.proto
 /**
  * @fileoverview
  * @enhanceable
@@ -378,9 +378,9 @@ proto.generic.events.v1.NotificationDelivered.serializeBinaryToWriter = function
  * @enum {number}
  */
 proto.generic.events.v1.NotificationEventCode = {
-  INVALID_NOTIFICATION_EVENT_CODE: 0,
-  NOTIFICATION_DELIVERY_REQUESTED: 1,
-  NOTIFICATION_DELIVERED: 2
+  NOTIFICATION_EVENT_CODE_INVALID: 0,
+  NOTIFICATION_EVENT_CODE_DELIVERY_REQUESTED: 1,
+  NOTIFICATION_EVENT_CODE_DELIVERED: 2
 };
 
 goog.object.extend(exports, proto.generic.events.v1);

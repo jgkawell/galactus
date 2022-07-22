@@ -4,7 +4,7 @@ package generic.events.v1;
 
 option go_package = "github.com/circadence-official/galactus/api/gen/go/generic/events/v1";
 
-import "generic/events/v1/notification.proto";
+import "generic/events/v1/notifications.proto";
 import "generic/events/v1/system.proto";
 import "generic/events/v1/todo.proto";
 

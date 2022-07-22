@@ -29,11 +29,10 @@ RUN chmod +x ./protoc-gen-grpc-web
 RUN mv protoc-gen-grpc-web $GOBIN/
 
 # install protoc plugins
-RUN go install -mod=readonly github.com/circadence-official/protoc-gen-validate@v0.6.8
 RUN go install -mod=readonly github.com/favadi/protoc-go-inject-tag@v1.3.0
-RUN go install -mod=readonly github.com/circadence-official/protoc-gen-gorm@v1.1.1
-RUN go install -mod=readonly github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway@v2.10.0
 RUN go install -mod=readonly github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2@v2.10.0
 RUN go install -mod=readonly google.golang.org/protobuf/cmd/protoc-gen-go@v1.28.0
 RUN go install -mod=readonly google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.2.0
 RUN go install -mod=readonly github.com/pseudomuto/protoc-gen-doc/cmd/protoc-gen-doc@v1.5.1
+RUN go install -mod=readonly github.com/circadence-official/protoc-gen-validate@v0.6.8
+RUN go install -mod=readonly github.com/circadence-official/protoc-gen-gorm@v1.1.3

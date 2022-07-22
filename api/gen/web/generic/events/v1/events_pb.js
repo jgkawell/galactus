@@ -15,8 +15,8 @@ var jspb = require('google-protobuf');
 var goog = jspb;
 var global = Function('return this')();
 
-var generic_events_v1_notification_pb = require('../../../generic/events/v1/notification_pb.js');
-goog.object.extend(proto, generic_events_v1_notification_pb);
+var generic_events_v1_notifications_pb = require('../../../generic/events/v1/notifications_pb.js');
+goog.object.extend(proto, generic_events_v1_notifications_pb);
 var generic_events_v1_system_pb = require('../../../generic/events/v1/system_pb.js');
 goog.object.extend(proto, generic_events_v1_system_pb);
 var generic_events_v1_todo_pb = require('../../../generic/events/v1/todo_pb.js');
