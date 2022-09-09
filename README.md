@@ -9,7 +9,6 @@
 - Domain support
 - Hasura as a generic query handler
 - CI/CD with Docker images hosted in Docker Hub
-- Microservice versioning
 
 ## Overview
 
