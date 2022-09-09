@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	agpb "github.com/circadence-official/galactus/api/gen/go/core/aggregates/v1"
 	espb "github.com/circadence-official/galactus/api/gen/go/core/eventstore/v1"
 	ntpb "github.com/circadence-official/galactus/api/gen/go/core/notifier/v1"
 	evpb "github.com/circadence-official/galactus/api/gen/go/generic/events/v1"
@@ -80,7 +81,7 @@ type Service interface {
 	Connect(context.Context, l.Logger, *ntpb.ConnectionRequest, ntpb.Notifier_ConnectServer) (NotificationChannel, l.Error)
 
 	// Deliver - receives and event from the `Notification` exchange and sends it to the correct client
-	Deliver(context.Context, l.Logger, *espb.Event) l.Error
+	Deliver(context.Context, l.Logger, *agpb.Event) l.Error
 
 	// SpawnWorker - Spawn a worker routine to process each incoming message on it's own `NotificationChannel`
 	SpawnWorker(logger l.Logger, notificationChannel NotificationChannel)
@@ -251,7 +252,7 @@ func (s *service) NewConnectionKey(actorID, clientID string) (*ConnectionKey, er
 // Deliver - is a method called by the `Consumer` that will pipe the notification to the users `InputChannel`
 // and send the message to the go routine maintaining the user's notificationChannel.action. When the message has been sent to
 // the users notificationChannel.action a notification_delivered event is published.
-func (s *service) Deliver(ctx context.Context, logger l.Logger, event *espb.Event) l.Error {
+func (s *service) Deliver(ctx context.Context, logger l.Logger, event *agpb.Event) l.Error {
 	logger.Info("attempting notification delivery")
 	data := []byte(event.GetEventData())
 	var req evpb.NotificationDeliveryRequested
@@ -294,8 +295,8 @@ func (s *service) Deliver(ctx context.Context, logger l.Logger, event *espb.Even
 
 	// emit notification delivered event
 	r := &evpb.NotificationDelivered{}
-	et := evpb.EventType{Code: &evpb.EventType_NotificationCode{NotificationCode: evpb.NotificationEventCode_NOTIFICATION_DELIVERED}}
-	if err := ev.CreateAndSendEventWithTransactionID(ctx, logger, s.esc, r, actorID, event.GetTransactionId(), evpb.AggregateType_AGGREGATE_TYPE_NOTIFICATION, et); err != nil {
+	et := evpb.EventType{Code: &evpb.EventType_NotificationCode{NotificationCode: evpb.NotificationEventCode_NOTIFICATION_EVENT_CODE_DELIVERED}}
+	if err := ev.CreateAndSendEvent(ctx, logger, s.esc, r, actorID, event.GetTransactionId(), evpb.AggregateType_AGGREGATE_TYPE_NOTIFICATION, et); err != nil {
 		return logger.WrapError(err)
 	}
 

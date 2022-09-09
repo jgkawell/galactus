@@ -6,7 +6,9 @@ import (
 
 	s "notifier/service"
 
+	agpb "github.com/circadence-official/galactus/api/gen/go/core/aggregates/v1"
 	es "github.com/circadence-official/galactus/api/gen/go/core/eventstore/v1"
+
 	ev "github.com/circadence-official/galactus/pkg/chassis/events"
 	mb "github.com/circadence-official/galactus/pkg/chassis/messagebus"
 	l "github.com/circadence-official/galactus/pkg/logging/v2"
@@ -23,7 +25,7 @@ type Consumer interface {
 }
 
 type Deliverer interface {
-	DeliverNotification(context.Context, *es.Event) error
+	DeliverNotification(context.Context, *agpb.Event) error
 }
 
 func NewConsumer(logger l.Logger, service s.Service) Consumer {
@@ -47,6 +49,7 @@ func (c *consumer) Handle(ctx context.Context, msg mb.Message) error {
 	evt, _, err := ev.GetEventAndMessageData(ctx, logger, msg)
 	if err != nil {
 		logger.WithError(err).Error(ErrorFailedGetEventAndMessageData)
+		msg.Reject()
 		return err
 	}
 

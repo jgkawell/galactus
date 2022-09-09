@@ -54,7 +54,7 @@ func main() {
 				}
 
 				fullAddress := fmt.Sprintf("%s:%d", connectionResponse.GetAddress(), connectionResponse.GetPort())
-				esc, conn, err = clientFactory.CreateEventStoreClient(fullAddress)
+				esc, conn, err = clientFactory.CreateEventStoreClient(b.GetLogger(), fullAddress)
 				if err != nil {
 					b.GetLogger().WithError(err).Panic("failed to connect to eventstore service")
 				}
@@ -76,8 +76,9 @@ func main() {
 				return chassis.ConsumerConfig{
 					Configs: []chassis.HandlerConfig{
 						{
-							AggregateType: fmt.Sprint(int64(evpb.AggregateType_AGGREGATE_TYPE_NOTIFICATION)),
-							EventType:     fmt.Sprint(int64(evpb.NotificationEventCode_NOTIFICATION_DELIVERY_REQUESTED)),
+							AggregateType: evpb.AggregateType_AGGREGATE_TYPE_NOTIFICATION,
+							EventType:     &evpb.EventType{Code: &evpb.EventType_NotificationCode{}},
+							EventCode:     evpb.NotificationEventCode_NOTIFICATION_EVENT_CODE_DELIVERY_REQUESTED,
 							// we want to "multicast" each message to all replicas of this service
 							ConsumerKind: mb.ExchangeKindTopic,
 							Handler:      h.NewConsumer(b.GetLogger(), svc),
