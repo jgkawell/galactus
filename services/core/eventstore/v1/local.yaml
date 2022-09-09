@@ -5,11 +5,14 @@ configMap:
   disableTracer: true
   isDevMode: true
   version: 0.0.0
-  # noSQL database values
+  # sql database connection values
+  sqlDbUser: admin
+  sqlDbSecret: admin
+  sqlDbName: dev
+  sqlDbPort: 5432
+  sqlDbHost: localhost
+  sqlDbSchema: local
   dbAddress: localhost
-  dbName: galactus
-  dbCollection: eventstore
-  dbTimeout: 10
   # other service values
   registryServiceAddress: localhost:35001
   # messagebus values

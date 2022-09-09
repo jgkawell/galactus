@@ -3,17 +3,15 @@ package main
 import (
 	h "eventstore/handler"
 	s "eventstore/service"
-	"time"
 
 	"github.com/circadence-official/galactus/pkg/chassis"
-	"github.com/circadence-official/galactus/pkg/chassis/db"
 
-	es "github.com/circadence-official/galactus/api/gen/go/core/eventstore/v1"
+	agpb "github.com/circadence-official/galactus/api/gen/go/core/aggregates/v1"
+	pb "github.com/circadence-official/galactus/api/gen/go/core/eventstore/v1"
 )
 
 func main() {
-	var dao db.CrudDao
-	var svc s.EventStoreService
+	var svc s.Service
 
 	b := chassis.NewMainBuilder(&chassis.MainBuilderConfig{
 		ApplicationName: "eventstore",
@@ -24,39 +22,30 @@ func main() {
 			KeyVaultOverridesVariable:     "keyVaultOverrides",
 		},
 		MessageBusConfig: &chassis.MessageBusConfig{},
-		NoSqlConfig: &chassis.NoSqlConfig{
-			DbAddressVariable: "dbAddress",
+		SqlConfig: &chassis.SqlConfig{
+			SqlDbHost:   "sqlDbHost",
+			SqlDbPort:   "sqlDbPort",
+			SqlDbName:   "sqlDbName",
+			SqlDbUser:   "sqlDbUser",
+			SqlDbSecret: "sqlDbSecret",
+			SqlDbSchema: "namespace",
 		},
 		DaoLayerConfig: &chassis.DaoLayerConfig{
 			CreateDaoLayer: func(b chassis.MainBuilder) {
-				config := b.GetConfig()
-				var err error
-				dao, err = db.NewCrudDao(
-					b.GetLogger(),
-					b.GetMongoClient(),
-					config.GetString("namespace"),
-					config.GetString("dbName"),
-					config.GetString("dbCollection"),
-					&db.CrudDaoConfig{
-						SoftDelete:           true,
-						Timeout:              config.GetDuration("dbTimeout") * time.Second,
-						AllowUpsert:          true,
-						UniqueKeyColumnNames: []string{},
-					},
+				db := b.GetSqlClient()
+				db.AutoMigrate(
+					&agpb.EventORM{},
 				)
-				if err != nil {
-					b.GetLogger().WithError(err).Fatal("failed to create dao")
-				}
 			},
 		},
 		ServiceLayerConfig: &chassis.ServiceLayerConfig{
 			CreateServiceLayer: func(b chassis.MainBuilder) {
-				svc = s.NewService(dao, b.GetBroker(), b.GetConfig().GetString("env"))
+				svc = s.NewService(b.GetSqlClient(), b.GetBroker(), b.GetConfig().GetString("env"))
 			},
 		},
 		HandlerLayerConfig: &chassis.HandlerLayerConfig{
 			CreateRpcHandlers: func(b chassis.MainBuilder) {
-				es.RegisterEventStoreServer(b.GetRpcServer(), h.NewEventStoreHandler(b.GetLogger(), svc))
+				pb.RegisterEventStoreServer(b.GetRpcServer(), h.NewEventStoreHandler(b.GetLogger(), svc))
 			},
 		},
 	})
