@@ -17,48 +17,6 @@
   ],
   "paths": {},
   "definitions": {
-    "coreaggregatesv1Protocol": {
-      "type": "object",
-      "properties": {
-        "id": {
-          "type": "string",
-          "title": "the table primary key"
-        },
-        "kind": {
-          "$ref": "#/definitions/v1ProtocolKind",
-          "title": "the api kind"
-        },
-        "version": {
-          "type": "string",
-          "title": "the api version (e.g. \"v1\" or \"v2\")"
-        },
-        "port": {
-          "type": "integer",
-          "format": "int32",
-          "title": "the api port (e.g. 8080 or 8090)"
-        }
-      }
-    },
-    "coreaggregatesv1ServiceStatus": {
-      "type": "string",
-      "enum": [
-        "SERVICE_STATUS_INVALID",
-        "SERVICE_STATUS_REGISTERED",
-        "SERVICE_STATUS_DEREGISTERED",
-        "SERVICE_STATUS_HEALTHY",
-        "SERVICE_STATUS_UNHEALTHY"
-      ],
-      "default": "SERVICE_STATUS_INVALID",
-      "title": "deregister vs unregister reference: https://grammarhow.com/unregister-vs-deregister/"
-    },
-    "coreregistryv1Protocol": {
-      "type": "object",
-      "properties": {
-        "kind": {
-          "$ref": "#/definitions/v1ProtocolKind"
-        }
-      }
-    },
     "coreregistryv1ServiceStatus": {
       "type": "string",
       "enum": [
@@ -110,31 +68,6 @@
         }
       }
     },
-    "v1Consumer": {
-      "type": "object",
-      "properties": {
-        "id": {
-          "type": "string",
-          "title": "the table primary key"
-        },
-        "exchange": {
-          "type": "string",
-          "title": "exchange name (this should match with an aggregate type)"
-        },
-        "routingKey": {
-          "type": "string",
-          "title": "routing key (this should match with an event type on the above aggregate)"
-        },
-        "kind": {
-          "$ref": "#/definitions/v1ConsumerKind",
-          "title": "consumer kind is whether the consumer is a queue (unicast - 1:N queue to consumer) or topic (multicast - 1:1 queue to consumer)"
-        },
-        "queue": {
-          "type": "string",
-          "title": "queue name (this will be set by the registry and returned to the calling client)"
-        }
-      }
-    },
     "v1ConsumerKind": {
       "type": "string",
       "enum": [
@@ -144,16 +77,45 @@
       ],
       "default": "CONSUMER_KIND_INVALID"
     },
-    "v1Producer": {
+    "v1ConsumerRequest": {
       "type": "object",
       "properties": {
-        "id": {
-          "type": "string",
-          "title": "the table primary key"
+        "order": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "kind": {
+          "$ref": "#/definitions/v1ConsumerKind"
+        },
+        "aggregateType": {
+          "type": "string"
+        },
+        "eventType": {
+          "type": "string"
+        },
+        "eventCode": {
+          "type": "string"
+        }
+      }
+    },
+    "v1ConsumerResponse": {
+      "type": "object",
+      "properties": {
+        "order": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "kind": {
+          "$ref": "#/definitions/v1ConsumerKind"
+        },
+        "routingKey": {
+          "type": "string"
         },
         "exchange": {
-          "type": "string",
-          "title": "exchange name (this should match with an aggregate type)"
+          "type": "string"
+        },
+        "queueName": {
+          "type": "string"
         }
       }
     },
@@ -166,61 +128,48 @@
       ],
       "default": "PROTOCOL_KIND_INVALID"
     },
-    "v1RegisterResponse": {
+    "v1ProtocolRequest": {
       "type": "object",
       "properties": {
-        "registration": {
-          "$ref": "#/definitions/v1Registration"
+        "order": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "kind": {
+          "$ref": "#/definitions/v1ProtocolKind"
         }
       }
     },
-    "v1Registration": {
+    "v1ProtocolResponse": {
       "type": "object",
       "properties": {
-        "id": {
-          "type": "string",
-          "title": "the table primary key"
+        "order": {
+          "type": "integer",
+          "format": "int32"
         },
-        "name": {
-          "type": "string",
-          "title": "NOTE: name + version must be unique\nthe service name"
+        "kind": {
+          "$ref": "#/definitions/v1ProtocolKind"
         },
-        "version": {
-          "type": "string",
-          "title": "the service version"
-        },
-        "description": {
-          "type": "string",
-          "title": "plain text description of the service"
-        },
-        "address": {
-          "type": "string",
-          "title": "the service address in the environment. e.g. \"http://localhost:8080\" when local or \"eventstore:8090\" when remote"
-        },
-        "status": {
-          "$ref": "#/definitions/coreaggregatesv1ServiceStatus",
-          "title": "the service current status"
-        },
+        "port": {
+          "type": "integer",
+          "format": "int32"
+        }
+      }
+    },
+    "v1RegisterResponse": {
+      "type": "object",
+      "properties": {
         "protocols": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/coreaggregatesv1Protocol"
-          },
-          "title": "the protocols this service exposes"
-        },
-        "producers": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/v1Producer"
-          },
-          "title": "the producer configuration of the service"
+            "$ref": "#/definitions/v1ProtocolResponse"
+          }
         },
         "consumers": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/v1Consumer"
-          },
-          "title": "the consumer configuration of the service"
+            "$ref": "#/definitions/v1ConsumerResponse"
+          }
         }
       }
     }

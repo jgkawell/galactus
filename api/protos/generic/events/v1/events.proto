@@ -9,7 +9,6 @@ import "generic/events/v1/system.proto";
 import "generic/events/v1/todo.proto";
 
 // map of all aggregate types, add to it as more aggregates are added to the application
-// WARNING: DO NOTE CHANGE THE ORDER OF THIS ENUM
 enum AggregateType {
     AGGREGATE_TYPE_INVALID = 0;
     AGGREGATE_TYPE_SYSTEM = 1;

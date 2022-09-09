@@ -26,10 +26,8 @@ message Registration {
     ServiceStatus status = 6 [(validate.rules).enum.defined_only = true];
     // the protocols this service exposes
     repeated Protocol protocols = 7;
-    // the producer configuration of the service
-    repeated Producer producers = 8;
     // the consumer configuration of the service
-    repeated Consumer consumers = 9;
+    repeated Consumer consumers = 8;
 }
 
 // deregister vs unregister reference: https://grammarhow.com/unregister-vs-deregister/
@@ -58,16 +56,6 @@ enum ProtocolKind {
     PROTOCOL_KIND_INVALID = 0;
     PROTOCOL_KIND_GRPC = 1;
     PROTOCOL_KIND_HTTP = 2;
-  }
-
-message Producer {
-    option (gorm.opts).ormable = true;
-
-    // the table primary key
-    string id = 1 [(validate.rules).string.uuid = true, (gorm.field).tag = {type: "uuid" primary_key: true}];
-    // exchange name (this should match with an aggregate type)
-    string exchange = 2 [(validate.rules).string = {min_len: 1, max_len: 255}];
-    // TODO: do we need to add the exchange kind? (e.g. direct, topic, fanout, etc.)
 }
 
 message Consumer {
@@ -75,14 +63,10 @@ message Consumer {
 
     // the table primary key
     string id = 1 [(validate.rules).string.uuid = true, (gorm.field).tag = {type: "uuid" primary_key: true}];
-    // exchange name (this should match with an aggregate type)
-    string exchange = 2 [(validate.rules).string = {min_len: 1, max_len: 255}];
     // routing key (this should match with an event type on the above aggregate)
-    string routing_key = 3 [(validate.rules).string = {min_len: 1, max_len: 255}];
+    string routing_key = 2 [(validate.rules).string = {min_len: 1, max_len: 255}];
     // consumer kind is whether the consumer is a queue (unicast - 1:N queue to consumer) or topic (multicast - 1:1 queue to consumer)
-    ConsumerKind kind = 4 [(validate.rules).enum.defined_only = true];
-    // queue name (this will be set by the registry and returned to the calling client)
-    string queue = 5 [(validate.rules).string = {min_len: 1, max_len: 255}];
+    ConsumerKind kind = 3 [(validate.rules).enum.defined_only = true];
 }
 
 enum ConsumerKind {

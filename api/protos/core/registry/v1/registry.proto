@@ -20,6 +20,8 @@ service Registry {
   rpc Connection(ConnectionRequest) returns (ConnectionResponse) {}
 }
 
+// REGISTER
+
 message RegisterRequest {
   string name = 1;
   string domain = 2; // this needs to match the k8s namespace for remote deployments
@@ -27,18 +29,43 @@ message RegisterRequest {
   string version = 3; // should be semver
   string description = 4;
 
-  repeated Protocol protocols = 5;
-  repeated core.aggregates.v1.Producer producers = 6;
-  repeated core.aggregates.v1.Consumer consumers = 7;
+  repeated ProtocolRequest protocols = 5;
+  repeated ConsumerRequest consumers = 7;
 }
 
-message Protocol {
-  core.aggregates.v1.ProtocolKind kind = 1;
+message ProtocolRequest {
+  int32 order = 1;
+  core.aggregates.v1.ProtocolKind kind = 2;
+}
+
+message ConsumerRequest {
+  int32 order = 1;
+  core.aggregates.v1.ConsumerKind kind = 2;
+  string aggregate_type = 3;
+  string event_type = 4;
+  string event_code = 5;
 }
 
 message RegisterResponse {
-  core.aggregates.v1.Registration registration = 1;
+  repeated ProtocolResponse protocols = 1;
+  repeated ConsumerResponse consumers = 2;
 }
+
+message ProtocolResponse {
+  int32 order = 1;
+  core.aggregates.v1.ProtocolKind kind = 2;
+  int32 port = 3;
+}
+
+message ConsumerResponse {
+  int32 order = 1;
+  core.aggregates.v1.ConsumerKind kind = 2;
+  string routing_key = 3;
+  string exchange = 4;
+  string queue_name = 5;
+}
+
+// CONNECTION
 
 message ConnectionRequest {
   string name = 1;

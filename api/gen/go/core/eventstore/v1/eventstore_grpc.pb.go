@@ -23,7 +23,7 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type EventStoreClient interface {
 	// Create a new event in the event store
-	Create(ctx context.Context, in *CreateEventRequest, opts ...grpc.CallOption) (*CreateEventResponse, error)
+	Create(ctx context.Context, in *CreateRequest, opts ...grpc.CallOption) (*CreateResponse, error)
 }
 
 type eventStoreClient struct {
@@ -34,8 +34,8 @@ func NewEventStoreClient(cc grpc.ClientConnInterface) EventStoreClient {
 	return &eventStoreClient{cc}
 }
 
-func (c *eventStoreClient) Create(ctx context.Context, in *CreateEventRequest, opts ...grpc.CallOption) (*CreateEventResponse, error) {
-	out := new(CreateEventResponse)
+func (c *eventStoreClient) Create(ctx context.Context, in *CreateRequest, opts ...grpc.CallOption) (*CreateResponse, error) {
+	out := new(CreateResponse)
 	err := c.cc.Invoke(ctx, "/core.eventstore.v1.EventStore/Create", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -48,14 +48,14 @@ func (c *eventStoreClient) Create(ctx context.Context, in *CreateEventRequest, o
 // for forward compatibility
 type EventStoreServer interface {
 	// Create a new event in the event store
-	Create(context.Context, *CreateEventRequest) (*CreateEventResponse, error)
+	Create(context.Context, *CreateRequest) (*CreateResponse, error)
 }
 
 // UnimplementedEventStoreServer should be embedded to have forward compatible implementations.
 type UnimplementedEventStoreServer struct {
 }
 
-func (UnimplementedEventStoreServer) Create(context.Context, *CreateEventRequest) (*CreateEventResponse, error) {
+func (UnimplementedEventStoreServer) Create(context.Context, *CreateRequest) (*CreateResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Create not implemented")
 }
 
@@ -71,7 +71,7 @@ func RegisterEventStoreServer(s grpc.ServiceRegistrar, srv EventStoreServer) {
 }
 
 func _EventStore_Create_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(CreateEventRequest)
+	in := new(CreateRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -83,7 +83,7 @@ func _EventStore_Create_Handler(srv interface{}, ctx context.Context, dec func(i
 		FullMethod: "/core.eventstore.v1.EventStore/Create",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(EventStoreServer).Create(ctx, req.(*CreateEventRequest))
+		return srv.(EventStoreServer).Create(ctx, req.(*CreateRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }

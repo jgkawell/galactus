@@ -78,33 +78,33 @@ proto.core.eventstore.v1.EventStorePromiseClient =
 /**
  * @const
  * @type {!grpc.web.MethodDescriptor<
- *   !proto.core.eventstore.v1.CreateEventRequest,
- *   !proto.core.eventstore.v1.CreateEventResponse>}
+ *   !proto.core.eventstore.v1.CreateRequest,
+ *   !proto.core.eventstore.v1.CreateResponse>}
  */
 const methodDescriptor_EventStore_Create = new grpc.web.MethodDescriptor(
   '/core.eventstore.v1.EventStore/Create',
   grpc.web.MethodType.UNARY,
-  proto.core.eventstore.v1.CreateEventRequest,
-  proto.core.eventstore.v1.CreateEventResponse,
+  proto.core.eventstore.v1.CreateRequest,
+  proto.core.eventstore.v1.CreateResponse,
   /**
-   * @param {!proto.core.eventstore.v1.CreateEventRequest} request
+   * @param {!proto.core.eventstore.v1.CreateRequest} request
    * @return {!Uint8Array}
    */
   function(request) {
     return request.serializeBinary();
   },
-  proto.core.eventstore.v1.CreateEventResponse.deserializeBinary
+  proto.core.eventstore.v1.CreateResponse.deserializeBinary
 );
 
 
 /**
- * @param {!proto.core.eventstore.v1.CreateEventRequest} request The
+ * @param {!proto.core.eventstore.v1.CreateRequest} request The
  *     request proto
  * @param {?Object<string, string>} metadata User defined
  *     call metadata
- * @param {function(?grpc.web.RpcError, ?proto.core.eventstore.v1.CreateEventResponse)}
+ * @param {function(?grpc.web.RpcError, ?proto.core.eventstore.v1.CreateResponse)}
  *     callback The callback function(error, response)
- * @return {!grpc.web.ClientReadableStream<!proto.core.eventstore.v1.CreateEventResponse>|undefined}
+ * @return {!grpc.web.ClientReadableStream<!proto.core.eventstore.v1.CreateResponse>|undefined}
  *     The XHR Node Readable Stream
  */
 proto.core.eventstore.v1.EventStoreClient.prototype.create =
@@ -119,11 +119,11 @@ proto.core.eventstore.v1.EventStoreClient.prototype.create =
 
 
 /**
- * @param {!proto.core.eventstore.v1.CreateEventRequest} request The
+ * @param {!proto.core.eventstore.v1.CreateRequest} request The
  *     request proto
  * @param {?Object<string, string>=} metadata User defined
  *     call metadata
- * @return {!Promise<!proto.core.eventstore.v1.CreateEventResponse>}
+ * @return {!Promise<!proto.core.eventstore.v1.CreateResponse>}
  *     Promise that resolves to the response
  */
 proto.core.eventstore.v1.EventStorePromiseClient.prototype.create =
