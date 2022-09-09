@@ -6,9 +6,9 @@ import "context"
 type ClientHandler interface {
 	// Handle is responsible for processing messages from a queue/topic.
 	// NOTE: Consumers SHOULD ALWAYS call Complete/Retry/Reject on the QueuedMessage
-	//       prior to returning. However, if an error is returned from this function w/o
+	//       prior to returning. However, if an error is returned from this function without
 	//       having called Complete/Retry/Reject on the msg, then the msg will be automatically
-	//       Rejected so that it is redelivered.  If this is not the desired behavior, then
+	//       Retried so that it is redelivered.  If this is not the desired behavior, then
 	//       explictly call Reject so that the message is discarded.
 	Handle(ctx context.Context, msg Message) error
 }

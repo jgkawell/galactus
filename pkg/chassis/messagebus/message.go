@@ -133,7 +133,7 @@ func (qm *message) GetMessage(target interface{}) error {
 	return nil
 }
 
-// Complete accepts the message, and removes it from the queue.
+// Complete acks the message so that it is not redelivered
 func (qm *message) Complete() error {
 	if qm.acked {
 		return nil
@@ -142,22 +142,22 @@ func (qm *message) Complete() error {
 	return qm.msg.Ack(false)
 }
 
-// Complete accepts the message, and removes it from the queue.
+// Retry rejects the message AND attempts an immediate redelivery
 func (qm *message) Retry() error {
 	return qm.reject(0, true)
 }
 
-// Complete accepts the message, and removes it from the queue.
+// RetryAfter rejects the message AND attempts a redelivery after the given amount of seconds
 func (qm *message) RetryAfter(seconds int) error {
 	return qm.reject(seconds, true)
 }
 
-// Reject  accepts the message, and removes it from the queue.
+// Reject rejects the message so that it will not be redelivered
 func (qm *message) Reject() error {
 	return qm.reject(0, false)
 }
 
-// Reject send the message back to the queue for retransmission.
+// reject will either reject and reschedule a message for redelivery based on the provided parameters
 func (qm *message) reject(retryDelay int, retransmit bool) error {
 	if qm.acked {
 		return nil
@@ -197,7 +197,7 @@ func (qm *message) reject(retryDelay int, retransmit bool) error {
 	if retryDelay > 0 {
 		qm.msg.Headers[messageOptionDeliverAfterMilliseconds] = strconv.Itoa(retryDelay)
 	}
-	// normal retrans, no header changes
+	// normal retransfer, no header changes
 	return qm.msg.Nack(false, true)
 }
 

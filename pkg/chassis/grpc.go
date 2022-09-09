@@ -32,14 +32,14 @@ func (b *mainBuilder) StartRpcServer() {
 	logger.Info("starting grpc server")
 
 	if b.rpcPort == "" {
-		b.logger.Panic("grpc server failed to start. grpc port not set")
+		b.logger.Fatal("grpc server failed to start. grpc port not set")
 	}
 	grpcListener, err := net.Listen("tcp", fmt.Sprintf(":%s", b.rpcPort))
 	if err != nil {
-		b.logger.WithError(err).Panic("failed to create grpc listener")
+		b.logger.WithError(err).Fatal("failed to create grpc listener")
 	}
 	if err := b.rpcServer.Serve(grpcListener); err != nil {
-		b.logger.WithError(err).Panic("grpc server failed to start. see error field for details")
+		b.logger.WithError(err).Fatal("grpc server failed to start. see error field for details")
 	}
 	terminator.TerminateApplication()
 }

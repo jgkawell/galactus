@@ -9,12 +9,13 @@ import (
 )
 
 type BrokerDefinition struct {
-	Exchange         string `mapstructure:"exchange"`
-	RoutingKey       string `mapstructure:"routingkey"`
-	QueueName        string `mapstructure:"queuename"`
+	Exchange   string
+	RoutingKey string
+	QueueName  string
+	Handler    messagebus.ClientHandler
 }
 
-func RegisterConsumer(logger l.Logger, bus messagebus.MessageBus, listener messagebus.ClientHandler, definition *BrokerDefinition) {
+func RegisterConsumer(logger l.Logger, bus messagebus.MessageBus, definition BrokerDefinition) {
 	logger = logger.WithField("queue_definition", definition)
 	logger.Info("establishing listener to queue")
 
@@ -26,10 +27,10 @@ func RegisterConsumer(logger l.Logger, bus messagebus.MessageBus, listener messa
 		context.Background(),
 		definition.QueueName,
 		definition.RoutingKey,
-		listener,
+		definition.Handler,
 		done)
 	if err != nil {
-		logger.WithError(err).WithField("queue", definition).Panic("failed to register queue listener")
+		logger.WithError(err).WithField("queue", definition).Fatal("failed to register queue listener")
 	}
 
 	// wait for the consumer to exit
@@ -37,10 +38,10 @@ func RegisterConsumer(logger l.Logger, bus messagebus.MessageBus, listener messa
 		select {
 		case response := <-done:
 			if response.Error != nil {
-				logger.WithError(response.Error).Panic("queue consumer exited with error")
+				logger.WithError(response.Error).Fatal("queue consumer exited with error")
 			}
 			if !response.Done {
-				logger.Panic("queue consumer exited without done=true")
+				logger.Fatal("queue consumer exited without done=true")
 			}
 			if response.Message != "" {
 				logger.Info(response.Message)

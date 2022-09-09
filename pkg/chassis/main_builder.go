@@ -1,6 +1,7 @@
 package chassis
 
 import (
+	// standard libraries
 	"context"
 	"crypto/tls"
 	"fmt"
@@ -14,19 +15,27 @@ import (
 	"syscall"
 	"time"
 
-	azkeyvault "github.com/circadence-official/galactus/pkg/azkeyvault"
+	// chassis packages
 	"github.com/circadence-official/galactus/pkg/chassis/broker"
 	cf "github.com/circadence-official/galactus/pkg/chassis/clientfactory"
 	ct "github.com/circadence-official/galactus/pkg/chassis/context"
 	"github.com/circadence-official/galactus/pkg/chassis/db"
 	ec "github.com/circadence-official/galactus/pkg/chassis/env"
+	"github.com/circadence-official/galactus/pkg/chassis/events"
 	messagebus "github.com/circadence-official/galactus/pkg/chassis/messagebus"
 	"github.com/circadence-official/galactus/pkg/chassis/terminator"
+
+	// other galactus modules
+	azkeyvault "github.com/circadence-official/galactus/pkg/azkeyvault"
 	l "github.com/circadence-official/galactus/pkg/logging/v2"
 
+	// galactus api packages
 	agpb "github.com/circadence-official/galactus/api/gen/go/core/aggregates/v1"
+	espb "github.com/circadence-official/galactus/api/gen/go/core/eventstore/v1"
 	rgpb "github.com/circadence-official/galactus/api/gen/go/core/registry/v1"
+	evpb "github.com/circadence-official/galactus/api/gen/go/generic/events/v1"
 
+	// third party libraries
 	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis/v8"
 	"github.com/google/uuid"
@@ -83,22 +92,24 @@ type MainBuilder interface {
 	GetAzureKeyVaultClient() azkeyvault.KeyVaultClient
 	// GetSqlClient exposes the sql client for services to use
 	GetSqlClient() *gorm.DB
+	// GetEventManager... TODO
+	GetEventManager() events.EventManager
 }
 
-// DaoLayerConfig defines the function for initializing the DAO layer
+// DaoLayerConfig defines the function for initializing the DAO layer if any custom setup is required
 type DaoLayerConfig struct {
 	// CreateDaoLayer creates the dao layer using the mongo client.
 	CreateDaoLayer func(b MainBuilder)
 }
 
-// NoSqlConfig defines the connection confiuration for the NoSQL database (e.g. Mongo)
+// NoSqlConfig defines the connection confiuration for the NoSQL database (only Mongo is currently supported)
 type NoSqlConfig struct {
 	// DbAddressVariable is the config variable containing the database's address.
 	// NOTE: This address is reserved for mongo db only.
 	DbAddressVariable string
 }
 
-// SqlConfig defines the connection configuration to the SQL database (e.g. Postgres)
+// SqlConfig defines the connection configuration to the SQL database (only Postgres is currently supported)
 type SqlConfig struct {
 	// Sql configuration variables that are pulled either from a secret store, or deployment configration
 	SqlDbHost   string
@@ -109,11 +120,11 @@ type SqlConfig struct {
 	SqlDbSchema string
 }
 
-// CacheConfig defines the configuration for the cache layer (e.g. Redis)
+// CacheConfig defines the configuration for the cache layer (only Redis is currently supported)
 type CacheConfig struct {
 	// CacheAddress host of the cache instance
 	CacheAddress string
-	// CacheSecret Secret/password for the cache
+	// CacheSecret the secret/password for the cache instance
 	CacheSecret string
 }
 
@@ -157,13 +168,13 @@ type ConsumerConfig struct {
 // HandlerConfig defines the configuration for a consumer handler (processing messages off of the messagebus)
 type HandlerConfig struct {
 	// AggregateType is mapped to the AMQP exchange name
-	AggregateType string
+	AggregateType evpb.AggregateType
 	// EventType is mapped to the AMQP routing key of the queue
-	EventType string
+	EventType *evpb.EventType
+	// EventCode ...
+	EventCode interface{}
 	// ConsumerKind is the type of consumer to create (e.g. queue, topic)
 	ConsumerKind messagebus.ExchangeKind
-	// QueueName is the name of the queue to consume on (NOTE: this value will be set by the registry)
-	QueueName string
 	// Handler is the callback function to execute when a message is received
 	Handler messagebus.ClientHandler
 }
@@ -225,6 +236,8 @@ type MainBuilderConfig struct {
 	//
 	// ONLY SET THIS TO TRUE FOR THE REGISTRY SERVICE ITSELF OR IF YOU REALLY KNOW WHAT YOU'RE DOING.
 	DoNotRegisterService bool
+	// CreateEventStoreClient specifies if the service needs a persistent client to the eventstore service to create events
+	CreateEventStoreClient bool
 	// DaoLayerConfig is the dao layer configuration.
 	DaoLayerConfig *DaoLayerConfig
 	// NoSqlConfig is the `NoSQL` db configuatrion
@@ -259,10 +272,11 @@ type mainBuilder struct {
 	logger l.Logger
 
 	// basic configuration
-	applicationName string
-	isDevMode       bool
-	httpPort        string
-	rpcPort         string
+	applicationName        string
+	isDevMode              bool
+	createEventStoreClient bool
+	httpPort               string
+	rpcPort                string
 
 	// http/grpc
 	httpServer     *http.Server
@@ -275,8 +289,9 @@ type mainBuilder struct {
 	bus                 messagebus.MessageBus
 	cacheClient         *redis.Client
 	noSqlClient         *mongo.Client
-	registryClient      rgpb.RegistryClient
 	sqlClient           *gorm.DB
+	registryClient      rgpb.RegistryClient
+	eventStoreClient    espb.EventStoreClient
 
 	// functions
 	onRun  func(b MainBuilder)
@@ -284,6 +299,7 @@ type mainBuilder struct {
 
 	// configs
 	consumerConfig       ConsumerConfig
+	brokerConfigs        []broker.BrokerDefinition
 	readinessCheckConfig *CheckConfig
 	wellnessCheckConfig  *CheckConfig
 	viper                *viper.Viper
@@ -305,12 +321,13 @@ func NewMainBuilder(mbc *MainBuilderConfig) MainBuilder {
 	}
 
 	b := &mainBuilder{
-		applicationName:      mbc.ApplicationName,
-		logger:               logger,
-		onRun:                mbc.OnRun,
-		onStop:               mbc.OnStop,
-		readinessCheckConfig: mbc.ReadinessCheckConfig,
-		wellnessCheckConfig:  mbc.WellnessCheckConfig,
+		applicationName:        mbc.ApplicationName,
+		logger:                 logger,
+		onRun:                  mbc.OnRun,
+		onStop:                 mbc.OnStop,
+		readinessCheckConfig:   mbc.ReadinessCheckConfig,
+		wellnessCheckConfig:    mbc.WellnessCheckConfig,
+		createEventStoreClient: mbc.CreateEventStoreClient,
 	}
 
 	// Get variables from local.yaml/values.yaml and environment variables for use by viper
@@ -324,7 +341,7 @@ func NewMainBuilder(mbc *MainBuilderConfig) MainBuilder {
 	// Setup viper
 	err := ec.ReadEnvironmentConfigurations(logger, baseDir)
 	if err != nil {
-		logger.WithError(err).Panic("failed to read environment configurations")
+		logger.WithError(err).Fatal("failed to read environment configurations")
 	}
 
 	v := viper.GetViper()
@@ -362,14 +379,15 @@ func NewMainBuilder(mbc *MainBuilderConfig) MainBuilder {
 		mbc.InitializeConfig.OnInitialize(b)
 	}
 
+	// If the service needs to be registered, register the service
 	if !mbc.DoNotRegisterService {
 		clientFactory := cf.NewClientFactory(b.logger)
-		registryClient, registryConnection, err := clientFactory.CreateRegistryClient(b.viper.GetString("registryServiceAddress"))
+		registryClient, registryConnection, err := clientFactory.CreateRegistryClient(b.GetLogger(), b.viper.GetString("registryServiceAddress"))
 		b.registryClient = registryClient
 		if err != nil {
 			b.logger.WithError(err).Fatal("failed to create registry client")
 		}
-		defer clientFactory.CloseConnection(registryConnection)
+		defer clientFactory.CloseConnection(b.GetLogger(), registryConnection)
 	}
 
 	// Setup the message bus
@@ -387,7 +405,7 @@ func NewMainBuilder(mbc *MainBuilderConfig) MainBuilder {
 		)
 
 		if err = b.bus.Connect(context.Background(), b.GetLogger()); err != nil {
-			logger.WithError(err).Panic("failed to connect to message bus")
+			logger.WithError(err).Fatal("failed to connect to message bus")
 		}
 	}
 
@@ -398,11 +416,11 @@ func NewMainBuilder(mbc *MainBuilderConfig) MainBuilder {
 			dbAddress := b.viper.GetString(mbc.NoSqlConfig.DbAddressVariable)
 			b.noSqlClient, err = db.CreateNoSqlClient(logger, dbAddress)
 			if err != nil {
-				logger.WithField("db_address", dbAddress).WithError(err).Panic("failed to create database client")
+				logger.WithField("db_address", dbAddress).WithError(err).Fatal("failed to create database client")
 			}
 			u, err := url.Parse(dbAddress)
 			if err != nil {
-				logger.WithField("db_address", dbAddress).WithError(err).Panic("failed to parse database address")
+				logger.WithField("db_address", dbAddress).WithError(err).Fatal("failed to parse database address")
 			}
 			if u.User != nil {
 				// remove the password so it doesn't get logged
@@ -425,7 +443,7 @@ func NewMainBuilder(mbc *MainBuilderConfig) MainBuilder {
 				b.isDevMode,
 			)
 			if err != nil {
-				logger.WithError(err).Panic("failed to create sql database client")
+				logger.WithError(err).Fatal("failed to create sql database client")
 			}
 
 			logger.Info("connected to sql db successfully")
@@ -470,21 +488,34 @@ func NewMainBuilder(mbc *MainBuilderConfig) MainBuilder {
 	// Setup the broker configuration
 	if mbc.HandlerLayerConfig.CreateBrokerConfig != nil {
 		b.consumerConfig = mbc.HandlerLayerConfig.CreateBrokerConfig(b)
+		for _, c := range b.consumerConfig.Configs {
+			err := events.ValidateEventCode(c.EventCode)
+			if err != nil {
+				b.logger.WithField("event_code", c.EventCode).WithError(err).Fatal("invalid event code in consumer config")
+			}
+		}
 	}
 
 	// register the service with the service registry
 	if !mbc.DoNotRegisterService {
 		// set protocols based on the chassis configuration
-		protocols := []*rgpb.Protocol{}
-		if mbc.HandlerLayerConfig.CreateRpcHandlers != nil {
-			protocols = append(protocols, &rgpb.Protocol{Kind: agpb.ProtocolKind_PROTOCOL_KIND_GRPC})
-		}
+		protocols := []*rgpb.ProtocolRequest{}
 		// NOTE: all services have an http handler that handles health checks. this handler can optionally be extended for other uses.
-		protocols = append(protocols, &rgpb.Protocol{Kind: agpb.ProtocolKind_PROTOCOL_KIND_HTTP})
+		protocols = append(protocols, &rgpb.ProtocolRequest{
+			Order: 0,
+			Kind:  agpb.ProtocolKind_PROTOCOL_KIND_HTTP,
+		})
+		// add rpc handlers only if requested
+		if mbc.HandlerLayerConfig.CreateRpcHandlers != nil {
+			protocols = append(protocols, &rgpb.ProtocolRequest{
+				Order: 1,
+				Kind:  agpb.ProtocolKind_PROTOCOL_KIND_GRPC,
+			})
+		}
 
 		// TODO: pull together producers, and consumers from mainbuilder config
-		consumers := []*agpb.Consumer{}
-		for _, c := range b.consumerConfig.Configs {
+		consumers := []*rgpb.ConsumerRequest{}
+		for i, c := range b.consumerConfig.Configs {
 
 			// map the messagebus kind to the consumer kind
 			var protoKind agpb.ConsumerKind
@@ -497,10 +528,12 @@ func NewMainBuilder(mbc *MainBuilderConfig) MainBuilder {
 				b.logger.WithField("kind", c.ConsumerKind).Fatal("unsupported messagebus kind")
 			}
 
-			consumers = append(consumers, &agpb.Consumer{
-				Exchange:   c.AggregateType,
-				RoutingKey: c.EventType,
-				Kind:       protoKind,
+			consumers = append(consumers, &rgpb.ConsumerRequest{
+				Order:         int32(i),
+				Kind:          protoKind,
+				AggregateType: events.AggregateTypeAsString(c.AggregateType),
+				EventType:     events.EventTypeAsString(c.EventType),
+				EventCode:     events.EventCodeAsString(c.EventCode),
 			})
 		}
 
@@ -516,7 +549,6 @@ func NewMainBuilder(mbc *MainBuilderConfig) MainBuilder {
 			Version:     b.viper.GetString("version"),
 			Description: b.viper.GetString("description"),
 			Protocols:   protocols,
-			Producers:   []*agpb.Producer{},
 			Consumers:   consumers,
 		})
 		if err != nil {
@@ -524,7 +556,7 @@ func NewMainBuilder(mbc *MainBuilderConfig) MainBuilder {
 		}
 
 		// set server ports based on registration values
-		for _, p := range registerResponse.GetRegistration().GetProtocols() {
+		for _, p := range registerResponse.GetProtocols() {
 			if p.GetKind() == agpb.ProtocolKind_PROTOCOL_KIND_GRPC {
 				b.rpcPort = fmt.Sprint(p.GetPort())
 			}
@@ -534,14 +566,13 @@ func NewMainBuilder(mbc *MainBuilderConfig) MainBuilder {
 		}
 
 		// set consumer configs based on registration values
-		for _, registryConsumer := range registerResponse.GetRegistration().GetConsumers() {
-			for j, configConsumer := range b.consumerConfig.Configs {
-				// remove the environment prefix from exchange value
-				exchange := strings.Split(registryConsumer.GetExchange(), ".")[1]
-				if configConsumer.AggregateType == exchange && configConsumer.EventType == registryConsumer.GetRoutingKey() {
-					b.logger.WithField("queue_name", registryConsumer.GetQueue()).Info("setting queue name")
-					b.consumerConfig.Configs[j].QueueName = registryConsumer.GetQueue()
-				}
+		b.brokerConfigs = make([]broker.BrokerDefinition, len(registerResponse.GetConsumers()))
+		for _, c := range registerResponse.GetConsumers() {
+			b.brokerConfigs[c.GetOrder()] = broker.BrokerDefinition{
+				RoutingKey: c.GetRoutingKey(),
+				Exchange:   c.GetExchange(),
+				QueueName:  c.GetQueueName(),
+				Handler:    b.consumerConfig.Configs[c.GetOrder()].Handler,
 			}
 		}
 	}
@@ -575,6 +606,7 @@ func NewMainBuilder(mbc *MainBuilderConfig) MainBuilder {
 // Run runs the microservice applications using the mainbuilder configuration.
 // This means starting all the servers and connections and then listening for an exit condition.
 func (b *mainBuilder) Run() {
+	ctx := context.Background()
 	// start datadog tracer (if this value isn't set viper returns false. that way we default to starting the tracer)
 	if !b.GetConfig().GetBool("disableTracer") {
 		b.GetLogger().Info("starting tracer")
@@ -597,6 +629,25 @@ func (b *mainBuilder) Run() {
 
 	if b.rpcServer != nil {
 		go b.StartRpcServer()
+	}
+
+	// initialize eventstore client if requested
+	if b.createEventStoreClient {
+		clientFactory := cf.NewClientFactory(b.logger)
+		resp, stdErr := b.registryClient.Connection(ctx, &rgpb.ConnectionRequest{
+			Name:    "eventstore",
+			Version: "v1",
+			Type:    agpb.ProtocolKind_PROTOCOL_KIND_GRPC,
+		})
+		if stdErr != nil {
+			b.logger.WithError(stdErr).Fatal("failed to initialize eventstore client")
+		}
+		client, conn, stdErr := clientFactory.CreateEventStoreClient(b.GetLogger(), resp.GetAddress())
+		defer conn.Close()
+		if stdErr != nil {
+			b.logger.WithError(stdErr).Fatal("failed to initialize eventstore client")
+		}
+		b.eventStoreClient = client
 	}
 
 	// if running locally, initialize broker listeners without waiting for Shawarma call
@@ -641,15 +692,10 @@ func (b *mainBuilder) InitializeGORM(dbAddress string) (*gorm.DB, error) {
 // This way we guarantee that the service will only read messages that it is supposed to based off of it's Argo rollout status.
 func (b *mainBuilder) initializeBrokerListeners(serviceName string) {
 	// setup queues
-	if b.consumerConfig.Configs != nil {
-		for _, qc := range b.consumerConfig.Configs {
-			// TODO: use values received from the registry service
-			bd := &broker.BrokerDefinition{
-				Exchange:   qc.AggregateType,
-				RoutingKey: generateRoutingKey(qc.EventType, serviceName),
-				QueueName:  qc.QueueName,
-			}
-			broker.RegisterConsumer(b.logger, b.bus, qc.Handler, bd)
+	if len(b.brokerConfigs) > 0 {
+		for _, bd := range b.brokerConfigs {
+			bd.RoutingKey = modifyRoutingKey(bd.RoutingKey, serviceName)
+			broker.RegisterConsumer(b.logger, b.bus, bd)
 		}
 	}
 }
@@ -659,19 +705,18 @@ func (b *mainBuilder) initializeBrokerListeners(serviceName string) {
 // This way we guarantee that the service will only read messages that it is supposed to based off of it's Argo rollout status.
 func (b *mainBuilder) cancelBrokerListeners(serviceName string) {
 	// cancel queues
-	if b.consumerConfig.Configs != nil {
-		for _, qc := range b.consumerConfig.Configs {
-			// TODO: use values received from the registry service
-			routingKey := generateRoutingKey(qc.EventType, serviceName)
-			b.bus.CancelConsumerChannelsBySuffix(routingKey, false)
+	if len(b.brokerConfigs) > 0 {
+		for _, bd := range b.brokerConfigs {
+			bd.RoutingKey = modifyRoutingKey(bd.RoutingKey, serviceName)
+			b.bus.CancelConsumerChannelsBySuffix(bd.RoutingKey, false)
 		}
 	}
 }
 
-// generateRoutingKey takes in a routing key and the service name (shape: SERVICE or SERVICE-preview)
+// modifyRoutingKey takes in a routing key and the service name (shape: SERVICE or SERVICE-preview)
 // and appends the `-preview` suffix if the service is in preview mode. This controls argo blue/green
 // routing for messagebus traffic in the same way as Istio for network traffic.
-func generateRoutingKey(routingKey, serviceName string) string {
+func modifyRoutingKey(routingKey, serviceName string) string {
 	if strings.Contains(serviceName, "preview") {
 		routingKey = fmt.Sprintf("%s-%s", routingKey, "preview")
 	}
@@ -707,7 +752,7 @@ func (b *mainBuilder) loadKeyVault(config *KeyVaultConfig, baseDir string) {
 	if len(resourceGroup) == 0 {
 		msg := "GetKeyVaultResourceGroup or KeyVaultResourceGroup is required"
 		if keyVaultRequired {
-			b.logger.Panic(msg)
+			b.logger.Fatal(msg)
 		}
 		b.logger.Warn(msg)
 		return
@@ -715,7 +760,7 @@ func (b *mainBuilder) loadKeyVault(config *KeyVaultConfig, baseDir string) {
 	if len(keyVaultName) == 0 {
 		msg := "GetKeyVaultName or KeyVaultName is required"
 		if keyVaultRequired {
-			b.logger.Panic(msg)
+			b.logger.Fatal(msg)
 		}
 		b.logger.Warn(msg)
 		return
@@ -726,7 +771,7 @@ func (b *mainBuilder) loadKeyVault(config *KeyVaultConfig, baseDir string) {
 		subFile = path.Join(baseDir, "azure.json")
 		if b.azureKeyVaultClient, err = azkeyvault.NewClientConfigPath(b.logger, subFile, resourceGroup, keyVaultName); err != nil {
 			if keyVaultRequired {
-				b.logger.WithError(err).Panic("failed to create key vault client")
+				b.logger.WithError(err).Fatal("failed to create key vault client")
 			} else {
 				b.logger.WithError(err).Warn("failed to create key vault client")
 			}
@@ -741,7 +786,7 @@ func (b *mainBuilder) loadKeyVault(config *KeyVaultConfig, baseDir string) {
 		for configKey, keyVaultKey := range overrides {
 			keyVaultValue, err := kvc.GetKeyVaultSecret(ctx, b.GetLogger(), keyVaultKey)
 			if err != nil {
-				b.GetLogger().WithError(err).Panic("failed to get key vault value")
+				b.GetLogger().WithError(err).Fatal("failed to get key vault value")
 			}
 			b.viper.Set(configKey, keyVaultValue)
 		}
@@ -793,4 +838,10 @@ func (b *mainBuilder) GetSqlClient() *gorm.DB {
 
 func (b *mainBuilder) IsDevMode() bool {
 	return b.isDevMode
+}
+
+func (b *mainBuilder) GetEventManager() events.EventManager {
+	return &events.Manager{
+		Client: b.eventStoreClient,
+	}
 }

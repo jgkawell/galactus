@@ -243,20 +243,8 @@ func (mb *messageBus) Consume(ctx context.Context, queueName, routingKey string,
 	// watch for messages on this channel
 	go func() {
 		for msg := range msgs {
-			message := &message{
-				acked: false,
-				msg:   &msg,
-			}
-			if message.msg.Body != nil {
-				err = h.Handle(ctx, message)
-				if err != nil {
-					// TODO: do we need logic to make sure we don't hit an infinite retry loop?
-					message.Retry()
-				} else {
-					// TODO: implicit ack?
-					message.Complete()
-				}
-			}
+			// spin off the message handling in a separate goroutine to parallelize message consumption
+			go processMessage(ctx, h, msg)
 		}
 		done <- DoneChannelResponse{
 			Done:    true,
@@ -265,6 +253,24 @@ func (mb *messageBus) Consume(ctx context.Context, queueName, routingKey string,
 	}()
 
 	return nil
+}
+
+// processMessage sends the queue message to the ClientHandler interface for handling
+func processMessage(ctx context.Context, h ClientHandler, msg amqp.Delivery) {
+	message := &message{
+		acked: false,
+		msg:   &msg,
+	}
+	if message.msg.Body != nil {
+		err := h.Handle(ctx, message)
+		if err != nil {
+			// NOTE: Message rejections are handled by the ClientHandler (h.Handle() above).
+			//       If the ClientHandler has already called message.Reject() this Retry() will not redeliver the message.
+			message.Retry()
+		} else {
+			message.Complete()
+		}
+	}
 }
 
 func (mb *messageBus) SendMessage(ctx context.Context, exchange, routingKey string, message interface{}) error {
