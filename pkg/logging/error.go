@@ -63,9 +63,11 @@ func (r customError) Unwrap() error {
 // This preserves the logger context which will have logger fields added throughout the call stack down to where the error was created.
 func (r customError) Fields() Fields {
 	var calls []string
-	fields := make(Fields)
+
 	// add first call to stack
 	calls = append(calls, fmt.Sprintf("%s:%d", r.file, r.line))
+	// start with fields of first error in wrapping chain
+	fields := r.fields
 	// add all other calls to stack (ignoring standard Go errors)
 	for e := errors.Unwrap(r); e != nil; e = errors.Unwrap(e) {
 		if e, ok := e.(customError); ok {
