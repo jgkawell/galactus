@@ -29,6 +29,7 @@ const (
 	ErrorFailedToCreateExecutionContext = "failed to create execution context"
 )
 
+// TODO: there needs to be a policy where we can check commands and data against the user calling this method
 func (h *handler) Apply(ctx context.Context, req *pb.ApplyCommandRequest) (*pb.ApplyCommandResponse, error) {
 	logger := h.logger.WithRPCContext(ctx)
 	// Creates transactionId and adds to execution context
@@ -37,6 +38,8 @@ func (h *handler) Apply(ctx context.Context, req *pb.ApplyCommandRequest) (*pb.A
 		executionCtx.GetLogger().WithFields(err.Fields()).WithError(err).Error(ErrorFailedToCreateExecutionContext)
 		return nil, err.Unwrap()
 	}
+
+	// TODO: validate the request
 
 	res, err := h.service.Apply(executionCtx, req)
 	if err != nil {
