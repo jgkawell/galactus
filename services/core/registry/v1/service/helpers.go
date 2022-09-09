@@ -20,7 +20,7 @@ const localPortConflictRetryLimit = 1000
 const localMinPort = 3502
 const localMaxPort = 4500
 
-func (s *service) convertProtocolRequestToORM(logger l.Logger, protocolPB *pb.Protocol, serviceVersion string) (*agpb.ProtocolORM, l.Error) {
+func (s *service) convertProtocolRequestToORM(logger l.Logger, protocolPB *pb.ProtocolRequest, serviceVersion string) (*agpb.ProtocolORM, l.Error) {
 	// check the protocol kind is valid
 	if protocolPB.GetKind() == agpb.ProtocolKind_PROTOCOL_KIND_INVALID {
 		return nil, logger.WithField("protocol_kind", protocolPB.GetKind()).WrapError(errors.New("invalid protocol kind"))
@@ -98,27 +98,29 @@ generateExchangeName will generate an exchange name based on the given base name
 The result will have the following form:
 	exchangeName = "ENV.EXCHANGE_NAME"
 */
-func (s *service) generateExchangeName(exchangeName string) string {
-	return fmt.Sprintf("%s.%s", s.env, exchangeName)
+func generateExchangeName(env, exchangeName string) string {
+	return fmt.Sprintf("%s.%s", env, exchangeName)
+}
+
+func generateRoutingKey(aggregateType, eventType, eventCode string) string {
+	return fmt.Sprintf("%s.%s.%s", aggregateType, eventType, eventCode)
 }
 
 /*
-generateExchangeAndQueueNames will generate the exchange and queue names based on the given service name, service environment, and the
-provided ConsumerORM values.
+generateQueueName will generate queue name based on the given exchange, routingKey, service and identifier.
 
 The result will have the following form:
-    exchangeName = "ENV.EXCHANGE_NAME"
-    // if consumer.Identifier is not empty
-    queueName = "ENV.EXCHANGE_NAME.ROUTING_KEY.SERVICE_NAME.IDENTIFIER"
-	// if consumer.Identifier is empty
-	queueName = "ENV.EXCHANGE_NAME.ROUTING_KEY.SERVICE_NAME"
+    exchangeName = "EXCHANGE_NAME"
+    // if identifier is not empty
+    queueName = "EXCHANGE_NAME.ROUTING_KEY.SERVICE_NAME.IDENTIFIER"
+	// if identifier is empty
+	queueName = "EXCHANGE_NAME.ROUTING_KEY.SERVICE_NAME"
 */
-func (s *service) generateExchangeAndQueueNames(serviceName string, consumer *agpb.ConsumerORM) (exchangeName, queueName string) {
-	exchangeName = s.generateExchangeName(consumer.Exchange)
-	queueName = fmt.Sprintf("%s.%s.%s.%s", exchangeName, consumer.RoutingKey, serviceName, consumer.Queue)
+func (s *service) generateQueueName(exchangeName, routingKey, serviceName, identifier string) (queueName string) {
+	queueName = fmt.Sprintf("%s.%s.%s.%s", exchangeName, routingKey, serviceName, identifier)
 	// if the queue name is empty, remove trailing period
-	if consumer.Queue == "" {
+	if identifier == "" {
 		queueName = strings.TrimSuffix(queueName, ".")
 	}
-	return exchangeName, queueName
+	return queueName
 }

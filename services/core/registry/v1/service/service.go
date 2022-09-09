@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"errors"
 
 	agpb "github.com/circadence-official/galactus/api/gen/go/core/aggregates/v1"
@@ -13,24 +14,35 @@ import (
 	"gorm.io/gorm"
 )
 
+const (
+	defaultExchangeName = "default"
+)
+
 type Service interface {
 	Register(ctx ct.ExecutionContext, req *pb.RegisterRequest) (*pb.RegisterResponse, l.Error)
 	Connection(ctx ct.ExecutionContext, req *pb.ConnectionRequest) (*pb.ConnectionResponse, l.Error)
 }
 
 type service struct {
-	env       string
-	db        *gorm.DB
-	mb        messagebus.MessageBus
-	isDevMode bool
+	defaultExchange string
+	db              *gorm.DB
+	mb              messagebus.MessageBus
+	isDevMode       bool
 }
 
-func NewService(env string, db *gorm.DB, mb messagebus.MessageBus, isDevMode bool) Service {
+func NewService(logger l.Logger, env string, db *gorm.DB, mb messagebus.MessageBus, isDevMode bool) Service {
+	// attempt to register the default exchange
+	exchange := generateExchangeName(env, defaultExchangeName)
+	err := mb.RegisterExchange(context.Background(), exchange, messagebus.ExchangeKindTopic)
+	if err != nil {
+		logger.WithField("exchange_name", exchange).WithError(err).Fatal("failed to register default exchange with messagebus")
+	}
+
 	return &service{
-		env:       env,
-		db:        db,
-		mb:        mb,
-		isDevMode: isDevMode,
+		defaultExchange: exchange,
+		db:              db,
+		mb:              mb,
+		isDevMode:       isDevMode,
 	}
 }
 
@@ -41,7 +53,6 @@ func (s *service) Register(ctx ct.ExecutionContext, req *pb.RegisterRequest) (*p
 	registrationORM := &agpb.RegistrationORM{}
 	r := s.db.Where("name = ? AND version = ?", req.GetName(), req.GetVersion()).
 		Preload("Protocols").
-		Preload("Producers").
 		Preload("Consumers").
 		First(registrationORM)
 	// failed to check for existing registration
@@ -58,40 +69,47 @@ func (s *service) Register(ctx ct.ExecutionContext, req *pb.RegisterRequest) (*p
 		}
 	}
 
-	// process producers to register exchanges with the messagebus
-	for _, p := range registrationORM.Producers {
-		// TODO: just using topic for now. may need to change to direct?
-		s.mb.RegisterExchange(ctx.GetContext(), s.generateExchangeName(p.Exchange), messagebus.ExchangeKindTopic)
+	response := &pb.RegisterResponse{
+		Protocols: make([]*pb.ProtocolResponse, len(req.GetProtocols())),
+		Consumers: make([]*pb.ConsumerResponse, len(req.GetConsumers())),
+	}
+
+	// pull out protocol values from ORM
+	for i, p := range registrationORM.Protocols {
+		response.Protocols[i] = &pb.ProtocolResponse{
+			Kind: agpb.ProtocolKind(p.Kind),
+			Port: p.Port,
+		}
 	}
 
 	// process consumers to register queues (and their associated exchanges) with the messagebus and bind them to their associated exchanges
 	for i, c := range registrationORM.Consumers {
-		var exchangeName, queueName string
+		var queueName string
 		switch c.Kind {
 		case int32(agpb.ConsumerKind_CONSUMER_KIND_QUEUE):
-			exchangeName, queueName = s.generateExchangeAndQueueNames(registrationORM.Name, c)
-			s.mb.RegisterExchange(ctx.GetContext(), exchangeName, messagebus.ExchangeKindTopic)
-			s.mb.RegisterQueue(ctx.GetContext(), queueName, exchangeName, c.RoutingKey)
-			registrationORM.Consumers[i].Queue = queueName
+			queueName = s.generateQueueName(s.defaultExchange, c.RoutingKey, registrationORM.Name, "")
+			err := s.mb.RegisterQueue(ctx.GetContext(), queueName, s.defaultExchange, c.RoutingKey)
+			if err != nil {
+				return nil, logger.WrapError(err)
+			}
 		case int32(agpb.ConsumerKind_CONSUMER_KIND_TOPIC):
 			// topics need unique queue names, so generate a uuid to append
-			c.Queue = uuid.NewString()
-			exchangeName, queueName = s.generateExchangeAndQueueNames(registrationORM.Name, c)
-			s.mb.RegisterExchange(ctx.GetContext(), exchangeName, messagebus.ExchangeKindTopic)
-			s.mb.RegisterTopic(ctx.GetContext(), queueName, exchangeName, c.RoutingKey)
+			queueName = s.generateQueueName(s.defaultExchange, c.RoutingKey, registrationORM.Name, uuid.NewString())
+			err := s.mb.RegisterTopic(ctx.GetContext(), queueName, s.defaultExchange, c.RoutingKey)
+			if err != nil {
+				return nil, logger.WrapError(err)
+			}
 		default:
 			return nil, logger.WithField("kind", c.Kind).WrapError(errors.New("unsupported consumer kind"))
 		}
 
-		// save exchange and queue names so they can be returned to caller
-		registrationORM.Consumers[i].Queue = queueName
-		registrationORM.Consumers[i].Exchange = exchangeName
-	}
-
-	// convert entry to proto
-	registrationPB, err := registrationORM.ToPB(ctx.GetContext())
-	if err != nil {
-		return nil, logger.WrapError(l.NewError(err, "failed to convert registration orm to proto"))
+		// save values for return to caller
+		response.Consumers[i] = &pb.ConsumerResponse{
+			Kind:       agpb.ConsumerKind(c.Kind),
+			RoutingKey: c.RoutingKey,
+			Exchange:   s.defaultExchange,
+			QueueName:  queueName,
+		}
 	}
 
 	// TODO: generate events
@@ -103,12 +121,13 @@ func (s *service) Register(ctx ct.ExecutionContext, req *pb.RegisterRequest) (*p
 
 	logger.Info("registered service")
 
-	return &pb.RegisterResponse{
-		Registration: &registrationPB,
-	}, nil
+	return response, nil
 }
 
 func (s *service) createDatabaseEntry(ctx ct.ExecutionContext, req *pb.RegisterRequest) (*agpb.RegistrationORM, l.Error) {
+
+	registrationId := uuid.NewString()
+
 	// if remote: address is service name (proxied through Istio)
 	// if local (devMode): address is localhost
 	serviceAddress := req.GetName()
@@ -126,38 +145,27 @@ func (s *service) createDatabaseEntry(ctx ct.ExecutionContext, req *pb.RegisterR
 		protocolsORM[i] = protocolORM
 	}
 
-	// generate ORM producers from PB producers
-	producersORM := make([]*agpb.ProducerORM, len(req.GetProducers()))
-	for i, producerPB := range req.GetProducers() {
-		producerORM, err := producerPB.ToORM(ctx.GetContext())
-		if err != nil {
-			return nil, ctx.GetLogger().WrapError(l.NewError(err, "failed to convert producer pb to orm"))
-		}
-		producerORM.Id = uuid.NewString()
-		producersORM[i] = &producerORM
-	}
-
 	// generate ORM consumers from PB consumers
 	consumersORM := make([]*agpb.ConsumerORM, len(req.GetConsumers()))
 	for i, consumerPB := range req.GetConsumers() {
-		consumerORM, err := consumerPB.ToORM(ctx.GetContext())
-		if err != nil {
-			return nil, ctx.GetLogger().WrapError(l.NewError(err, "failed to convert consumer pb to orm"))
+		consumerORM := agpb.ConsumerORM{
+			Id:             uuid.NewString(),
+			Kind:           int32(consumerPB.GetKind()),
+			RegistrationId: &registrationId,
+			RoutingKey:     generateRoutingKey(consumerPB.GetAggregateType(), consumerPB.GetEventType(), consumerPB.GetEventCode()),
 		}
-		consumerORM.Id = uuid.NewString()
 		consumersORM[i] = &consumerORM
 	}
 
 	// create new entry
 	registrationORM := &agpb.RegistrationORM{
-		Id:          uuid.NewString(),
+		Id:          registrationId,
 		Name:        req.GetName(),
 		Version:     req.GetVersion(),
 		Description: req.GetDescription(),
 		Address:     serviceAddress,
 		Status:      int32(agpb.ServiceStatus_SERVICE_STATUS_REGISTERED),
 		Protocols:   protocolsORM,
-		Producers:   producersORM,
 		Consumers:   consumersORM,
 	}
 	err := s.db.Create(&registrationORM).Error
@@ -170,9 +178,9 @@ func (s *service) createDatabaseEntry(ctx ct.ExecutionContext, req *pb.RegisterR
 
 func (s *service) Connection(ctx ct.ExecutionContext, req *pb.ConnectionRequest) (*pb.ConnectionResponse, l.Error) {
 	logger := ctx.GetLogger().WithFields(l.Fields{
-		"service_name": req.GetName(),
+		"service_name":    req.GetName(),
 		"service_version": req.GetVersion(),
-		"protocol_kind": req.GetType(),
+		"protocol_kind":   req.GetType(),
 	})
 
 	result := &agpb.RegistrationORM{}

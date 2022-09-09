@@ -55,3 +55,9 @@ func (h *registryHandler) Connection(ctx context.Context, req *pb.ConnectionRequ
 
 	return response, err
 }
+
+// HELPERS
+
+func validateServiceVersion(version string) error {
+	return nil
+}
