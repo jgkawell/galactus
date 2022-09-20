@@ -14,21 +14,22 @@ service CommandHandler {
   rpc Apply(ApplyCommandRequest) returns (ApplyCommandResponse) {}
 }
 
-// TODO: need to change this to the same pattern as Events
 message ApplyCommandRequest {
-  // the integer identifier (enum value) of the event type this command belongs to
-  // NOTE: this is simply an integer to keep the commandhandler from depending on changing types
-  int64 event_type = 1;
-  // the integer identifier (enum value) of the aggregate type this command belongs to
-  // NOTE: this is simply an integer to keep the commandhandler from depending on changing types
-  int64 aggregate_type = 2;
-  // the id of the aggregate that this event belongs to
-  string aggregate_id = 3 [(validate.rules).string.uuid = true];
-  // data representing the change to state of the system that this command encapsulates
-  // it is saved as a json string so that the eventstore can be completey agnostic to the
-  // the data structure of the system (and thus be a static service)
+  // the string identifier (enum value) of the aggregate type this event belongs to
+  // NOTE: this is simply a string to keep the eventstore from depending on changing types
+  string aggregate_type = 1;
+  // map of all event types
+  // NOTE: this is simply a string to keep the eventstore from depending on changing types
+  string event_type = 2;
+  // TODO: is this the way we want to route things?
+  string event_code = 3;
+  // the id of the aggregate that this command belongs to
+  string aggregate_id = 4 [(validate.rules).string.uuid = true];
+  // data representing the change to the state of the system that this command encapsulates
+  // it is saved as a json string so that the core services can be completey agnostic to the
+  // the data structure of the system (and thus be static services)
   // this data MUST be able to be unmarshalled into a Proto message type
-  string command_data = 4;
+  string command_data = 5;
 }
 
 message ApplyCommandResponse {

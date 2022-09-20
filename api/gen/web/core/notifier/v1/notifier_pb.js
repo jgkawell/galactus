@@ -114,7 +114,7 @@ proto.core.notifier.v1.ConnectionRequest.prototype.toObject = function(opt_inclu
  */
 proto.core.notifier.v1.ConnectionRequest.toObject = function(includeInstance, msg) {
   var f, obj = {
-    userId: jspb.Message.getFieldWithDefault(msg, 1, ""),
+    actorId: jspb.Message.getFieldWithDefault(msg, 1, ""),
     clientId: jspb.Message.getFieldWithDefault(msg, 2, "")
   };
 
@@ -154,7 +154,7 @@ proto.core.notifier.v1.ConnectionRequest.deserializeBinaryFromReader = function(
     switch (field) {
     case 1:
       var value = /** @type {string} */ (reader.readString());
-      msg.setUserId(value);
+      msg.setActorId(value);
       break;
     case 2:
       var value = /** @type {string} */ (reader.readString());
@@ -189,7 +189,7 @@ proto.core.notifier.v1.ConnectionRequest.prototype.serializeBinary = function() 
  */
 proto.core.notifier.v1.ConnectionRequest.serializeBinaryToWriter = function(message, writer) {
   var f = undefined;
-  f = message.getUserId();
+  f = message.getActorId();
   if (f.length > 0) {
     writer.writeString(
       1,
@@ -207,10 +207,10 @@ proto.core.notifier.v1.ConnectionRequest.serializeBinaryToWriter = function(mess
 
 
 /**
- * optional string user_id = 1;
+ * optional string actor_id = 1;
  * @return {string}
  */
-proto.core.notifier.v1.ConnectionRequest.prototype.getUserId = function() {
+proto.core.notifier.v1.ConnectionRequest.prototype.getActorId = function() {
   return /** @type {string} */ (jspb.Message.getFieldWithDefault(this, 1, ""));
 };
 
@@ -219,7 +219,7 @@ proto.core.notifier.v1.ConnectionRequest.prototype.getUserId = function() {
  * @param {string} value
  * @return {!proto.core.notifier.v1.ConnectionRequest} returns this
  */
-proto.core.notifier.v1.ConnectionRequest.prototype.setUserId = function(value) {
+proto.core.notifier.v1.ConnectionRequest.prototype.setActorId = function(value) {
   return jspb.Message.setProto3StringField(this, 1, value);
 };
 

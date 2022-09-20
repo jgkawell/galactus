@@ -13,7 +13,6 @@ service EventStore {
   rpc Create(CreateRequest) returns (CreateResponse) {}
 }
 
-// Wrapper for the Event model, this is to keep inline with our linters
 message CreateRequest {
   // the string identifier (enum value) of the aggregate type this event belongs to
   // NOTE: this is simply a string to keep the eventstore from depending on changing types
@@ -21,6 +20,7 @@ message CreateRequest {
   // map of all event types
   // NOTE: this is simply a string to keep the eventstore from depending on changing types
   string event_type = 2;
+  // TODO: is this the way we want to route things?
   string event_code = 3;
   // the id of the aggregate that this event belongs to
   string aggregate_id = 4 [(validate.rules).string.uuid = true];

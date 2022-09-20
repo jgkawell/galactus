@@ -2371,7 +2371,7 @@ the service name </p></td>
 
       
         <h3 id="core.commandhandler.v1.ApplyCommandRequest">ApplyCommandRequest</h3>
-        <p>TODO: need to change this to the same pattern as Events</p>
+        <p></p>
 
         
           <table class="field-table">
@@ -2381,35 +2381,42 @@ the service name </p></td>
             <tbody>
               
                 <tr>
-                  <td>event_type</td>
-                  <td><a href="#int64">int64</a></td>
+                  <td>aggregate_type</td>
+                  <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>the integer identifier (enum value) of the event type this command belongs to
-NOTE: this is simply an integer to keep the commandhandler from depending on changing types </p></td>
+                  <td><p>the string identifier (enum value) of the aggregate type this event belongs to
+NOTE: this is simply a string to keep the eventstore from depending on changing types </p></td>
                 </tr>
               
                 <tr>
-                  <td>aggregate_type</td>
-                  <td><a href="#int64">int64</a></td>
+                  <td>event_type</td>
+                  <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>the integer identifier (enum value) of the aggregate type this command belongs to
-NOTE: this is simply an integer to keep the commandhandler from depending on changing types </p></td>
+                  <td><p>map of all event types
+NOTE: this is simply a string to keep the eventstore from depending on changing types </p></td>
+                </tr>
+              
+                <tr>
+                  <td>event_code</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>TODO: is this the way we want to route things? </p></td>
                 </tr>
               
                 <tr>
                   <td>aggregate_id</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>the id of the aggregate that this event belongs to </p></td>
+                  <td><p>the id of the aggregate that this command belongs to </p></td>
                 </tr>
               
                 <tr>
                   <td>command_data</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>data representing the change to state of the system that this command encapsulates
-it is saved as a json string so that the eventstore can be completey agnostic to the
-the data structure of the system (and thus be a static service)
+                  <td><p>data representing the change to the state of the system that this command encapsulates
+it is saved as a json string so that the core services can be completey agnostic to the
+the data structure of the system (and thus be static services)
 this data MUST be able to be unmarshalled into a Proto message type </p></td>
                 </tr>
               
@@ -2513,7 +2520,7 @@ a completed event on the notifier service</p></td>
 
       
         <h3 id="core.eventstore.v1.CreateRequest">CreateRequest</h3>
-        <p>Wrapper for the Event model, this is to keep inline with our linters</p>
+        <p></p>
 
         
           <table class="field-table">
@@ -2542,7 +2549,7 @@ NOTE: this is simply a string to keep the eventstore from depending on changing 
                   <td>event_code</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>TODO: is this the way we want to route things? </p></td>
                 </tr>
               
                 <tr>
@@ -2664,7 +2671,7 @@ this data MUST be able to be unmarshalled into a Proto message type </p></td>
             <tbody>
               
                 <tr>
-                  <td>user_id</td>
+                  <td>actor_id</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p> </p></td>

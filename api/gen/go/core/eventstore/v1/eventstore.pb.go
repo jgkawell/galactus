@@ -22,7 +22,6 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// Wrapper for the Event model, this is to keep inline with our linters
 type CreateRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -34,6 +33,7 @@ type CreateRequest struct {
 	// map of all event types
 	// NOTE: this is simply a string to keep the eventstore from depending on changing types
 	EventType string `protobuf:"bytes,2,opt,name=event_type,json=eventType,proto3" json:"event_type,omitempty"`
+	// TODO: is this the way we want to route things?
 	EventCode string `protobuf:"bytes,3,opt,name=event_code,json=eventCode,proto3" json:"event_code,omitempty"`
 	// the id of the aggregate that this event belongs to
 	AggregateId string `protobuf:"bytes,4,opt,name=aggregate_id,json=aggregateId,proto3" json:"aggregate_id,omitempty"`
