@@ -31,7 +31,6 @@ import (
 
 	// galactus api packages
 	agpb "github.com/circadence-official/galactus/api/gen/go/core/aggregates/v1"
-	espb "github.com/circadence-official/galactus/api/gen/go/core/eventstore/v1"
 	rgpb "github.com/circadence-official/galactus/api/gen/go/core/registry/v1"
 	evpb "github.com/circadence-official/galactus/api/gen/go/generic/events/v1"
 
@@ -291,7 +290,7 @@ type mainBuilder struct {
 	noSqlClient         *mongo.Client
 	sqlClient           *gorm.DB
 	registryClient      rgpb.RegistryClient
-	eventStoreClient    espb.EventStoreClient
+	eventManager        *events.Manager
 
 	// functions
 	onRun  func(b MainBuilder)
@@ -328,6 +327,7 @@ func NewMainBuilder(mbc *MainBuilderConfig) MainBuilder {
 		readinessCheckConfig:   mbc.ReadinessCheckConfig,
 		wellnessCheckConfig:    mbc.WellnessCheckConfig,
 		createEventStoreClient: mbc.CreateEventStoreClient,
+		eventManager:           &events.Manager{},
 	}
 
 	// Get variables from local.yaml/values.yaml and environment variables for use by viper
@@ -543,7 +543,7 @@ func NewMainBuilder(mbc *MainBuilderConfig) MainBuilder {
 			b.logger.WithError(err).Fatal("failed to create execution context for call to registry")
 			return nil
 		}
-		registerResponse, err := b.registryClient.Register(ctx.GetContextWithTransactionID(), &rgpb.RegisterRequest{
+		registerResponse, err := b.registryClient.Register(ctx.GetContext(), &rgpb.RegisterRequest{
 			Name:        mbc.ApplicationName,
 			Domain:      "", // TODO: how do we manage this?
 			Version:     b.viper.GetString("version"),
@@ -606,7 +606,7 @@ func NewMainBuilder(mbc *MainBuilderConfig) MainBuilder {
 // Run runs the microservice applications using the mainbuilder configuration.
 // This means starting all the servers and connections and then listening for an exit condition.
 func (b *mainBuilder) Run() {
-	ctx := context.Background()
+	ctx, _ := ct.NewExecutionContext(context.Background(), b.GetLogger(), uuid.NewString())
 	// start datadog tracer (if this value isn't set viper returns false. that way we default to starting the tracer)
 	if !b.GetConfig().GetBool("disableTracer") {
 		b.GetLogger().Info("starting tracer")
@@ -634,20 +634,28 @@ func (b *mainBuilder) Run() {
 	// initialize eventstore client if requested
 	if b.createEventStoreClient {
 		clientFactory := cf.NewClientFactory(b.logger)
-		resp, stdErr := b.registryClient.Connection(ctx, &rgpb.ConnectionRequest{
+		// TODO: is there a better way to persist clients so we don't have to create them multiple times?
+		registryClient, conn, stdErr := clientFactory.CreateRegistryClient(b.GetLogger(), b.viper.GetString("registryServiceAddress"))
+		defer conn.Close()
+		if stdErr != nil {
+			b.logger.WithError(stdErr).Fatal("failed to initialize registry client")
+		}
+		b.registryClient = registryClient
+
+		resp, stdErr := b.registryClient.Connection(ctx.GetContext(), &rgpb.ConnectionRequest{
 			Name:    "eventstore",
-			Version: "v1",
+			Version: "0.0.0",
 			Type:    agpb.ProtocolKind_PROTOCOL_KIND_GRPC,
 		})
 		if stdErr != nil {
-			b.logger.WithError(stdErr).Fatal("failed to initialize eventstore client")
+			b.logger.WithError(stdErr).Fatal("failed to request connection info from registry service during initialization of eventstore client")
 		}
 		client, conn, stdErr := clientFactory.CreateEventStoreClient(b.GetLogger(), resp.GetAddress())
 		defer conn.Close()
 		if stdErr != nil {
 			b.logger.WithError(stdErr).Fatal("failed to initialize eventstore client")
 		}
-		b.eventStoreClient = client
+		b.eventManager.Client = client
 	}
 
 	// if running locally, initialize broker listeners without waiting for Shawarma call
@@ -841,7 +849,5 @@ func (b *mainBuilder) IsDevMode() bool {
 }
 
 func (b *mainBuilder) GetEventManager() events.EventManager {
-	return &events.Manager{
-		Client: b.eventStoreClient,
-	}
+	return b.eventManager
 }
