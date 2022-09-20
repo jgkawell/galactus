@@ -1,17 +1,16 @@
 package service
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"sync"
 	"time"
 
 	agpb "github.com/circadence-official/galactus/api/gen/go/core/aggregates/v1"
-	espb "github.com/circadence-official/galactus/api/gen/go/core/eventstore/v1"
 	ntpb "github.com/circadence-official/galactus/api/gen/go/core/notifier/v1"
 	evpb "github.com/circadence-official/galactus/api/gen/go/generic/events/v1"
 
+	ct "github.com/circadence-official/galactus/pkg/chassis/context"
 	ev "github.com/circadence-official/galactus/pkg/chassis/events"
 	l "github.com/circadence-official/galactus/pkg/logging/v2"
 )
@@ -19,7 +18,7 @@ import (
 type service struct {
 	isHeartbeatEnabled bool
 	heartbeatTimeout   int
-	esc                espb.EventStoreClient
+	em                 ev.EventManager
 	inputChannels      *inputChannels
 }
 
@@ -33,7 +32,7 @@ type inputChannels struct {
 }
 
 // NewService - Create an instance of the `service` struct that is implementing the `Service` interface.
-func NewService(isHeartbeatEnabled bool, heartbeatTimeout int, esc espb.EventStoreClient) Service {
+func NewService(isHeartbeatEnabled bool, heartbeatTimeout int, em ev.EventManager) Service {
 	ic := &inputChannels{
 		Channels: make(map[string]map[string]chan evpb.NotificationDeliveryRequested),
 	}
@@ -41,7 +40,7 @@ func NewService(isHeartbeatEnabled bool, heartbeatTimeout int, esc espb.EventSto
 	return &service{
 		isHeartbeatEnabled: isHeartbeatEnabled,
 		heartbeatTimeout:   heartbeatTimeout,
-		esc:                esc,
+		em:                 em,
 		inputChannels:      ic,
 	}
 }
@@ -78,10 +77,10 @@ const (
 // allowing a different component to send messages to a specified `User`
 type Service interface {
 	// Connect, and begin to process incoming messages for a client
-	Connect(context.Context, l.Logger, *ntpb.ConnectionRequest, ntpb.Notifier_ConnectServer) (NotificationChannel, l.Error)
+	Connect(ct.ExecutionContext, *ntpb.ConnectionRequest, ntpb.Notifier_ConnectServer) (NotificationChannel, l.Error)
 
 	// Deliver - receives and event from the `Notification` exchange and sends it to the correct client
-	Deliver(context.Context, l.Logger, *agpb.Event) l.Error
+	Deliver(ct.ExecutionContext, *agpb.Event) l.Error
 
 	// SpawnWorker - Spawn a worker routine to process each incoming message on it's own `NotificationChannel`
 	SpawnWorker(logger l.Logger, notificationChannel NotificationChannel)
@@ -104,22 +103,22 @@ type Service interface {
 
 // Connect - when called will establish a long term connection with the client and provide a `NotificationChannel` that can be used to communicate
 // with the running goroutine, and stop it's message processing.
-func (s *service) Connect(ctx context.Context, logger l.Logger, req *ntpb.ConnectionRequest, stream ntpb.Notifier_ConnectServer) (NotificationChannel, l.Error) {
+func (s *service) Connect(ctx ct.ExecutionContext, req *ntpb.ConnectionRequest, stream ntpb.Notifier_ConnectServer) (NotificationChannel, l.Error) {
 	// create configuration from request
-	ck, err := s.NewConnectionKey(req.GetUserId(), req.GetClientId())
+	ck, err := s.NewConnectionKey(req.GetActorId(), req.GetClientId())
 	if err != nil {
-		return NotificationChannel{}, logger.WrapError(l.NewError(err, ErrorInvalidConnectionMetadata))
+		return NotificationChannel{}, ctx.Logger.WrapError(l.NewError(err, ErrorInvalidConnectionMetadata))
 	}
-	logger.WithFields(l.Fields{"client_id": ck.clientID, "actor_id": ck.actorID}).Debug("client connecting")
+	ctx.Logger.WithFields(l.Fields{"client_id": ck.clientID, "actor_id": ck.actorID}).Debug("client connecting")
 
 	// create the `NotificationChannel` for the worker to receive messages to work on
-	nc := s.NewNotificationChannelForConnection(logger, ck, stream)
-	logger.Debug("notification channel created")
+	nc := s.NewNotificationChannelForConnection(ctx.Logger, ck, stream)
+	ctx.Logger.Debug("notification channel created")
 
 	// begin the worker process
-	s.SpawnWorker(logger, nc)
+	s.SpawnWorker(ctx.Logger, nc)
 
-	return nc, logger.WrapError(<-nc.Error)
+	return nc, ctx.Logger.WrapError(<-nc.Error)
 }
 
 // NewNotificationChannelForConnection - Starts, and stores a long term grpc server streaming connection for a specified client
@@ -252,12 +251,12 @@ func (s *service) NewConnectionKey(actorID, clientID string) (*ConnectionKey, er
 // Deliver - is a method called by the `Consumer` that will pipe the notification to the users `InputChannel`
 // and send the message to the go routine maintaining the user's notificationChannel.action. When the message has been sent to
 // the users notificationChannel.action a notification_delivered event is published.
-func (s *service) Deliver(ctx context.Context, logger l.Logger, event *agpb.Event) l.Error {
-	logger.Info("attempting notification delivery")
+func (s *service) Deliver(ctx ct.ExecutionContext, event *agpb.Event) l.Error {
+	ctx.Logger.Info("attempting notification delivery")
 	data := []byte(event.GetEventData())
 	var req evpb.NotificationDeliveryRequested
 	if err := json.Unmarshal(data, &req); err != nil {
-		return logger.WrapError(l.NewError(err, ErrorFailedUnmarshal))
+		return ctx.Logger.WrapError(l.NewError(err, ErrorFailedUnmarshal))
 	}
 
 	//set event transaction id in the Notification request
@@ -266,41 +265,41 @@ func (s *service) Deliver(ctx context.Context, logger l.Logger, event *agpb.Even
 
 	actorID := req.GetActorId()
 	if actorID == "" {
-		return logger.WrapError(errors.New(ErrorInvalidNotificationRequest))
+		return ctx.Logger.WrapError(errors.New(ErrorInvalidNotificationRequest))
 	}
 
 	// TODO: implement unicast messaging
 	// clientID := req.GetClientId()
 
-	logger.WithField("actor_id", actorID).WithField("transaction_id", transactionID).Debug("notification delivery requested")
+	ctx.Logger.Debug("notification delivery requested")
 
 	/* // TODO: implement unicast messaging
 	 * if clientID != "" {
 	 *   // if client_id is provided `unicast`
 	 *   if err := s.Inputs.Unicast(logger, actorID, clientID, req); err != nil {
-	 *     logger.WithError(err).Error(FailedToFindChannels)
+	 *     ctx.Logger.WithError(err).Error(FailedToFindChannels)
 	 *     return err
 	 *   }
 	 * } else {
 	 *   // else `multicast`
 	 *   if err := s.Inputs.Multicast(logger, actorID, req); err != nil {
-	 *     logger.WithError(err).Error(FailedToFindChannels)
+	 *     ctx.Logger.WithError(err).Error(FailedToFindChannels)
 	 *     return err
 	 *   }
 	 * }  */
 
-	if err := s.Multicast(logger, actorID, req); err != nil {
-		return logger.WrapError(err)
+	if err := s.Multicast(ctx.Logger, actorID, req); err != nil {
+		return ctx.Logger.WrapError(err)
 	}
 
 	// emit notification delivered event
 	r := &evpb.NotificationDelivered{}
-	et := evpb.EventType{Code: &evpb.EventType_NotificationCode{NotificationCode: evpb.NotificationEventCode_NOTIFICATION_EVENT_CODE_DELIVERED}}
-	if err := ev.CreateAndSendEvent(ctx, logger, s.esc, r, actorID, event.GetTransactionId(), evpb.AggregateType_AGGREGATE_TYPE_NOTIFICATION, et); err != nil {
-		return logger.WrapError(err)
+	et := evpb.EventType{Code: &evpb.EventType_NotificationCode{}}
+	if err := s.em.CreateAndSendEvent(ctx, r, actorID, evpb.AggregateType_AGGREGATE_TYPE_NOTIFICATION, et, ev.EventCodeAsString(evpb.NotificationEventCode_NOTIFICATION_EVENT_CODE_DELIVERED)); err != nil {
+		return ctx.Logger.WrapError(err)
 	}
 
-	logger.WithField("actor_id", actorID).WithField("transaction_id", transactionID).Debug("notification published to actor")
+	ctx.Logger.Debug("notification published to actor")
 
 	return nil
 }

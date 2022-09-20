@@ -24,28 +24,26 @@ func NewHandler(logger l.Logger, service s.Service) pb.CommandHandlerServer {
 	}
 }
 
-const (
-	ErrorApplyFailed                    = "apply failed"
-	ErrorFailedToCreateExecutionContext = "failed to create execution context"
-)
-
 // TODO: there needs to be a policy where we can check commands and data against the user calling this method
-func (h *handler) Apply(ctx context.Context, req *pb.ApplyCommandRequest) (*pb.ApplyCommandResponse, error) {
-	logger := h.logger.WithRPCContext(ctx)
-	// Creates transactionId and adds to execution context
-	executionCtx, err := ct.NewExecutionContext(ctx, logger, uuid.New().String())
+func (h *handler) Apply(c context.Context, req *pb.ApplyCommandRequest) (*pb.ApplyCommandResponse, error) {
+	logger := h.logger.WithRPCContext(c)
+
+	ctx, err := ct.NewExecutionContext(c, logger, uuid.New().String())
 	if err != nil {
-		executionCtx.GetLogger().WithFields(err.Fields()).WithError(err).Error(ErrorFailedToCreateExecutionContext)
+		logger.WrappedError(err, "failed to create execution context. this should never happen here as we are creating a new transaction id ourselves")
 		return nil, err.Unwrap()
 	}
 
-	// TODO: validate the request
+	// TODO: validate the request parameters
 
-	res, err := h.service.Apply(executionCtx, req)
+	err = h.service.Apply(*ctx, req)
 	if err != nil {
-		executionCtx.GetLogger().WithFields(err.Fields()).WithError(err).Error(ErrorApplyFailed)
+		ctx.Logger.WrappedError(err, "failed to apply command")
 		return nil, err.Unwrap()
 	}
 
-	return res, nil
+	return &pb.ApplyCommandResponse{
+		Id:            req.GetAggregateId(),
+		TransactionId: ctx.GetTransactionID(),
+	}, nil
 }

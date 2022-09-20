@@ -6,7 +6,11 @@ import (
 	s "notifier/service"
 
 	ntpb "github.com/circadence-official/galactus/api/gen/go/core/notifier/v1"
+
+	ct "github.com/circadence-official/galactus/pkg/chassis/context"
 	l "github.com/circadence-official/galactus/pkg/logging/v2"
+
+	"github.com/google/uuid"
 )
 
 type notifierHandler struct {
@@ -23,11 +27,20 @@ func NewNotifierHandler(logger l.Logger, service s.Service) ntpb.NotifierServer 
 
 // Connect - Implements the `Connect` method of the `ntpb.NotifierServer` interface
 func (h *notifierHandler) Connect(req *ntpb.ConnectionRequest, stream ntpb.Notifier_ConnectServer) error {
-	h.logger.WithField("connection_request", req).Debug("establish a connection")
+	logger := h.logger.WithFields(l.Fields{
+		"actor_id":  req.GetActorId(),
+		"client_id": req.GetClientId(),
+	})
+	logger.Debug("connection requested")
 
-	conn, err := h.service.Connect(context.Background(), h.logger, req, stream)
+	ctx, err := ct.NewExecutionContext(context.Background(), logger, uuid.NewString())
 	if err != nil {
-		h.logger.WithError(err).Error("failed to connect")
+		logger.WrappedError(err, "failed to create execution context. this should never happen here as we are creating a new transaction id ourselves")
+	}
+
+	conn, err := h.service.Connect(*ctx, req, stream)
+	if err != nil {
+		ctx.Logger.WithError(err).Error("failed to connect")
 	}
 
 	return <-conn.Error

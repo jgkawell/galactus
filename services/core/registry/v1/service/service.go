@@ -47,8 +47,6 @@ func NewService(logger l.Logger, env string, db *gorm.DB, mb messagebus.MessageB
 }
 
 func (s *service) Register(ctx ct.ExecutionContext, req *pb.RegisterRequest) (*pb.RegisterResponse, l.Error) {
-	logger := ctx.GetLogger()
-
 	// check for existing registration before creating new one
 	registrationORM := &agpb.RegistrationORM{}
 	r := s.db.Where("name = ? AND version = ?", req.GetName(), req.GetVersion()).
@@ -57,15 +55,15 @@ func (s *service) Register(ctx ct.ExecutionContext, req *pb.RegisterRequest) (*p
 		First(registrationORM)
 	// failed to check for existing registration
 	if r.Error != nil && r.Error != gorm.ErrRecordNotFound {
-		return nil, logger.WrapError(l.NewError(r.Error, "failed to check for existing registration"))
+		return nil, ctx.Logger.WrapError(l.NewError(r.Error, "failed to check for existing registration"))
 	}
 	// no previous registration found, create new one
 	if r.Error == gorm.ErrRecordNotFound {
-		logger.Info("no previous registration found, creating new one")
+		ctx.Logger.Info("no previous registration found, creating new one")
 		var err l.Error
 		registrationORM, err = s.createDatabaseEntry(ctx, req)
 		if err != nil {
-			return nil, logger.WrapError(err)
+			return nil, ctx.Logger.WrapError(err)
 		}
 	}
 
@@ -90,17 +88,17 @@ func (s *service) Register(ctx ct.ExecutionContext, req *pb.RegisterRequest) (*p
 			queueName = s.generateQueueName(s.defaultExchange, c.RoutingKey, registrationORM.Name, "")
 			err := s.mb.RegisterQueue(ctx.GetContext(), queueName, s.defaultExchange, c.RoutingKey)
 			if err != nil {
-				return nil, logger.WrapError(err)
+				return nil, ctx.Logger.WrapError(err)
 			}
 		case int32(agpb.ConsumerKind_CONSUMER_KIND_TOPIC):
 			// topics need unique queue names, so generate a uuid to append
 			queueName = s.generateQueueName(s.defaultExchange, c.RoutingKey, registrationORM.Name, uuid.NewString())
 			err := s.mb.RegisterTopic(ctx.GetContext(), queueName, s.defaultExchange, c.RoutingKey)
 			if err != nil {
-				return nil, logger.WrapError(err)
+				return nil, ctx.Logger.WrapError(err)
 			}
 		default:
-			return nil, logger.WithField("kind", c.Kind).WrapError(errors.New("unsupported consumer kind"))
+			return nil, ctx.Logger.WithField("kind", c.Kind).WrapError(errors.New("unsupported consumer kind"))
 		}
 
 		// save values for return to caller
@@ -115,11 +113,11 @@ func (s *service) Register(ctx ct.ExecutionContext, req *pb.RegisterRequest) (*p
 	// TODO: generate events
 	// evt := espb.EventType{Code: &espb.EventType_LabEventCode{LabEventCode: espb.LabEventCode_LAB_EVENT_CODE_LAB_CREATED}}
 	// if err := et.CreateAndSendEventWithTransactionID(ctx.GetContext(), logger, s.eventStoreClient, lab, lab.GetId(), transactionId, espb.AggregateType_LAB, evt); err != nil {
-	// 	logger.WithError(err).Error(ErrorFailedToEmitEvent)
+	// 	ctx.Logger.WithError(err).Error(ErrorFailedToEmitEvent)
 	// 	return nil, err
 	// }
 
-	logger.Info("registered service")
+	ctx.Logger.Info("registered service")
 
 	return response, nil
 }
@@ -138,9 +136,9 @@ func (s *service) createDatabaseEntry(ctx ct.ExecutionContext, req *pb.RegisterR
 	// generate ORM protocols from PB protocols
 	protocolsORM := make([]*agpb.ProtocolORM, len(req.GetProtocols()))
 	for i, protocolPB := range req.GetProtocols() {
-		protocolORM, err := s.convertProtocolRequestToORM(ctx.GetLogger(), protocolPB, req.GetVersion())
+		protocolORM, err := s.convertProtocolRequestToORM(ctx.Logger, protocolPB, req.GetVersion())
 		if err != nil {
-			return nil, ctx.GetLogger().WrapError(err)
+			return nil, ctx.Logger.WrapError(err)
 		}
 		protocolsORM[i] = protocolORM
 	}
@@ -170,14 +168,14 @@ func (s *service) createDatabaseEntry(ctx ct.ExecutionContext, req *pb.RegisterR
 	}
 	err := s.db.Create(&registrationORM).Error
 	if err != nil {
-		return nil, ctx.GetLogger().WrapError(l.NewError(err, "failed to create registration in db"))
+		return nil, ctx.Logger.WrapError(l.NewError(err, "failed to create registration in db"))
 	}
 
 	return registrationORM, nil
 }
 
 func (s *service) Connection(ctx ct.ExecutionContext, req *pb.ConnectionRequest) (*pb.ConnectionResponse, l.Error) {
-	logger := ctx.GetLogger().WithFields(l.Fields{
+	ctx.Logger = ctx.Logger.WithFields(l.Fields{
 		"service_name":    req.GetName(),
 		"service_version": req.GetVersion(),
 		"protocol_kind":   req.GetType(),
@@ -186,7 +184,7 @@ func (s *service) Connection(ctx ct.ExecutionContext, req *pb.ConnectionRequest)
 	result := &agpb.RegistrationORM{}
 	err := s.db.Model(&agpb.RegistrationORM{}).Where("name = ? AND version = ?", req.GetName(), req.GetVersion()).Preload("Protocols").Find(result).Error
 	if err != nil {
-		return nil, logger.WrapError(l.NewError(err, "failed to find registration"))
+		return nil, ctx.Logger.WrapError(l.NewError(err, "failed to find registration"))
 	}
 
 	var port int32
@@ -196,7 +194,7 @@ func (s *service) Connection(ctx ct.ExecutionContext, req *pb.ConnectionRequest)
 		}
 	}
 	if port == 0 {
-		return nil, logger.WrapError(errors.New("failed to find port for given protocol kind"))
+		return nil, ctx.Logger.WrapError(errors.New("failed to find port for given protocol kind"))
 	}
 
 	// TODO: check the health of the service

@@ -8,6 +8,7 @@ import (
 	s "eventstore/service"
 
 	pb "github.com/circadence-official/galactus/api/gen/go/core/eventstore/v1"
+	ct "github.com/circadence-official/galactus/pkg/chassis/context"
 	l "github.com/circadence-official/galactus/pkg/logging/v2"
 
 	"github.com/google/uuid"
@@ -26,29 +27,34 @@ func NewEventStoreHandler(logger l.Logger, service s.Service) *eventStoreHandler
 	}
 }
 
-func (h *eventStoreHandler) Create(ctx context.Context, req *pb.CreateRequest) (*pb.CreateResponse, error) {
-	logger := h.logger.WithRPCContext(ctx)
+func (h *eventStoreHandler) Create(c context.Context, req *pb.CreateRequest) (*pb.CreateResponse, error) {
+	logger := h.logger.WithRPCContext(c)
+	ctx, err := ct.NewExecutionContextFromContextWithMetadata(c, logger)
+	if err != nil {
+		ctx.Logger.WrappedError(err, "failed to create execution context")
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
 	// populate logger with event fields
 	// NOTE: the EventData is not included as a field here because it could contain sensitive information
-	logger = logger.WithFields(l.Fields{
+	logger = ctx.Logger.WithFields(l.Fields{
 		"aggregate_type": req.GetAggregateType(),
 		"event_type":     req.GetEventType(),
 		"event_code":     req.GetEventCode(),
 		"aggregate_id":   req.GetAggregateId(),
 	})
-	logger.Debug("handling create event request")
+	ctx.Logger.Debug("handling create event request")
 
 	// validate the event
-	err := validateRequest(logger, req)
+	err = validateRequest(*ctx, req)
 	if err != nil {
-		logger.WithFields(err.Fields()).Warn("rejecting create event request due to invalid request values")
+		ctx.Logger.WithFields(err.Fields()).Warn("rejecting create event request due to invalid request values")
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	// call service layer to create and publish event
-	id, err := h.service.Create(ctx, logger, req)
+	id, err := h.service.Create(*ctx, req)
 	if err != nil {
-		logger.WithFields(err.Fields()).WithError(err).Error("failed to create event")
+		ctx.Logger.WithFields(err.Fields()).WithError(err).Error("failed to create event")
 		// TODO: should we wrap one more time and return the error to the client? What shape will it take if we do that?
 		return nil, status.Error(codes.Internal, "failed to either publish or save event during creation, this is most likely due to a network or infrastructure issue like RabbitMQ or MongoDB being down so a retry is suggested")
 	}
@@ -63,33 +69,33 @@ func (h *eventStoreHandler) Create(ctx context.Context, req *pb.CreateRequest) (
 // HELPER FUNCTIONS
 
 // validateRequest makes sure the event passed into Create() is valid and returns an error if it is not
-func validateRequest(logger l.Logger, req *pb.CreateRequest) l.Error {
+func validateRequest(ctx ct.ExecutionContext, req *pb.CreateRequest) l.Error {
 
 	// validate aggregate type
 	if req.GetAggregateType() == "" {
-		return logger.WrapError(errors.New("aggregate type is a required field but was not set"))
+		return ctx.Logger.WrapError(errors.New("aggregate type is a required field but was not set"))
 	}
 
 	// validate event type
 	if req.GetEventType() == "" {
-		return logger.WrapError(errors.New("event type is a required field but was not set"))
+		return ctx.Logger.WrapError(errors.New("event type is a required field but was not set"))
 	}
 
 	// validate event code
 	if req.GetEventCode() == "" {
-		return logger.WrapError(errors.New("event code is a required field but was not set"))
+		return ctx.Logger.WrapError(errors.New("event code is a required field but was not set"))
 	}
 
 	// validate aggregate id
 	_, err := uuid.Parse(req.GetAggregateId())
 	if err != nil {
-		return logger.WrapError(errors.New("invalid aggregate id, must be a valid UUID"))
+		return ctx.Logger.WrapError(errors.New("invalid aggregate id, must be a valid UUID"))
 	}
 
 	// validate event data
 	validJson := json.Valid([]byte(req.GetEventData()))
 	if !validJson {
-		return logger.WrapError(errors.New("invalid event data, must be valid JSON"))
+		return ctx.Logger.WrapError(errors.New("invalid event data, must be valid JSON"))
 	}
 
 	// everything in the request is valid
