@@ -1,4 +1,4 @@
-# note: call scripts from /scripts
+# NOTE: call scripts from /scripts instead of writing lengthy targets
 SHELL=/bin/bash # this forces usage of bash instead of sh (which is default and doesn't have a lot of features)
 DOCKER_REGISTRY=REPLACE_ME
 BUILD_ID=$(shell date +%Y%m%d%H%M)

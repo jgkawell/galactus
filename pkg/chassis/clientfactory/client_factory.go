@@ -95,7 +95,7 @@ func (f *clientFactory) createRpcConnection(logger l.Logger, target string) (*gr
 
 	connection, stdErr := grpc.Dial(
 		target,
-		// we use insecure here since TLS is handled by the Istio sidecar
+		// NOTE: We use insecure here since TLS is handled by the Istio sidecar
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithConnectParams(grpc.ConnectParams{MinConnectTimeout: defaultTimeout}),
 		grpc.WithStreamInterceptor(si),
