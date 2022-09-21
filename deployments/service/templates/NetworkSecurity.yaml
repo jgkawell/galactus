@@ -6,9 +6,7 @@ metadata:
   namespace: {{ .Values.namespace }}
 spec:
   mtls:
-    # TODO: Need to look into the implications of this and possible scream test setting to STRICT.
-    #       As is, PERMISSIVE allows non-TLS traffic between services in the same namespace.
-    mode: PERMISSIVE
+    mode: STRICT
 ---
 apiVersion: security.istio.io/v1beta1
 kind: RequestAuthentication

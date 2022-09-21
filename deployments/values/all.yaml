@@ -57,11 +57,4 @@ configMap:
     sqlDbHost: postgresHost
     sqlDbName: postgresDbName
 
-  # TODO: do we need these?
-  sqlDbPort: 5432
-  softDelete: false
-  daoTimeoutSeconds: 10
-  enforceCustomerIdCheck: true
   allowUpsert: false
-  MessageBusTimeout: 10
-  gormDebug: false
