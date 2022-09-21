@@ -93,10 +93,11 @@ proto.core.commandhandler.v1.ApplyCommandRequest.prototype.toObject = function(o
  */
 proto.core.commandhandler.v1.ApplyCommandRequest.toObject = function(includeInstance, msg) {
   var f, obj = {
-    eventType: jspb.Message.getFieldWithDefault(msg, 1, 0),
-    aggregateType: jspb.Message.getFieldWithDefault(msg, 2, 0),
-    aggregateId: jspb.Message.getFieldWithDefault(msg, 3, ""),
-    commandData: jspb.Message.getFieldWithDefault(msg, 4, "")
+    aggregateType: jspb.Message.getFieldWithDefault(msg, 1, ""),
+    eventType: jspb.Message.getFieldWithDefault(msg, 2, ""),
+    eventCode: jspb.Message.getFieldWithDefault(msg, 3, ""),
+    aggregateId: jspb.Message.getFieldWithDefault(msg, 4, ""),
+    commandData: jspb.Message.getFieldWithDefault(msg, 5, "")
   };
 
   if (includeInstance) {
@@ -134,18 +135,22 @@ proto.core.commandhandler.v1.ApplyCommandRequest.deserializeBinaryFromReader = f
     var field = reader.getFieldNumber();
     switch (field) {
     case 1:
-      var value = /** @type {number} */ (reader.readInt64());
-      msg.setEventType(value);
+      var value = /** @type {string} */ (reader.readString());
+      msg.setAggregateType(value);
       break;
     case 2:
-      var value = /** @type {number} */ (reader.readInt64());
-      msg.setAggregateType(value);
+      var value = /** @type {string} */ (reader.readString());
+      msg.setEventType(value);
       break;
     case 3:
       var value = /** @type {string} */ (reader.readString());
-      msg.setAggregateId(value);
+      msg.setEventCode(value);
       break;
     case 4:
+      var value = /** @type {string} */ (reader.readString());
+      msg.setAggregateId(value);
+      break;
+    case 5:
       var value = /** @type {string} */ (reader.readString());
       msg.setCommandData(value);
       break;
@@ -178,31 +183,38 @@ proto.core.commandhandler.v1.ApplyCommandRequest.prototype.serializeBinary = fun
  */
 proto.core.commandhandler.v1.ApplyCommandRequest.serializeBinaryToWriter = function(message, writer) {
   var f = undefined;
-  f = message.getEventType();
-  if (f !== 0) {
-    writer.writeInt64(
+  f = message.getAggregateType();
+  if (f.length > 0) {
+    writer.writeString(
       1,
       f
     );
   }
-  f = message.getAggregateType();
-  if (f !== 0) {
-    writer.writeInt64(
+  f = message.getEventType();
+  if (f.length > 0) {
+    writer.writeString(
       2,
       f
     );
   }
-  f = message.getAggregateId();
+  f = message.getEventCode();
   if (f.length > 0) {
     writer.writeString(
       3,
       f
     );
   }
-  f = message.getCommandData();
+  f = message.getAggregateId();
   if (f.length > 0) {
     writer.writeString(
       4,
+      f
+    );
+  }
+  f = message.getCommandData();
+  if (f.length > 0) {
+    writer.writeString(
+      5,
       f
     );
   }
@@ -210,46 +222,46 @@ proto.core.commandhandler.v1.ApplyCommandRequest.serializeBinaryToWriter = funct
 
 
 /**
- * optional int64 event_type = 1;
- * @return {number}
- */
-proto.core.commandhandler.v1.ApplyCommandRequest.prototype.getEventType = function() {
-  return /** @type {number} */ (jspb.Message.getFieldWithDefault(this, 1, 0));
-};
-
-
-/**
- * @param {number} value
- * @return {!proto.core.commandhandler.v1.ApplyCommandRequest} returns this
- */
-proto.core.commandhandler.v1.ApplyCommandRequest.prototype.setEventType = function(value) {
-  return jspb.Message.setProto3IntField(this, 1, value);
-};
-
-
-/**
- * optional int64 aggregate_type = 2;
- * @return {number}
+ * optional string aggregate_type = 1;
+ * @return {string}
  */
 proto.core.commandhandler.v1.ApplyCommandRequest.prototype.getAggregateType = function() {
-  return /** @type {number} */ (jspb.Message.getFieldWithDefault(this, 2, 0));
+  return /** @type {string} */ (jspb.Message.getFieldWithDefault(this, 1, ""));
 };
 
 
 /**
- * @param {number} value
+ * @param {string} value
  * @return {!proto.core.commandhandler.v1.ApplyCommandRequest} returns this
  */
 proto.core.commandhandler.v1.ApplyCommandRequest.prototype.setAggregateType = function(value) {
-  return jspb.Message.setProto3IntField(this, 2, value);
+  return jspb.Message.setProto3StringField(this, 1, value);
 };
 
 
 /**
- * optional string aggregate_id = 3;
+ * optional string event_type = 2;
  * @return {string}
  */
-proto.core.commandhandler.v1.ApplyCommandRequest.prototype.getAggregateId = function() {
+proto.core.commandhandler.v1.ApplyCommandRequest.prototype.getEventType = function() {
+  return /** @type {string} */ (jspb.Message.getFieldWithDefault(this, 2, ""));
+};
+
+
+/**
+ * @param {string} value
+ * @return {!proto.core.commandhandler.v1.ApplyCommandRequest} returns this
+ */
+proto.core.commandhandler.v1.ApplyCommandRequest.prototype.setEventType = function(value) {
+  return jspb.Message.setProto3StringField(this, 2, value);
+};
+
+
+/**
+ * optional string event_code = 3;
+ * @return {string}
+ */
+proto.core.commandhandler.v1.ApplyCommandRequest.prototype.getEventCode = function() {
   return /** @type {string} */ (jspb.Message.getFieldWithDefault(this, 3, ""));
 };
 
@@ -258,16 +270,16 @@ proto.core.commandhandler.v1.ApplyCommandRequest.prototype.getAggregateId = func
  * @param {string} value
  * @return {!proto.core.commandhandler.v1.ApplyCommandRequest} returns this
  */
-proto.core.commandhandler.v1.ApplyCommandRequest.prototype.setAggregateId = function(value) {
+proto.core.commandhandler.v1.ApplyCommandRequest.prototype.setEventCode = function(value) {
   return jspb.Message.setProto3StringField(this, 3, value);
 };
 
 
 /**
- * optional string command_data = 4;
+ * optional string aggregate_id = 4;
  * @return {string}
  */
-proto.core.commandhandler.v1.ApplyCommandRequest.prototype.getCommandData = function() {
+proto.core.commandhandler.v1.ApplyCommandRequest.prototype.getAggregateId = function() {
   return /** @type {string} */ (jspb.Message.getFieldWithDefault(this, 4, ""));
 };
 
@@ -276,8 +288,26 @@ proto.core.commandhandler.v1.ApplyCommandRequest.prototype.getCommandData = func
  * @param {string} value
  * @return {!proto.core.commandhandler.v1.ApplyCommandRequest} returns this
  */
-proto.core.commandhandler.v1.ApplyCommandRequest.prototype.setCommandData = function(value) {
+proto.core.commandhandler.v1.ApplyCommandRequest.prototype.setAggregateId = function(value) {
   return jspb.Message.setProto3StringField(this, 4, value);
+};
+
+
+/**
+ * optional string command_data = 5;
+ * @return {string}
+ */
+proto.core.commandhandler.v1.ApplyCommandRequest.prototype.getCommandData = function() {
+  return /** @type {string} */ (jspb.Message.getFieldWithDefault(this, 5, ""));
+};
+
+
+/**
+ * @param {string} value
+ * @return {!proto.core.commandhandler.v1.ApplyCommandRequest} returns this
+ */
+proto.core.commandhandler.v1.ApplyCommandRequest.prototype.setCommandData = function(value) {
+  return jspb.Message.setProto3StringField(this, 5, value);
 };
 
 

@@ -103,40 +103,6 @@ func (m *RegisterRequest) validate(all bool) error {
 
 	}
 
-	for idx, item := range m.GetProducers() {
-		_, _ = idx, item
-
-		if all {
-			switch v := interface{}(item).(type) {
-			case interface{ ValidateAll() error }:
-				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, RegisterRequestValidationError{
-						field:  fmt.Sprintf("Producers[%v]", idx),
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			case interface{ Validate() error }:
-				if err := v.Validate(); err != nil {
-					errors = append(errors, RegisterRequestValidationError{
-						field:  fmt.Sprintf("Producers[%v]", idx),
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			}
-		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
-			if err := v.Validate(); err != nil {
-				return RegisterRequestValidationError{
-					field:  fmt.Sprintf("Producers[%v]", idx),
-					reason: "embedded message failed validation",
-					cause:  err,
-				}
-			}
-		}
-
-	}
-
 	for idx, item := range m.GetConsumers() {
 		_, _ = idx, item
 
@@ -249,43 +215,46 @@ var _ interface {
 	ErrorName() string
 } = RegisterRequestValidationError{}
 
-// Validate checks the field values on Protocol with the rules defined in the
-// proto definition for this message. If any rules are violated, the first
-// error encountered is returned, or nil if there are no violations.
-func (m *Protocol) Validate() error {
+// Validate checks the field values on ProtocolRequest with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
+func (m *ProtocolRequest) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on Protocol with the rules defined in
-// the proto definition for this message. If any rules are violated, the
-// result is a list of violation errors wrapped in ProtocolMultiError, or nil
-// if none found.
-func (m *Protocol) ValidateAll() error {
+// ValidateAll checks the field values on ProtocolRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ProtocolRequestMultiError, or nil if none found.
+func (m *ProtocolRequest) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *Protocol) validate(all bool) error {
+func (m *ProtocolRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
 
 	var errors []error
 
+	// no validation rules for Order
+
 	// no validation rules for Kind
 
 	if len(errors) > 0 {
-		return ProtocolMultiError(errors)
+		return ProtocolRequestMultiError(errors)
 	}
 
 	return nil
 }
 
-// ProtocolMultiError is an error wrapping multiple validation errors returned
-// by Protocol.ValidateAll() if the designated constraints aren't met.
-type ProtocolMultiError []error
+// ProtocolRequestMultiError is an error wrapping multiple validation errors
+// returned by ProtocolRequest.ValidateAll() if the designated constraints
+// aren't met.
+type ProtocolRequestMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m ProtocolMultiError) Error() string {
+func (m ProtocolRequestMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -294,11 +263,11 @@ func (m ProtocolMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m ProtocolMultiError) AllErrors() []error { return m }
+func (m ProtocolRequestMultiError) AllErrors() []error { return m }
 
-// ProtocolValidationError is the validation error returned by
-// Protocol.Validate if the designated constraints aren't met.
-type ProtocolValidationError struct {
+// ProtocolRequestValidationError is the validation error returned by
+// ProtocolRequest.Validate if the designated constraints aren't met.
+type ProtocolRequestValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -306,22 +275,22 @@ type ProtocolValidationError struct {
 }
 
 // Field function returns field value.
-func (e ProtocolValidationError) Field() string { return e.field }
+func (e ProtocolRequestValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e ProtocolValidationError) Reason() string { return e.reason }
+func (e ProtocolRequestValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e ProtocolValidationError) Cause() error { return e.cause }
+func (e ProtocolRequestValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e ProtocolValidationError) Key() bool { return e.key }
+func (e ProtocolRequestValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e ProtocolValidationError) ErrorName() string { return "ProtocolValidationError" }
+func (e ProtocolRequestValidationError) ErrorName() string { return "ProtocolRequestValidationError" }
 
 // Error satisfies the builtin error interface
-func (e ProtocolValidationError) Error() string {
+func (e ProtocolRequestValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -333,14 +302,14 @@ func (e ProtocolValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sProtocol.%s: %s%s",
+		"invalid %sProtocolRequest.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = ProtocolValidationError{}
+var _ error = ProtocolRequestValidationError{}
 
 var _ interface {
 	Field() string
@@ -348,7 +317,117 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = ProtocolValidationError{}
+} = ProtocolRequestValidationError{}
+
+// Validate checks the field values on ConsumerRequest with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
+func (m *ConsumerRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ConsumerRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ConsumerRequestMultiError, or nil if none found.
+func (m *ConsumerRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ConsumerRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Order
+
+	// no validation rules for Kind
+
+	// no validation rules for AggregateType
+
+	// no validation rules for EventType
+
+	// no validation rules for EventCode
+
+	if len(errors) > 0 {
+		return ConsumerRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// ConsumerRequestMultiError is an error wrapping multiple validation errors
+// returned by ConsumerRequest.ValidateAll() if the designated constraints
+// aren't met.
+type ConsumerRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ConsumerRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ConsumerRequestMultiError) AllErrors() []error { return m }
+
+// ConsumerRequestValidationError is the validation error returned by
+// ConsumerRequest.Validate if the designated constraints aren't met.
+type ConsumerRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ConsumerRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ConsumerRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ConsumerRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ConsumerRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ConsumerRequestValidationError) ErrorName() string { return "ConsumerRequestValidationError" }
+
+// Error satisfies the builtin error interface
+func (e ConsumerRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sConsumerRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ConsumerRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ConsumerRequestValidationError{}
 
 // Validate checks the field values on RegisterResponse with the rules defined
 // in the proto definition for this message. If any rules are violated, the
@@ -372,33 +451,72 @@ func (m *RegisterResponse) validate(all bool) error {
 
 	var errors []error
 
-	if all {
-		switch v := interface{}(m.GetRegistration()).(type) {
-		case interface{ ValidateAll() error }:
-			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, RegisterResponseValidationError{
-					field:  "Registration",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
+	for idx, item := range m.GetProtocols() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, RegisterResponseValidationError{
+						field:  fmt.Sprintf("Protocols[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, RegisterResponseValidationError{
+						field:  fmt.Sprintf("Protocols[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
 			}
-		case interface{ Validate() error }:
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
 			if err := v.Validate(); err != nil {
-				errors = append(errors, RegisterResponseValidationError{
-					field:  "Registration",
+				return RegisterResponseValidationError{
+					field:  fmt.Sprintf("Protocols[%v]", idx),
 					reason: "embedded message failed validation",
 					cause:  err,
-				})
+				}
 			}
 		}
-	} else if v, ok := interface{}(m.GetRegistration()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return RegisterResponseValidationError{
-				field:  "Registration",
-				reason: "embedded message failed validation",
-				cause:  err,
+
+	}
+
+	for idx, item := range m.GetConsumers() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, RegisterResponseValidationError{
+						field:  fmt.Sprintf("Consumers[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, RegisterResponseValidationError{
+						field:  fmt.Sprintf("Consumers[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return RegisterResponseValidationError{
+					field:  fmt.Sprintf("Consumers[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
 			}
 		}
+
 	}
 
 	if len(errors) > 0 {
@@ -478,6 +596,222 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = RegisterResponseValidationError{}
+
+// Validate checks the field values on ProtocolResponse with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
+func (m *ProtocolResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ProtocolResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ProtocolResponseMultiError, or nil if none found.
+func (m *ProtocolResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ProtocolResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Order
+
+	// no validation rules for Kind
+
+	// no validation rules for Port
+
+	if len(errors) > 0 {
+		return ProtocolResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// ProtocolResponseMultiError is an error wrapping multiple validation errors
+// returned by ProtocolResponse.ValidateAll() if the designated constraints
+// aren't met.
+type ProtocolResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ProtocolResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ProtocolResponseMultiError) AllErrors() []error { return m }
+
+// ProtocolResponseValidationError is the validation error returned by
+// ProtocolResponse.Validate if the designated constraints aren't met.
+type ProtocolResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ProtocolResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ProtocolResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ProtocolResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ProtocolResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ProtocolResponseValidationError) ErrorName() string { return "ProtocolResponseValidationError" }
+
+// Error satisfies the builtin error interface
+func (e ProtocolResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sProtocolResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ProtocolResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ProtocolResponseValidationError{}
+
+// Validate checks the field values on ConsumerResponse with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
+func (m *ConsumerResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ConsumerResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ConsumerResponseMultiError, or nil if none found.
+func (m *ConsumerResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ConsumerResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Order
+
+	// no validation rules for Kind
+
+	// no validation rules for RoutingKey
+
+	// no validation rules for Exchange
+
+	// no validation rules for QueueName
+
+	if len(errors) > 0 {
+		return ConsumerResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// ConsumerResponseMultiError is an error wrapping multiple validation errors
+// returned by ConsumerResponse.ValidateAll() if the designated constraints
+// aren't met.
+type ConsumerResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ConsumerResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ConsumerResponseMultiError) AllErrors() []error { return m }
+
+// ConsumerResponseValidationError is the validation error returned by
+// ConsumerResponse.Validate if the designated constraints aren't met.
+type ConsumerResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ConsumerResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ConsumerResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ConsumerResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ConsumerResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ConsumerResponseValidationError) ErrorName() string { return "ConsumerResponseValidationError" }
+
+// Error satisfies the builtin error interface
+func (e ConsumerResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sConsumerResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ConsumerResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ConsumerResponseValidationError{}
 
 // Validate checks the field values on ConnectionRequest with the rules defined
 // in the proto definition for this message. If any rules are violated, the

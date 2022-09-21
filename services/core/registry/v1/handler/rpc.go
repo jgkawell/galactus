@@ -21,15 +21,15 @@ func NewRegistryHandler(logger l.Logger, service s.Service) pb.RegistryServer {
 }
 
 // Register
-func (h *registryHandler) Register(ctx context.Context, req *pb.RegisterRequest) (*pb.RegisterResponse, error) {
+func (h *registryHandler) Register(c context.Context, req *pb.RegisterRequest) (*pb.RegisterResponse, error) {
 	// build execution context, with request context that contains `transaction_id` in metadata
-	executionContext, err := ct.NewExecutionContextFromContextWithMetadata(ctx, h.logger)
+	ctx, err := ct.NewExecutionContextFromContextWithMetadata(c, h.logger)
 	if err != nil {
 		h.logger.WithFields(err.Fields()).WithError(err).Error("failed to create application context from current context")
 		return nil, err.Unwrap()
 	}
 
-	response, err := h.service.Register(executionContext, req)
+	response, err := h.service.Register(*ctx, req)
 	if err != nil {
 		h.logger.WithFields(err.Fields()).WithError(err).Error("failed to register")
 		return nil, err.Unwrap()
@@ -39,19 +39,25 @@ func (h *registryHandler) Register(ctx context.Context, req *pb.RegisterRequest)
 }
 
 // Connection
-func (h *registryHandler) Connection(ctx context.Context, req *pb.ConnectionRequest) (*pb.ConnectionResponse, error) {
+func (h *registryHandler) Connection(c context.Context, req *pb.ConnectionRequest) (*pb.ConnectionResponse, error) {
 	// build execution context, with request context that contains `transaction_id` in metadata
-	executionContext, err := ct.NewExecutionContextFromContextWithMetadata(ctx, h.logger)
+	ctx, err := ct.NewExecutionContextFromContextWithMetadata(c, h.logger)
 	if err != nil {
 		h.logger.WithFields(err.Fields()).WithError(err).Error("failed to create application context from current context")
 		return nil, err
 	}
 
-	response, err := h.service.Connection(executionContext, req)
+	response, err := h.service.Connection(*ctx, req)
 	if err != nil {
 		h.logger.WithFields(err.Fields()).WithError(err).Error("failed to get connection information")
 		return nil, err.Unwrap()
 	}
 
 	return response, err
+}
+
+// HELPERS
+
+func validateServiceVersion(version string) error {
+	return nil
 }

@@ -29,11 +29,6 @@ export class Registration extends jspb.Message {
   clearProtocolsList(): Registration;
   addProtocols(value?: Protocol, index?: number): Protocol;
 
-  getProducersList(): Array<Producer>;
-  setProducersList(value: Array<Producer>): Registration;
-  clearProducersList(): Registration;
-  addProducers(value?: Producer, index?: number): Producer;
-
   getConsumersList(): Array<Consumer>;
   setConsumersList(value: Array<Consumer>): Registration;
   clearConsumersList(): Registration;
@@ -56,7 +51,6 @@ export namespace Registration {
     address: string,
     status: ServiceStatus,
     protocolsList: Array<Protocol.AsObject>,
-    producersList: Array<Producer.AsObject>,
     consumersList: Array<Consumer.AsObject>,
   }
 }
@@ -91,43 +85,15 @@ export namespace Protocol {
   }
 }
 
-export class Producer extends jspb.Message {
-  getId(): string;
-  setId(value: string): Producer;
-
-  getExchange(): string;
-  setExchange(value: string): Producer;
-
-  serializeBinary(): Uint8Array;
-  toObject(includeInstance?: boolean): Producer.AsObject;
-  static toObject(includeInstance: boolean, msg: Producer): Producer.AsObject;
-  static serializeBinaryToWriter(message: Producer, writer: jspb.BinaryWriter): void;
-  static deserializeBinary(bytes: Uint8Array): Producer;
-  static deserializeBinaryFromReader(message: Producer, reader: jspb.BinaryReader): Producer;
-}
-
-export namespace Producer {
-  export type AsObject = {
-    id: string,
-    exchange: string,
-  }
-}
-
 export class Consumer extends jspb.Message {
   getId(): string;
   setId(value: string): Consumer;
-
-  getExchange(): string;
-  setExchange(value: string): Consumer;
 
   getRoutingKey(): string;
   setRoutingKey(value: string): Consumer;
 
   getKind(): ConsumerKind;
   setKind(value: ConsumerKind): Consumer;
-
-  getQueue(): string;
-  setQueue(value: string): Consumer;
 
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): Consumer.AsObject;
@@ -140,10 +106,8 @@ export class Consumer extends jspb.Message {
 export namespace Consumer {
   export type AsObject = {
     id: string,
-    exchange: string,
     routingKey: string,
     kind: ConsumerKind,
-    queue: string,
   }
 }
 

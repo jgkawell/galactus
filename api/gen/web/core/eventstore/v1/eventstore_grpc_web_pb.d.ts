@@ -9,11 +9,11 @@ export class EventStoreClient {
                options?: null | { [index: string]: any; });
 
   create(
-    request: core_eventstore_v1_eventstore_pb.CreateEventRequest,
+    request: core_eventstore_v1_eventstore_pb.CreateRequest,
     metadata: grpcWeb.Metadata | undefined,
     callback: (err: grpcWeb.RpcError,
-               response: core_eventstore_v1_eventstore_pb.CreateEventResponse) => void
-  ): grpcWeb.ClientReadableStream<core_eventstore_v1_eventstore_pb.CreateEventResponse>;
+               response: core_eventstore_v1_eventstore_pb.CreateResponse) => void
+  ): grpcWeb.ClientReadableStream<core_eventstore_v1_eventstore_pb.CreateResponse>;
 
 }
 
@@ -23,9 +23,9 @@ export class EventStorePromiseClient {
                options?: null | { [index: string]: any; });
 
   create(
-    request: core_eventstore_v1_eventstore_pb.CreateEventRequest,
+    request: core_eventstore_v1_eventstore_pb.CreateRequest,
     metadata?: grpcWeb.Metadata
-  ): Promise<core_eventstore_v1_eventstore_pb.CreateEventResponse>;
+  ): Promise<core_eventstore_v1_eventstore_pb.CreateResponse>;
 
 }
 

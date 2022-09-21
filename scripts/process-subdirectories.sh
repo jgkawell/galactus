@@ -6,13 +6,13 @@
 
 while getopts d:a: option; do
     case "${option}" in
-    d) directory=${OPTARG} ;; # directory to iterate subdirectories within (e.g. internal/)
+    d) directory=${OPTARG} ;; # directory to iterate subdirectories within (e.g. services/)
     a) all=${OPTARG} ;;       # [OPTIONAL] accept all prompts
     *) echo "Unsupported option: ${OPTARG}" ;;
     esac
 done
 
-# TODO: Update this to do something cool!
+# NOTE: Update this function with anything you need to run within all directories
 function something() {
     echo "Doing something..."
 

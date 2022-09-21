@@ -60,9 +60,11 @@ func (m *ApplyCommandRequest) validate(all bool) error {
 
 	var errors []error
 
+	// no validation rules for AggregateType
+
 	// no validation rules for EventType
 
-	// no validation rules for AggregateType
+	// no validation rules for EventCode
 
 	if err := m._validateUuid(m.GetAggregateId()); err != nil {
 		err = ApplyCommandRequestValidationError{

@@ -6,7 +6,7 @@ This service functions as a registry for other services. Providing a way for oth
 
 Process:
 
-- On bootup, the regsitry service will connect to its DB (Postgres) and create a table for storing the service values
+- On bootup, the registry service will connect to its DB (Postgres) and create a table for storing the service values
 - It will expose a gRPC API that will have the following methods: `Register()` (anything else?)
 - The other services at bootup will connect to the registry service and register themselves.
   - They will send all their information (listed below) to the registry service

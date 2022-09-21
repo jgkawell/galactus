@@ -5,11 +5,14 @@ import * as google_protobuf_timestamp_pb from 'google-protobuf/google/protobuf/t
 
 
 export class ApplyCommandRequest extends jspb.Message {
-  getEventType(): number;
-  setEventType(value: number): ApplyCommandRequest;
+  getAggregateType(): string;
+  setAggregateType(value: string): ApplyCommandRequest;
 
-  getAggregateType(): number;
-  setAggregateType(value: number): ApplyCommandRequest;
+  getEventType(): string;
+  setEventType(value: string): ApplyCommandRequest;
+
+  getEventCode(): string;
+  setEventCode(value: string): ApplyCommandRequest;
 
   getAggregateId(): string;
   setAggregateId(value: string): ApplyCommandRequest;
@@ -27,8 +30,9 @@ export class ApplyCommandRequest extends jspb.Message {
 
 export namespace ApplyCommandRequest {
   export type AsObject = {
-    eventType: number,
-    aggregateType: number,
+    aggregateType: string,
+    eventType: string,
+    eventCode: string,
     aggregateId: string,
     commandData: string,
   }

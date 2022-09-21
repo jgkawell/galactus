@@ -3,8 +3,8 @@ import * as jspb from 'google-protobuf'
 
 
 export class ConnectionRequest extends jspb.Message {
-  getUserId(): string;
-  setUserId(value: string): ConnectionRequest;
+  getActorId(): string;
+  setActorId(value: string): ConnectionRequest;
 
   getClientId(): string;
   setClientId(value: string): ConnectionRequest;
@@ -19,7 +19,7 @@ export class ConnectionRequest extends jspb.Message {
 
 export namespace ConnectionRequest {
   export type AsObject = {
-    userId: string,
+    actorId: string,
     clientId: string,
   }
 }
@@ -79,5 +79,4 @@ export namespace Heartbeat {
 export enum NotificationType { 
   INVALID = 0,
   HEARTBEAT = 1,
-  TODO_CREATED = 2,
 }

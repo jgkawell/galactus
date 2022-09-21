@@ -21,7 +21,6 @@ const (
 )
 
 // map of all aggregate types, add to it as more aggregates are added to the application
-// WARNING: DO NOTE CHANGE THE ORDER OF THIS ENUM
 type AggregateType int32
 
 const (

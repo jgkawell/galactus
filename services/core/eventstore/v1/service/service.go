@@ -1,106 +1,93 @@
 package service
 
 import (
-	"context"
-	"errors"
 	"fmt"
+	"time"
 
-	es "github.com/circadence-official/galactus/api/gen/go/core/eventstore/v1"
-	db "github.com/circadence-official/galactus/pkg/chassis/db"
+	agpb "github.com/circadence-official/galactus/api/gen/go/core/aggregates/v1"
+	pb "github.com/circadence-official/galactus/api/gen/go/core/eventstore/v1"
+
+	ct "github.com/circadence-official/galactus/pkg/chassis/context"
 	"github.com/circadence-official/galactus/pkg/chassis/messagebus"
 	l "github.com/circadence-official/galactus/pkg/logging/v2"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
-var (
-	errInvalidAggregateType = errors.New("invalid aggregate type in event")
-	errInvalidEventType     = errors.New("invalid event type in event")
-)
-
-type EventStoreService interface {
-	Create(ctx context.Context, log l.Logger, event *es.Event) (string, bool, l.Error)
+type Service interface {
+	Create(ctx ct.ExecutionContext, request *pb.CreateRequest) (string, l.Error)
 }
 
 type service struct {
-	dao db.CrudDao
+	db  *gorm.DB
 	mb  messagebus.MessageBus
 	env string
 }
 
-func NewService(dao db.CrudDao, mb messagebus.MessageBus, env string) EventStoreService {
+func NewService(db *gorm.DB, mb messagebus.MessageBus, env string) Service {
 	return &service{
-		dao, mb, env,
+		db, mb, env,
 	}
 }
 
 // Create - Create a new event that will be stored, published to an exchange (if requested), and updated with its published timestamp
-func (s *service) Create(ctx context.Context, logger l.Logger, event *es.Event) (string, bool, l.Error) {
-	logger = logger.WithFields(l.Fields{
-		"event_type":     event.GetEventType(),
-		"aggregate_id":   event.GetAggregateId(),
-		"aggregate_type": event.GetAggregateType(),
-		"transaction_id": event.GetTransactionId(),
+func (s *service) Create(ctx ct.ExecutionContext, req *pb.CreateRequest) (string, l.Error) {
+
+	// create and set id and add it to the logger
+	rTime := time.Now()
+	event := &agpb.EventORM{
+		Id: uuid.NewString(),
+		AggregateId: req.GetAggregateId(),
+		AggregateType: req.GetAggregateType(),
+		EventData: req.GetEventData(),
+		EventType: req.GetEventType(),
+		EventCode: req.GetEventCode(),
+		ReceivedTime: &rTime,
+		TransactionId: ctx.GetTransactionID(),
+	}
+	ctx.Logger = ctx.Logger.WithFields(l.Fields{
+		"event_id": event.Id,
 	})
+	ctx.Logger.Debug("creating event")
 
-	logger.Info("create event")
-	if event == nil {
-		return "", false, logger.WrapError(errors.New("event is nil"))
+	// attempt to publish event
+	eventPB, stdErr := event.ToPB(ctx.GetContext())
+	if stdErr != nil {
+		return event.Id, ctx.Logger.WrapError(l.NewError(stdErr, "failed to convert event from ORM to PB"))
+	}
+	err := s.publishEvent(ctx, eventPB)
+	if err != nil {
+		// if publishEvent returns an error, that means there was an unexpected system error.
+		// we should thus return an error to the client as they may wish to create a new event to reattempt to publish
+		// NOTE: this also means the event is NOT stored in the database
+		return event.Id, ctx.Logger.WrapError(err)
+	}
+	pTime := time.Now()
+	event.PublishedTime = &pTime
+
+	// save event to db
+	stdErr = s.db.Create(event).Error
+	if stdErr != nil {
+		// if Create returns an error, that means there was an unexpected system error.
+		// the publish succeeded so simply log the error and continue.
+		ctx.Logger.WrappedError(err, "failed to save event to database")
 	}
 
-	// create and set id
-	event.EventId = uuid.New().String()
-	logger = logger.WithField("event_id", event.GetEventId())
+	ctx.Logger.Debug("successfully created event")
+	return event.Id, nil
+}
 
-	// set timestamp
-	event.ReceivedDate = timestamppb.Now()
-
-	// get and check the validity of the provided aggregate type
-	logger = logger.WithField("aggregate_type", event.GetAggregateType())
-	// all we check for here is if the aggregate_type is 0 (invalid) since the client is
-	// responsible for providing a valid aggregate_type that matches a proto definition
-	if event.GetAggregateType() == 0 {
-		return "", false, logger.WrapError(errInvalidAggregateType)
+func (s *service) publishEvent(ctx ct.ExecutionContext, event agpb.Event) l.Error {
+	ctx.Logger.Debug("attempting to publish event")
+	stdErr := s.mb.SendMessage(ctx.GetContext(), "local.default", generateRoutingKey(event.GetAggregateType(), event.GetEventType(), event.GetEventCode()), event)
+	if stdErr != nil {
+		return ctx.Logger.WrapError(l.NewError(stdErr, "failed to publish event as message on messagebus"))
 	}
-	logger.Debug("aggregate type is valid")
+	ctx.Logger.Debug("event published")
+	return nil
+}
 
-	// get and check the validity of the provided event type
-	logger = logger.WithField("event_type", event.GetEventType())
-	// all we check for here is if the event_type is 0 (invalid) since the client is
-	// responsible for providing a valid event_type that matches a proto definition
-	if event.GetEventType() == 0 {
-		return "", false, logger.WrapError(errInvalidEventType)
-	}
-	logger.Debug("event type is valid")
-
-	// if the caller requests the event to be published, publish it
-	if event.GetPublish() {
-		// put the message on the messagebus with the mapping:
-		// 	 - aggregate_type = exchange
-		// 	 - event_type     = routing_key
-		logger.WithFields(l.Fields{
-			"exchange":    fmt.Sprint(event.GetAggregateType()),
-			"routing_key": fmt.Sprint(event.GetEventType()),
-			"event":       event,
-		}).Debug("publishing event")
-		err := s.mb.SendMessage(ctx, fmt.Sprintf("%s.%d", s.env, event.GetAggregateType()), fmt.Sprint(event.GetEventType()), event)
-		if err != nil {
-			return "", false, logger.WrapError(err)
-		}
-		// save the published timestamp
-		event.PublishedDate = timestamppb.Now()
-		logger.WithField("published_date", event.PublishedDate).Debug("generated published date")
-	}
-
-	// save the event to the db asynchronously since it's not a critical operation and if it fails the event creation is still successful
-	go func() {
-		id, err := s.dao.Create(ctx, logger, event)
-		if err != nil {
-			logger.WithError(err).Error("failed to store the event after it's been published")
-		}
-		logger.WithField("model_id", id).Debug("event stored in database")
-	}()
-
-	return event.GetEventId(), true, nil
+func generateRoutingKey(aggregateType, eventType, eventCode string) string {
+	return fmt.Sprintf("%s.%s.%s", aggregateType, eventType, eventCode)
 }

@@ -27,8 +27,8 @@ type Logger interface {
 	// Logging should really be done through the CustomLogger wrapper,
 	// NOT through logrus directly.
 	GetEntry() *logrus.Entry
-	// WrapError converts a standard Go error into a custom error with additional
-	// context of current logger fields and call stack information.
+	// WrapError wraps a standard Go error (OR `logging.Error`) into a custom error with the
+	// additional context of current logger fields and call stack information.
 	WrapError(error) Error
 
 	// WithHTTPContext injects tracing IDs into logs from context
@@ -85,6 +85,13 @@ type Logger interface {
 	// it's an assertion failure, network problem, etc etc.,
 	// probably one that is going to abort the current operation
 	Error(msg string)
+	// WrappedError - Definition:
+	// this is a convenience method that calls Error() but makes sure to wrap the error a final time
+	// so that all current call context is included in the error. This has the same output as:
+	//   logger.WithFields(logger.WrapError(err).Fields()).WithError(logger.WrapError(err)).Error("failed to process request")
+	// but instead has a much simpler oneliner of:
+	//   logger.WrappedError(err, "failed to process request")
+	WrappedError(Error, string) *CustomLogger
 	// Fatal - Definition:
 	// the app (or at the very least a thread) is about to die horribly.
 	// This is where the info explaining why that's happening goes.
@@ -132,8 +139,8 @@ func (l *CustomLogger) GetEntry() *logrus.Entry {
 	return l.entry
 }
 
-// WrapError converts a standard Go error into a custom error with additional
-// context of current logger fields and call stack information.
+// WrapError wraps a standard Go error (OR `logging.Error`) into a custom error with the
+// additional context of current logger fields and call stack information.
 func (l *CustomLogger) WrapError(err error) Error {
 	wrappedError := wrap(err, Fields(l.entry.Data))
 	if wrappedError == nil {
@@ -276,6 +283,18 @@ func (l *CustomLogger) Warn(msg string) {
 // probably one that is going to abort the current operation
 func (l *CustomLogger) Error(msg string) {
 	l.withLogContext().entry.Error(msg)
+}
+
+// WrappedError - Definition:
+// this is a convenience method that calls Error() but makes sure to wrap the error a final time
+// so that all current call context is included in the error. This has the same output as:
+//   logger.WithFields(logger.WrapError(err).Fields()).WithError(logger.WrapError(err)).Error("failed to process request")
+// but instead has a much simpler oneliner of:
+//   logger.WrappedError(err, "failed to process request")
+func (l *CustomLogger) WrappedError(err Error, msg string) *CustomLogger {
+	err = wrap(err, Fields(l.entry.Data))
+	l.WithFields(err.Fields()).WithError(err).withLogContext().entry.Error(msg)
+	return l
 }
 
 // Fatal - Definition:

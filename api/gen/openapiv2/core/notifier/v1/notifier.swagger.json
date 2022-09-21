@@ -66,8 +66,7 @@
       "type": "string",
       "enum": [
         "INVALID",
-        "HEARTBEAT",
-        "TODO_CREATED"
+        "HEARTBEAT"
       ],
       "default": "INVALID",
       "title": "NotificationType - A code that communicates to a integrated client the message type that is being sent.\nTODO: check to see if you can add to this enum without having to redeploy the notifier service"

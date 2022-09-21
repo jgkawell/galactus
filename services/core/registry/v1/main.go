@@ -4,7 +4,7 @@ import (
 	h "registry/handler"
 	s "registry/service"
 
-	mb "github.com/circadence-official/galactus/pkg/chassis"
+	"github.com/circadence-official/galactus/pkg/chassis"
 
 	agpb "github.com/circadence-official/galactus/api/gen/go/core/aggregates/v1"
 	pb "github.com/circadence-official/galactus/api/gen/go/core/registry/v1"
@@ -13,17 +13,17 @@ import (
 func main() {
 	var svc s.Service
 
-	b := mb.NewMainBuilder(&mb.MainBuilderConfig{
+	b := chassis.NewMainBuilder(&chassis.MainBuilderConfig{
 		ApplicationName: "registry",
 		DoNotRegisterService: true,
-		KeyVaultConfig: &mb.KeyVaultConfig{
-			RequireKeyVault:               func(b mb.MainBuilder) bool { return !b.GetConfig().GetBool("isDevMode") },
+		KeyVaultConfig: &chassis.KeyVaultConfig{
+			RequireKeyVault:               func(b chassis.MainBuilder) bool { return !b.GetConfig().GetBool("isDevMode") },
 			KeyVaultResourceGroupVariable: "resourceGroup",
 			KeyVaultNameVariable:          "keyVault",
 			KeyVaultOverridesVariable:     "keyVaultOverrides",
 		},
-		MessageBusConfig: &mb.MessageBusConfig{},
-		SqlConfig: &mb.SqlConfig{
+		MessageBusConfig: &chassis.MessageBusConfig{},
+		SqlConfig: &chassis.SqlConfig{
 			SqlDbHost:   "sqlDbHost",
 			SqlDbPort:   "sqlDbPort",
 			SqlDbName:   "sqlDbName",
@@ -31,26 +31,25 @@ func main() {
 			SqlDbSecret: "sqlDbSecret",
 			SqlDbSchema: "namespace",
 		},
-		DaoLayerConfig: &mb.DaoLayerConfig{
-			CreateDaoLayer: func(b mb.MainBuilder) {
+		DaoLayerConfig: &chassis.DaoLayerConfig{
+			CreateDaoLayer: func(b chassis.MainBuilder) {
 				db := b.GetSqlClient()
 				db.AutoMigrate(
 					&agpb.RegistrationORM{},
 					&agpb.ProtocolORM{},
-					&agpb.ProducerORM{},
 					&agpb.ConsumerORM{},
 				)
 			},
 		},
-		ServiceLayerConfig: &mb.ServiceLayerConfig{
-			CreateServiceLayer: func(b mb.MainBuilder) {
-				svc = s.NewService(b.GetConfig().GetString("env"), b.GetSqlClient(), b.GetBroker(), b.IsDevMode())
+		ServiceLayerConfig: &chassis.ServiceLayerConfig{
+			CreateServiceLayer: func(b chassis.MainBuilder) {
+				svc = s.NewService(b.GetLogger(), b.GetConfig().GetString("env"), b.GetSqlClient(), b.GetBroker(), b.IsDevMode())
 			},
 		},
-		HandlerLayerConfig: &mb.HandlerLayerConfig{
+		HandlerLayerConfig: &chassis.HandlerLayerConfig{
 			HttpPortVariable: "httpPort",
 			RpcPortVariable:  "grpcPort",
-			CreateRpcHandlers: func(b mb.MainBuilder) {
+			CreateRpcHandlers: func(b chassis.MainBuilder) {
 				pb.RegisterRegistryServer(b.GetRpcServer(), h.NewRegistryHandler(b.GetLogger(), svc))
 			},
 		},

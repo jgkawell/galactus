@@ -33,6 +33,8 @@ func main() {
 			KeyVaultOverridesVariable:     "keyVaultOverrides",
 		},
 		GatewayLayerConfig: &chassis.GatewayLayerConfig{
+			// NOTE: most services do not need to create a dedicated eventstore client like below, instead they should use the EventManager in the chassis
+			//       commandhandler is an exception though as it doesn't create events by types (Aggregate/Event) but creates them by strings so it can't use EventManager.
 			CreateInternalClients: func(b chassis.MainBuilder, clientFactory cf.ClientFactory) []*grpc.ClientConn {
 				var (
 					conn        *grpc.ClientConn
@@ -41,7 +43,7 @@ func main() {
 				)
 
 				ctx, _ := ct.NewExecutionContext(context.Background(), b.GetLogger(), uuid.NewString())
-				connectionResponse, err := b.GetRegistryClient().Connection(ctx.GetContextWithTransactionID(), &rgpb.ConnectionRequest{
+				connectionResponse, err := b.GetRegistryClient().Connection(ctx.GetContext(), &rgpb.ConnectionRequest{
 					Name:    "eventstore",
 					Version: "0.0.0",
 					Type:    agpb.ProtocolKind_PROTOCOL_KIND_GRPC,
@@ -52,7 +54,7 @@ func main() {
 				}
 
 				fullAddress := fmt.Sprintf("%s:%d", connectionResponse.GetAddress(), connectionResponse.GetPort())
-				esc, conn, err = clientFactory.CreateEventStoreClient(fullAddress)
+				esc, conn, err = clientFactory.CreateEventStoreClient(b.GetLogger(), fullAddress)
 				if err != nil {
 					b.GetLogger().WithError(err).Panic("failed to connect to eventstore service")
 				}

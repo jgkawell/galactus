@@ -2,11 +2,10 @@ package handler
 
 import (
 	"context"
-	"errors"
 
 	s "notifier/service"
 
-	es "github.com/circadence-official/galactus/api/gen/go/core/eventstore/v1"
+	ct "github.com/circadence-official/galactus/pkg/chassis/context"
 	ev "github.com/circadence-official/galactus/pkg/chassis/events"
 	mb "github.com/circadence-official/galactus/pkg/chassis/messagebus"
 	l "github.com/circadence-official/galactus/pkg/logging/v2"
@@ -15,56 +14,50 @@ import (
 type consumer struct {
 	logger  l.Logger
 	service s.Service
+	em      ev.EventManager
 }
 
 type Consumer interface {
 	mb.ClientHandler
-	Deliverer
 }
 
-type Deliverer interface {
-	DeliverNotification(context.Context, *es.Event) error
-}
-
-func NewConsumer(logger l.Logger, service s.Service) Consumer {
+func NewConsumer(logger l.Logger, service s.Service, em ev.EventManager) Consumer {
 	return &consumer{
-		logger, service,
+		logger, service, em,
 	}
 }
 
 var (
 	ErrorFailedGetEventAndMessageData = "failed to get message data from queued message"
-	ErrorFailedUnmarshal              = "failed to unmarshal request"
-	ErrorFailedToParseMessageData     = "failed to parse message data from event"
 	ErrorFailedToDeliverNotification  = "failed to deliver notification"
-	WarningMessageTypeNotMatched      = "warning type not matched"
 )
 
 // Handle - Subscribed to the `Notifier` exchange and processing messages of type `NOTIFICATION_DELIVERY_REQUESTED`
-func (c *consumer) Handle(ctx context.Context, msg mb.Message) error {
-	logger := c.logger.WithField("handle_incoming_message", msg)
+func (h *consumer) Handle(c context.Context, msg mb.Message) error {
+	h.logger.Debug("handling message")
 
-	evt, _, err := ev.GetEventAndMessageData(ctx, logger, msg)
+	evt, _, err := h.em.GetEventAndMessageData(h.logger, msg)
 	if err != nil {
-		logger.WithError(err).Error(ErrorFailedGetEventAndMessageData)
+		h.logger.WrappedError(err, "failed to get event and message data from queued message")
+		// reject since notifier listens to a topic and so is the only consumer on it's unique queue
+		msg.Reject()
+		return err
+	}
+	ctx, err := ct.NewExecutionContextFromEvent(c, h.logger, evt)
+	if err != nil {
+		h.logger.WrappedError(err, "failed to create execution context from event")
+		msg.Reject()
 		return err
 	}
 
-	if err := c.DeliverNotification(ctx, evt); err != nil {
-		logger.WithError(err).Error(ErrorFailedToParseMessageData)
+	err = h.service.Deliver(*ctx, evt)
+	if err != nil {
+		ctx.Logger.WrappedError(err, "failed to deliver message")
+		// reject since notifier listens to a topic and so is the only consumer on it's unique queue
+		msg.Reject()
 		return err
 	}
 
-	return nil
-}
-
-func (c *consumer) DeliverNotification(ctx context.Context, event *es.Event) error {
-	c.logger.WithField("event", event).Info("delivering notification")
-	c.logger.WithField("service", c.service).Info("delivering notification (service)")
-	if err := c.service.Deliver(ctx, c.logger, event); err != nil {
-		c.logger.WithError(err).Error(ErrorFailedToDeliverNotification)
-		return errors.New(ErrorFailedToDeliverNotification)
-	}
-
+	msg.Complete()
 	return nil
 }
