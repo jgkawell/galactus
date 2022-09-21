@@ -268,12 +268,10 @@ func (s *service) Deliver(ctx ct.ExecutionContext, event *agpb.Event) l.Error {
 		return ctx.Logger.WrapError(errors.New(ErrorInvalidNotificationRequest))
 	}
 
-	// TODO: implement unicast messaging
-	// clientID := req.GetClientId()
-
 	ctx.Logger.Debug("notification delivery requested")
 
 	/* // TODO: implement unicast messaging
+	 * clientID := req.GetClientId()
 	 * if clientID != "" {
 	 *   // if client_id is provided `unicast`
 	 *   if err := s.Inputs.Unicast(logger, actorID, clientID, req); err != nil {

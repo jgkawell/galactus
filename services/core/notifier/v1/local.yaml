@@ -7,8 +7,6 @@ configMap:
   version: 0.0.0
   # other service values
   registryServiceAddress: localhost:35001
-  # TODO: get this value from the registry
-  eventstoreAddress: localhost:4402
   # messagebus values
   MessageBusUser: 'guest'
   MessageBusPassword: 'guest'

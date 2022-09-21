@@ -513,7 +513,7 @@ func NewMainBuilder(mbc *MainBuilderConfig) MainBuilder {
 			})
 		}
 
-		// TODO: pull together producers, and consumers from mainbuilder config
+		// pull together producers, and consumers from chassis config
 		consumers := []*rgpb.ConsumerRequest{}
 		for i, c := range b.consumerConfig.Configs {
 
