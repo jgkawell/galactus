@@ -796,8 +796,7 @@ TODO: check to see if you can add to this enum without having to redeploy the no
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | INVALID | 0 |  |
-| HEARTBEAT | 1 |  |
-| TODO_CREATED | 2 |  |
+| HEARTBEAT | 1 | NOTE: add enum values here as needed |
 
 
  

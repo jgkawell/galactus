@@ -50,7 +50,7 @@ message Notification {
 enum NotificationType {
   INVALID = 0;
   HEARTBEAT = 1;
-  TODO_CREATED = 2;
+  // NOTE: add enum values here as needed
 }
 
 // Heartbeat - A message sent on a consistent time interval maintaining the users session, and expiration deadline.

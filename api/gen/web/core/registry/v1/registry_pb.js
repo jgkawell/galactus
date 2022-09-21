@@ -200,7 +200,7 @@ if (goog.DEBUG && !COMPILED) {
  * @private {!Array<number>}
  * @const
  */
-proto.core.registry.v1.RegisterRequest.repeatedFields_ = [5,7];
+proto.core.registry.v1.RegisterRequest.repeatedFields_ = [5,6];
 
 
 
@@ -298,7 +298,7 @@ proto.core.registry.v1.RegisterRequest.deserializeBinaryFromReader = function(ms
       reader.readMessage(value,proto.core.registry.v1.ProtocolRequest.deserializeBinaryFromReader);
       msg.addProtocols(value);
       break;
-    case 7:
+    case 6:
       var value = new proto.core.registry.v1.ConsumerRequest;
       reader.readMessage(value,proto.core.registry.v1.ConsumerRequest.deserializeBinaryFromReader);
       msg.addConsumers(value);
@@ -371,7 +371,7 @@ proto.core.registry.v1.RegisterRequest.serializeBinaryToWriter = function(messag
   f = message.getConsumersList();
   if (f.length > 0) {
     writer.writeRepeatedMessage(
-      7,
+      6,
       f,
       proto.core.registry.v1.ConsumerRequest.serializeBinaryToWriter
     );
@@ -490,12 +490,12 @@ proto.core.registry.v1.RegisterRequest.prototype.clearProtocolsList = function()
 
 
 /**
- * repeated ConsumerRequest consumers = 7;
+ * repeated ConsumerRequest consumers = 6;
  * @return {!Array<!proto.core.registry.v1.ConsumerRequest>}
  */
 proto.core.registry.v1.RegisterRequest.prototype.getConsumersList = function() {
   return /** @type{!Array<!proto.core.registry.v1.ConsumerRequest>} */ (
-    jspb.Message.getRepeatedWrapperField(this, proto.core.registry.v1.ConsumerRequest, 7));
+    jspb.Message.getRepeatedWrapperField(this, proto.core.registry.v1.ConsumerRequest, 6));
 };
 
 
@@ -504,7 +504,7 @@ proto.core.registry.v1.RegisterRequest.prototype.getConsumersList = function() {
  * @return {!proto.core.registry.v1.RegisterRequest} returns this
 */
 proto.core.registry.v1.RegisterRequest.prototype.setConsumersList = function(value) {
-  return jspb.Message.setRepeatedWrapperField(this, 7, value);
+  return jspb.Message.setRepeatedWrapperField(this, 6, value);
 };
 
 
@@ -514,7 +514,7 @@ proto.core.registry.v1.RegisterRequest.prototype.setConsumersList = function(val
  * @return {!proto.core.registry.v1.ConsumerRequest}
  */
 proto.core.registry.v1.RegisterRequest.prototype.addConsumers = function(opt_value, opt_index) {
-  return jspb.Message.addToRepeatedWrapperField(this, 7, opt_value, proto.core.registry.v1.ConsumerRequest, opt_index);
+  return jspb.Message.addToRepeatedWrapperField(this, 6, opt_value, proto.core.registry.v1.ConsumerRequest, opt_index);
 };
 
 

@@ -30,7 +30,7 @@ message RegisterRequest {
   string description = 4;
 
   repeated ProtocolRequest protocols = 5;
-  repeated ConsumerRequest consumers = 7;
+  repeated ConsumerRequest consumers = 6;
 }
 
 message ProtocolRequest {

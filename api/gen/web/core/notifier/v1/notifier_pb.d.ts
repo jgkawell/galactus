@@ -79,5 +79,4 @@ export namespace Heartbeat {
 export enum NotificationType { 
   INVALID = 0,
   HEARTBEAT = 1,
-  TODO_CREATED = 2,
 }
