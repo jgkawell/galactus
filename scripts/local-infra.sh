@@ -29,6 +29,14 @@ if [ "$command" == "start" ]; then
         -p 5672:5672 \
         broker
 
+    # envoy proxy
+    docker build --rm . -f ./third_party/proxy/Dockerfile -t proxy
+    docker run --name galactus-proxy \
+        -d --rm -it \
+        --net=host \
+        -p 10000:10000 \
+        proxy
+
     # display results
     docker ps
 
@@ -47,6 +55,9 @@ if [ "$command" == "stop" ]; then
 
     # rabbitmq
     docker stop galactus-broker
+
+    # envoy proxy
+    docker stop galactus-proxy
 
     echo "Local infra stopped"
     exit 0
