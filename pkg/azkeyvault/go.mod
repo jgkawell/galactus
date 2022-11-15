@@ -1,6 +1,6 @@
 module github.com/circadence-official/galactus/pkg/azkeyvault
 
-go 1.17
+go 1.19
 
 replace github.com/circadence-official/galactus/pkg/logging/v2 v2.0.0 => ../logging
 

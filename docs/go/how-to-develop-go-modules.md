@@ -27,7 +27,7 @@ Update the file `/services/core/eventstore/go.mod` to include the replace call o
 ```go.mod
 module asset
 
-go 1.17
+go 1.19
 
 require (
     ...

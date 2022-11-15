@@ -1,13 +1,10 @@
 module examples
 
-go 1.17
+go 1.19
 
 replace github.com/circadence-official/galactus/pkg/logging/v2 v2.0.0 => ../../pkg/logging
 
-require (
-	github.com/circadence-official/galactus/pkg/logging/v2 v2.0.0
-	github.com/pkg/errors v0.9.1
-)
+require github.com/circadence-official/galactus/pkg/logging/v2 v2.0.0
 
 require (
 	github.com/DataDog/datadog-go v4.8.3+incompatible // indirect

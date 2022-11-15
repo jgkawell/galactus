@@ -1,6 +1,6 @@
 module github.com/circadence-official/galactus/api/gen/go
 
-go 1.17
+go 1.19
 
 require (
 	github.com/envoyproxy/protoc-gen-validate v0.6.7

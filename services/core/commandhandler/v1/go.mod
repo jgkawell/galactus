@@ -1,6 +1,6 @@
 module commandhandler
 
-go 1.17
+go 1.19
 
 replace github.com/circadence-official/galactus/api/gen/go v0.0.0 => ../../../../api/gen/go
 
