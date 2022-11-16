@@ -18,7 +18,7 @@ if [ "$command" == "start" ]; then
         -e POSTGRES_PASSWORD=admin \
         -e POSTGRES_USER=admin \
         -e POSTGRES_DB=dev \
-        -p 5432:5432 \
+        -p 5434:5432 \
         postgres:14.4
 
     # rabbitmq

@@ -9,7 +9,7 @@ configMap:
   sqlDbUser: admin
   sqlDbSecret: admin
   sqlDbName: dev
-  sqlDbPort: 5432
+  sqlDbPort: 5434
   sqlDbHost: localhost
   sqlDbSchema: local
   dbAddress: localhost
