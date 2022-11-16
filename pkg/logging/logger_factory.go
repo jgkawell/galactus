@@ -21,8 +21,6 @@ func CreateLogger(level string, service string) *CustomLogger {
 	logrus.SetFormatter(&runtime.Formatter{
 		ChildFormatter: &logrus.JSONFormatter{
 			DisableHTMLEscape: true,
-			// TODO: should we only have this enabled for local?
-			PrettyPrint: true,
 		},
 	})
 	logrus.SetOutput(os.Stdout)

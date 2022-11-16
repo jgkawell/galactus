@@ -16,6 +16,7 @@ import (
 	"time"
 
 	// chassis packages
+	runtime "github.com/banzaicloud/logrus-runtime-formatter"
 	"github.com/circadence-official/galactus/pkg/chassis/broker"
 	cf "github.com/circadence-official/galactus/pkg/chassis/clientfactory"
 	ct "github.com/circadence-official/galactus/pkg/chassis/context"
@@ -365,6 +366,11 @@ func NewMainBuilder(mbc *MainBuilderConfig) MainBuilder {
 	b.isDevMode = b.viper.GetBool(devModeKey)
 	if b.isDevMode {
 		b.logger.Info("Currently running in dev mode")
+		logrus.SetFormatter(&runtime.Formatter{
+			ChildFormatter: &logrus.TextFormatter{
+				ForceColors: true,
+			},
+		})
 	} else {
 		b.logger.Info("Currently running in prod mode")
 	}
@@ -686,6 +692,7 @@ func (b *mainBuilder) Close() {
 	}
 	b.StopHttpServer()
 	b.StopRpcServer()
+	b.logger.Info("service stopped")
 }
 
 // InitializeGORM sets up the GORM SQL DB connection
