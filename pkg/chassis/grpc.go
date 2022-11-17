@@ -34,7 +34,7 @@ func (b *mainBuilder) StartRpcServer() {
 	if b.rpcPort == "" {
 		b.logger.Fatal("grpc server failed to start. grpc port not set")
 	}
-	grpcListener, err := net.Listen("tcp", fmt.Sprintf(":%s", b.rpcPort))
+	grpcListener, err := net.Listen("tcp", fmt.Sprintf("localhost:%s", b.rpcPort))
 	if err != nil {
 		b.logger.WithError(err).Fatal("failed to create grpc listener")
 	}

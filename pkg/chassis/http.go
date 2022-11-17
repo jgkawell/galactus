@@ -61,7 +61,7 @@ func (b *mainBuilder) createHttpServer() {
 func (b *mainBuilder) StartHttpServer() {
 	b.logger.WithField("port", b.httpPort).Info("starting http server")
 
-	b.httpServer = &http.Server{Addr: ":" + b.httpPort}
+	b.httpServer = &http.Server{Addr: "localhost:" + b.httpPort}
 	b.httpServer.Handler = b.httpRouter
 
 	if err := b.httpServer.ListenAndServe(); err != nil {
