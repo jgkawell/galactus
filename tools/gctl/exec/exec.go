@@ -37,7 +37,7 @@ func ExecuteCommand(ctx context.Context, cmd *exec.Cmd) (err error) {
 	// wait for completion
 	err = cmd.Wait()
 	if err != nil {
-		// don't error if closed by user
+		// only error if not closed by user
 		if err.Error() != "signal: killed" {
 			return err
 		}

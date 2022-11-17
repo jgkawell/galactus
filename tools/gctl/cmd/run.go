@@ -22,7 +22,6 @@ var (
 var runCmd = &cobra.Command{
 	Use:   "run",
 	Short: "Run a service locally",
-	Long:  `Run a service locally...`,
 	Run: func(cmd *cobra.Command, args []string) {
 
 		log.Println("running service:")
