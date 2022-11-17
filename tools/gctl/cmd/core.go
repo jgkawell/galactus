@@ -14,6 +14,15 @@ import (
 	"github.com/spf13/viper"
 )
 
+const (
+	commandHandlerVersion = "v1"
+	eventStoreVersion     = "v1"
+	notifierVersion       = "v1"
+	registryVersion       = "v1"
+
+	registryHealthEndpoint = "http://localhost:35000/health"
+)
+
 // coreCmd represents the core command
 var coreCmd = &cobra.Command{
 	Use:   "core",
@@ -23,7 +32,7 @@ var coreCmd = &cobra.Command{
 
 		// start registry first
 		go func() {
-			err := runService(ctx, "core", "registry", "v1")
+			err := runService(ctx, "core", "registry", registryVersion)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -32,7 +41,7 @@ var coreCmd = &cobra.Command{
 		// block until registry is up and healthy
 		healthy := false
 		for !healthy {
-			resp, _ := http.Get("http://localhost:35000/health")
+			resp, _ := http.Get(registryHealthEndpoint)
 			if resp != nil && resp.StatusCode == http.StatusOK {
 				healthy = true
 			}
@@ -40,7 +49,7 @@ var coreCmd = &cobra.Command{
 
 		// start commandhandler
 		go func() {
-			err := runService(ctx, "core", "commandhandler", "v1")
+			err := runService(ctx, "core", "commandhandler", commandHandlerVersion)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -48,7 +57,7 @@ var coreCmd = &cobra.Command{
 
 		// start eventstore
 		go func() {
-			err := runService(ctx, "core", "eventstore", "v1")
+			err := runService(ctx, "core", "eventstore", eventStoreVersion)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -56,7 +65,7 @@ var coreCmd = &cobra.Command{
 
 		// start notifier
 		go func() {
-			err := runService(ctx, "core", "notifier", "v1")
+			err := runService(ctx, "core", "notifier", notifierVersion)
 			if err != nil {
 				log.Fatal(err)
 			}
