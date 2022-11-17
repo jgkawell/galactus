@@ -73,11 +73,12 @@ func (NotificationEventCode) EnumDescriptor() ([]byte, []int) {
 // NotificationDeliveryRequested is an event used to send a message to an actor connected the `notifier` service.
 // `Multicast`, is the default delivery type and a `actor_id` is required. If `Unicast` is desired (i.e Sending a notification
 // to only one client) Then a `client_id` should also be provided.
-//    {
-//      "actor_id": "cffbbfa8-1a7e-4b64-af2e-345654b37aa7",
-//      "client_id": "07925e22-3eee-4931-aea9-19fc621fd825",
-//      "notification": "<NOTIFICATION_MESSAGE>"
-//    }
+//
+//	{
+//	  "actor_id": "cffbbfa8-1a7e-4b64-af2e-345654b37aa7",
+//	  "client_id": "07925e22-3eee-4931-aea9-19fc621fd825",
+//	  "notification": "<NOTIFICATION_MESSAGE>"
+//	}
 type NotificationDeliveryRequested struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -88,7 +89,7 @@ type NotificationDeliveryRequested struct {
 	// Using the `actor_id` instead of a specific `user_id` field allows for many differnt types of client connections to the notifier and gives the system a common way
 	// to send data to those connected clients whitout having to change the underlying datastructure when adding new clients.
 	ActorId string `protobuf:"bytes,1,opt,name=actor_id,json=actorId,proto3" json:"actor_id,omitempty"`
-	// optional, specify only if `unicast` to one client is desired. if empty, `multicast` to all clients associated with the `actor_id`` will be used.
+	// optional, specify only if `unicast` to one client is desired. if empty, `multicast` to all clients associated with the `actor_id“ will be used.
 	ClientId string `protobuf:"bytes,2,opt,name=client_id,json=clientId,proto3" json:"client_id,omitempty"`
 	// notification is the data payload that will be sent the client.
 	Notification *v1.Notification `protobuf:"bytes,3,opt,name=notification,proto3" json:"notification,omitempty"`

@@ -209,6 +209,7 @@ type GormFieldOptions struct {
 	Tag  *GormTag `protobuf:"bytes,1,opt,name=tag,proto3" json:"tag,omitempty"`
 	Drop bool     `protobuf:"varint,2,opt,name=drop,proto3" json:"drop,omitempty"`
 	// Types that are assignable to Association:
+	//
 	//	*GormFieldOptions_HasOne
 	//	*GormFieldOptions_BelongsTo
 	//	*GormFieldOptions_HasMany

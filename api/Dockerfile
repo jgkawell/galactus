@@ -1,9 +1,12 @@
-FROM bufbuild/buf:1.4.0 AS buffer
+# NOTE: if you don't specify platform here, the copy below will pull from an ARM64 image if the host is an Apple Silicon Mac
+FROM --platform=amd64 golang:1.19-alpine AS go-amd64
+
+FROM --platform=amd64 bufbuild/buf:1.4.0 AS buffer
 
 # Install
 RUN apk add --update --no-cache npm curl ca-certificates
 
-COPY --from=golang:1.17-alpine /usr/local/go/ /usr/local/go/
+COPY --from=go-amd64 /usr/local/go/ /usr/local/go/
 ENV PATH="/usr/local/go/bin:${PATH}"
 
 RUN apk add --update --no-cache protoc

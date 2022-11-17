@@ -5,7 +5,7 @@ OS := $(shell uname)
 .PHONY: build clean
 
 build:
-	@echo "Processing extra build setps for 'go/'"
+	@echo "Processing extra build steps for 'go/'"
 	@# https://github.com/infobloxopen/protoc-gen-gorm/issues/224
 	@# On OSX, replace -i '' with -i '.bak' to generate before and after if the sed is misbehaving.
 	@if [ "$(OS)" = "Linux" ]; then \

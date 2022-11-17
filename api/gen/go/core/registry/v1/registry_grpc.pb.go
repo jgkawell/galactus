@@ -26,8 +26,9 @@ type RegistryClient interface {
 	Register(ctx context.Context, in *RegisterRequest, opts ...grpc.CallOption) (*RegisterResponse, error)
 	// Connection returns the connection info for a microservice.
 	// Example: Service A wishes to call Service B, A calls registry.Connection(B)
-	//          which returns the connection info for B. If B is not available or
-	//          not registered, an error will be returned.
+	//
+	//	which returns the connection info for B. If B is not available or
+	//	not registered, an error will be returned.
 	Connection(ctx context.Context, in *ConnectionRequest, opts ...grpc.CallOption) (*ConnectionResponse, error)
 }
 
@@ -65,8 +66,9 @@ type RegistryServer interface {
 	Register(context.Context, *RegisterRequest) (*RegisterResponse, error)
 	// Connection returns the connection info for a microservice.
 	// Example: Service A wishes to call Service B, A calls registry.Connection(B)
-	//          which returns the connection info for B. If B is not available or
-	//          not registered, an error will be returned.
+	//
+	//	which returns the connection info for B. If B is not available or
+	//	not registered, an error will be returned.
 	Connection(context.Context, *ConnectionRequest) (*ConnectionResponse, error)
 }
 

@@ -80,6 +80,7 @@ type EventType struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Types that are assignable to Code:
+	//
 	//	*EventType_SystemCode
 	//	*EventType_NotificationCode
 	//	*EventType_TodoEventCode
