@@ -13,11 +13,25 @@ func ExecuteCommand(ctx context.Context, cmd *exec.Cmd) (err error) {
 	if err != nil {
 		return err
 	}
+	// create a pipe for the error output
+	cmdErrReader, err := cmd.StderrPipe()
+	if err != nil {
+		return err
+	}
 
 	// scanner for output
 	scanner := bufio.NewScanner(cmdReader)
 	go func() {
 		for scanner.Scan() {
+			fmt.Println(scanner.Text())
+		}
+	}()
+
+	// scanner for error output
+	scannerErr := bufio.NewScanner(cmdErrReader)
+	go func() {
+		for scannerErr.Scan() {
+			fmt.Println("---")
 			fmt.Println(scanner.Text())
 		}
 	}()

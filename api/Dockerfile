@@ -1,22 +1,13 @@
-# NOTE: if you don't specify platform here, the copy below will pull from an ARM64 image if the host is an Apple Silicon Mac
-FROM --platform=amd64 golang:1.19-alpine AS go-amd64
+FROM --platform=linux/amd64 bufbuild/buf:1.4.0 AS buffer
 
-FROM --platform=amd64 bufbuild/buf:1.4.0 AS buffer
-
-# Install
-RUN apk add --update --no-cache npm curl ca-certificates
-
-COPY --from=go-amd64 /usr/local/go/ /usr/local/go/
-ENV PATH="/usr/local/go/bin:${PATH}"
-
-RUN apk add --update --no-cache protoc
+# Install dependencies
+RUN apk add --update --no-cache ca-certificates curl npm protoc
+RUN apk add --update --no-cache go=1.19.3-r0 --repository=http://dl-cdn.alpinelinux.org/alpine/edge/community
 
 # Set go env
 ENV GOPATH=$HOME/go
 ENV GOBIN=$GOPATH/bin
-ENV GO111MODULE=on
 ENV PATH=$PATH:$GOBIN
-
 RUN mkdir -p $GOBIN
 
 # Download ts-protoc-gen

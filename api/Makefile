@@ -29,8 +29,8 @@ docker-clean:
 
 run-proto-builder:
 	@echo "Running the protobuf builder"
-	@docker run --rm --name $(BUILDER_IMAGE) --volume $(PWD):/workspace --workdir /workspace $(BUILDER_IMAGE):v1 mod update
-	@docker run --rm --name $(BUILDER_IMAGE) --volume $(PWD):/workspace --workdir /workspace $(BUILDER_IMAGE):v1 generate
+	@docker run --rm --name $(BUILDER_IMAGE) --volume $(PWD):/workspace --workdir /workspace $(BUILDER_IMAGE):v3 mod update
+	@docker run --rm --name $(BUILDER_IMAGE) --volume $(PWD):/workspace --workdir /workspace $(BUILDER_IMAGE):v3 generate
 	@if [ "$(OS)" = "Linux" ]; then\
 		sudo chown -R $(USER):$(USER) $(PWD);\
 	fi
