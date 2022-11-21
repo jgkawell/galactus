@@ -21,10 +21,7 @@ var buildCmd = &cobra.Command{
 	Use:   "build",
 	Short: "A brief description of your command",
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("build called")
-
 		var err error
-
 		ctx := cmd.Context()
 
 		// build out execution path

@@ -16,6 +16,8 @@ import (
 	"github.com/spf13/viper"
 )
 
+// TODO: have a command to remove generated Docker images?
+
 // initCmd represents the init command
 var initCmd = &cobra.Command{
 	Use:   "init",
