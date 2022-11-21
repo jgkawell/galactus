@@ -2,13 +2,13 @@ package cmd
 
 import (
 	"fmt"
-	"gctl/docker"
 	"log"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strings"
-	"sync"
+
+	"gctl/docker"
+	"gctl/files"
 
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/mount"
@@ -23,9 +23,7 @@ var buildCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("build called")
 
-		var (
-			err error
-		)
+		var err error
 
 		ctx := cmd.Context()
 
@@ -60,14 +58,14 @@ var buildCmd = &cobra.Command{
 			log.Fatal(err)
 		}
 
-		// run builder
-		fmt.Println("running builder...")
+		// run docker proto-builder image
+		fmt.Println("running: build")
 
+		// base configuration for docker container runs
 		config := &container.Config{
 			Image:      "proto-builder:v3",
 			WorkingDir: "/workspace",
 		}
-
 		hostConfig := &container.HostConfig{
 			Mounts: []mount.Mount{
 				{
@@ -92,31 +90,37 @@ var buildCmd = &cobra.Command{
 			log.Fatal(err)
 		}
 
-		// TODO: move the below to a helper and pass a function in for processing?
-
 		// extra steps for go
-		// TODO: adding this breaks the web cleanup (probably because we're reusing the waitgroup)
-		// for w := 1; w <= runtime.NumCPU(); w++ {
-		// 	go loopFilesWorker(goFileCleanup)
-		// }
-		// //Start the recursion
-		// LoopDirsFiles(filepath.Join(apiPath, "gen", "go"))
-		// wg.Wait()
+		processor := files.NewProcessor(goFileCleanup)
+		processor.Start(filepath.Join(apiPath, "gen", "go"))
+		processor.Wait()
 
 		// extra steps for web
-
-		for w := 1; w <= runtime.NumCPU(); w++ {
-			go loopFilesWorker(webFileCleanup)
-		}
-		//Start the recursion
-		LoopDirsFiles(filepath.Join(apiPath, "gen", "web"))
-		wg.Wait()
+		processor = files.NewProcessor(webFileCleanup)
+		processor.Start(filepath.Join(apiPath, "gen", "web"))
+		processor.Wait()
 
 		fmt.Println("finished")
 	},
 }
 
+func init() {
+	apiCmd.AddCommand(buildCmd)
+}
+
+// goFileCleanup fixes issues with generated golang protobuf files
+func goFileCleanup(filePath string) {
+	// protoc-gen-gorm messes up this import by "nulling" it out
+	if strings.HasSuffix(filePath, ".pb.gorm.go") {
+		old := "_ google.golang.org/protobuf/types/known/timestamppb"
+		new := "google.golang.org/protobuf/types/known/timestamppb"
+		sed(old, new, filePath)
+	}
+}
+
+// webFileCleanup fixes issues with generated web protobuf files
 func webFileCleanup(filePath string) {
+	// these imports aren't actually needed and so are removed
 	if strings.HasSuffix(filePath, ".d.ts") {
 		old := "import * as validate_validate_pb from '../../../validate/validate_pb';"
 		new := ""
@@ -133,18 +137,7 @@ func webFileCleanup(filePath string) {
 	}
 }
 
-func goFileCleanup(filePath string) {
-	if strings.HasSuffix(filePath, ".pb.gorm.go") {
-		old := "_ google.golang.org/protobuf/types/known/timestamppb"
-		new := "google.golang.org/protobuf/types/known/timestamppb"
-		sed(old, new, filePath)
-	}
-}
-
-func init() {
-	apiCmd.AddCommand(buildCmd)
-}
-
+// deleteAllSubDirectories removes all subdirectories and their children without affecting the top-level non-directory files
 func deleteAllSubDirectories(path string) error {
 	dir, err := os.ReadDir(path)
 	if err != nil {
@@ -158,63 +151,18 @@ func deleteAllSubDirectories(path string) error {
 	return nil
 }
 
-var (
-	wg   sync.WaitGroup
-	jobs chan string = make(chan string)
-)
-
-func loopFilesWorker(fileProcessor func(filePath string)) error {
-	for path := range jobs {
-		files, err := os.ReadDir(path)
-		if err != nil {
-			wg.Done()
-			return err
-		}
-
-		for _, file := range files {
-			if !file.IsDir() {
-				fileProcessor(filepath.Join(path, file.Name()))
-			}
-		}
-		wg.Done()
-	}
-	return nil
-}
-
-func LoopDirsFiles(path string) error {
-	files, err := os.ReadDir(path)
-	if err != nil {
-		return err
-	}
-	//Add this path as a job to the workers
-	//You must call it in a go routine, since if every worker is busy, then you have to wait for the channel to be free.
-	go func() {
-		wg.Add(1)
-		jobs <- path
-	}()
-	for _, file := range files {
-		if file.IsDir() {
-			//Recursively go further in the tree
-			LoopDirsFiles(filepath.Join(path, file.Name()))
-		}
-	}
-	return nil
-}
-
+// sed replicates the basic functionality of the unix/linux sed command
 func sed(old, new, filePath string) error {
 	fileData, err := os.ReadFile(filePath)
 	if err != nil {
 		return err
 	}
-
 	fileString := string(fileData)
 	fileString = strings.ReplaceAll(fileString, old, new)
 	fileData = []byte(fileString)
-
 	err = os.WriteFile(filePath, fileData, 0o600)
 	if err != nil {
 		return err
 	}
-
 	return nil
 }
