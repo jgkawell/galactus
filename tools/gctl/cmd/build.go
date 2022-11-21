@@ -1,9 +1,8 @@
 package cmd
 
 import (
-	"context"
 	"fmt"
-	"io/ioutil"
+	"gctl/docker"
 	"log"
 	"os"
 	"path/filepath"
@@ -11,10 +10,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/mount"
-	"github.com/docker/docker/client"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -36,42 +33,42 @@ var buildCmd = &cobra.Command{
 		rootPath := viper.GetString("config.root")
 		apiPath := filepath.Join(rootPath, "api")
 
-		log.Println("running: clean")
+		fmt.Println("running: clean")
 
 		// remove buf.lock
 		os.Remove(filepath.Join(apiPath, "buf.lock"))
 		// clean docs
-		log.Println("cleaning docs...")
+		fmt.Println("cleaning docs...")
 		os.Remove(filepath.Join(apiPath, "gen", "docs", "docs.md"))
 		os.Remove(filepath.Join(apiPath, "gen", "docs", "index.html"))
 		// clean go
-		log.Println("cleaning go...")
+		fmt.Println("cleaning go...")
 		err = deleteAllSubDirectories(filepath.Join(apiPath, "gen", "go"))
 		if err != nil {
 			log.Fatal(err)
 		}
 		// clean openapiv2
-		log.Println("cleaning openapiv2...")
+		fmt.Println("cleaning openapiv2...")
 		err = deleteAllSubDirectories(filepath.Join(apiPath, "gen", "openapiv2"))
 		if err != nil {
 			log.Fatal(err)
 		}
 		// clean web
-		log.Println("cleaning web...")
+		fmt.Println("cleaning web...")
 		err = deleteAllSubDirectories(filepath.Join(apiPath, "gen", "web"))
 		if err != nil {
 			log.Fatal(err)
 		}
 
 		// run builder
-		log.Println("running builder...")
+		fmt.Println("running builder...")
 
-		cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
-		if err != nil {
-			log.Fatal(err)
+		config := &container.Config{
+			Image:      "proto-builder:v3",
+			WorkingDir: "/workspace",
 		}
 
-		hostConfig := container.HostConfig{
+		hostConfig := &container.HostConfig{
 			Mounts: []mount.Mount{
 				{
 					Type:   mount.TypeBind,
@@ -81,55 +78,19 @@ var buildCmd = &cobra.Command{
 			},
 		}
 
-		// TODO: consolidate below Docker steps into helper function
-
 		// mod update
-		containerConfig := &container.Config{
-			Image:      "proto-builder:v3",
-			WorkingDir: "/workspace",
-			Cmd:        []string{"mod", "update"},
-		}
-		resp, err := cli.ContainerCreate(ctx, containerConfig, &hostConfig, nil, nil, "proto-builder")
+		config.Cmd = []string{"mod", "update"}
+		err = docker.RunContainer(ctx, "proto-builder", config, hostConfig, true, true)
 		if err != nil {
 			log.Fatal(err)
 		}
-		err = cli.ContainerStart(ctx, resp.ID, types.ContainerStartOptions{})
-		if err != nil {
-			log.Fatal(err)
-		}
-		_, err = waitForContainer(ctx, cli, resp.ID)
-		if err != nil {
-			log.Fatal(err)
-		}
-		err = cli.ContainerRemove(ctx, resp.ID, types.ContainerRemoveOptions{})
-		if err != nil {
-			log.Fatal(err)
-		}
-		// TODO: tail logs from container
 
 		// generate
-		containerConfig = &container.Config{
-			Image:      "proto-builder:v3",
-			WorkingDir: "/workspace",
-			Cmd:        []string{"generate"},
-		}
-		resp, err = cli.ContainerCreate(ctx, containerConfig, &hostConfig, nil, nil, "proto-builder")
+		config.Cmd = []string{"generate"}
+		err = docker.RunContainer(ctx, "proto-builder", config, hostConfig, true, true)
 		if err != nil {
 			log.Fatal(err)
 		}
-		err = cli.ContainerStart(ctx, resp.ID, types.ContainerStartOptions{})
-		if err != nil {
-			log.Fatal(err)
-		}
-		_, err = waitForContainer(ctx, cli, resp.ID)
-		if err != nil {
-			log.Fatal(err)
-		}
-		err = cli.ContainerRemove(ctx, resp.ID, types.ContainerRemoveOptions{})
-		if err != nil {
-			log.Fatal(err)
-		}
-		// TODO: tail logs from container
 
 		// TODO: move the below to a helper and pass a function in for processing?
 
@@ -151,7 +112,7 @@ var buildCmd = &cobra.Command{
 		LoopDirsFiles(filepath.Join(apiPath, "gen", "web"))
 		wg.Wait()
 
-		log.Println("finished")
+		fmt.Println("finished")
 	},
 }
 
@@ -185,7 +146,7 @@ func init() {
 }
 
 func deleteAllSubDirectories(path string) error {
-	dir, err := ioutil.ReadDir(path)
+	dir, err := os.ReadDir(path)
 	if err != nil {
 		return err
 	}
@@ -197,61 +158,51 @@ func deleteAllSubDirectories(path string) error {
 	return nil
 }
 
-func waitForContainer(ctx context.Context, cli *client.Client, id string) (state int64, err error) {
-	resultC, errC := cli.ContainerWait(ctx, id, "")
-	select {
-	case err := <-errC:
-		return 0, err
-	case result := <-resultC:
-		return result.StatusCode, nil
-	}
-}
-
 var (
-    wg   sync.WaitGroup
-    jobs chan string = make(chan string)
+	wg   sync.WaitGroup
+	jobs chan string = make(chan string)
 )
 
 func loopFilesWorker(fileProcessor func(filePath string)) error {
-    for path := range jobs {
-        files, err := ioutil.ReadDir(path)
-        if err != nil {
-            wg.Done()
-            return err
-        }
+	for path := range jobs {
+		files, err := os.ReadDir(path)
+		if err != nil {
+			wg.Done()
+			return err
+		}
 
-        for _, file := range files {
-            if !file.IsDir() {
-                fileProcessor(filepath.Join(path, file.Name()))
-            }
-        }
-        wg.Done()
-    }
-    return nil
+		for _, file := range files {
+			if !file.IsDir() {
+				fileProcessor(filepath.Join(path, file.Name()))
+			}
+		}
+		wg.Done()
+	}
+	return nil
 }
 
 func LoopDirsFiles(path string) error {
-    files, err := ioutil.ReadDir(path)
-    if err != nil {
-        return err
-    }
-    //Add this path as a job to the workers
-    //You must call it in a go routine, since if every worker is busy, then you have to wait for the channel to be free.
-    go func() {
+	files, err := os.ReadDir(path)
+	if err != nil {
+		return err
+	}
+	//Add this path as a job to the workers
+	//You must call it in a go routine, since if every worker is busy, then you have to wait for the channel to be free.
+	go func() {
 		wg.Add(1)
-        jobs <- path
-    }()
-    for _, file := range files {
-        if file.IsDir() {
-            //Recursively go further in the tree
-            LoopDirsFiles(filepath.Join(path, file.Name()))
-        }
-    }
-    return nil
+		jobs <- path
+	}()
+	for _, file := range files {
+		if file.IsDir() {
+			//Recursively go further in the tree
+			LoopDirsFiles(filepath.Join(path, file.Name()))
+		}
+	}
+	return nil
 }
 
 func sed(old, new, filePath string) error {
-	fileData, err := ioutil.ReadFile(filePath)
+	fileData, err := os.ReadFile(filePath)
 	if err != nil {
 		return err
 	}
@@ -260,7 +211,7 @@ func sed(old, new, filePath string) error {
 	fileString = strings.ReplaceAll(fileString, old, new)
 	fileData = []byte(fileString)
 
-	err = ioutil.WriteFile(filePath, fileData, 0o600)
+	err = os.WriteFile(filePath, fileData, 0o600)
 	if err != nil {
 		return err
 	}
