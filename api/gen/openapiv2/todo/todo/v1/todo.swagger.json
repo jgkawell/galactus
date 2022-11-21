@@ -68,11 +68,6 @@
         },
         "status": {
           "$ref": "#/definitions/v1TodoStatus"
-        },
-        "scheduledTime": {
-          "type": "string",
-          "format": "date-time",
-          "description": "TODO: the proto will throw an error if you don't have a google.protobuf.Timestamp somewhere in the model. Need to figure out a way around this."
         }
       }
     },

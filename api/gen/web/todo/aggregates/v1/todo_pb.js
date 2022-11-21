@@ -77,8 +77,7 @@ proto.todo.aggregates.v1.Todo.toObject = function(includeInstance, msg) {
     id: jspb.Message.getFieldWithDefault(msg, 1, ""),
     title: jspb.Message.getFieldWithDefault(msg, 2, ""),
     description: jspb.Message.getFieldWithDefault(msg, 3, ""),
-    status: jspb.Message.getFieldWithDefault(msg, 4, 0),
-    scheduledTime: (f = msg.getScheduledTime()) && google_protobuf_timestamp_pb.Timestamp.toObject(includeInstance, f)
+    status: jspb.Message.getFieldWithDefault(msg, 4, 0)
   };
 
   if (includeInstance) {
@@ -130,11 +129,6 @@ proto.todo.aggregates.v1.Todo.deserializeBinaryFromReader = function(msg, reader
     case 4:
       var value = /** @type {!proto.todo.aggregates.v1.TodoStatus} */ (reader.readEnum());
       msg.setStatus(value);
-      break;
-    case 5:
-      var value = new google_protobuf_timestamp_pb.Timestamp;
-      reader.readMessage(value,google_protobuf_timestamp_pb.Timestamp.deserializeBinaryFromReader);
-      msg.setScheduledTime(value);
       break;
     default:
       reader.skipField();
@@ -191,14 +185,6 @@ proto.todo.aggregates.v1.Todo.serializeBinaryToWriter = function(message, writer
     writer.writeEnum(
       4,
       f
-    );
-  }
-  f = message.getScheduledTime();
-  if (f != null) {
-    writer.writeMessage(
-      5,
-      f,
-      google_protobuf_timestamp_pb.Timestamp.serializeBinaryToWriter
     );
   }
 };
@@ -273,43 +259,6 @@ proto.todo.aggregates.v1.Todo.prototype.getStatus = function() {
  */
 proto.todo.aggregates.v1.Todo.prototype.setStatus = function(value) {
   return jspb.Message.setProto3EnumField(this, 4, value);
-};
-
-
-/**
- * optional google.protobuf.Timestamp scheduled_time = 5;
- * @return {?proto.google.protobuf.Timestamp}
- */
-proto.todo.aggregates.v1.Todo.prototype.getScheduledTime = function() {
-  return /** @type{?proto.google.protobuf.Timestamp} */ (
-    jspb.Message.getWrapperField(this, google_protobuf_timestamp_pb.Timestamp, 5));
-};
-
-
-/**
- * @param {?proto.google.protobuf.Timestamp|undefined} value
- * @return {!proto.todo.aggregates.v1.Todo} returns this
-*/
-proto.todo.aggregates.v1.Todo.prototype.setScheduledTime = function(value) {
-  return jspb.Message.setWrapperField(this, 5, value);
-};
-
-
-/**
- * Clears the message field making it undefined.
- * @return {!proto.todo.aggregates.v1.Todo} returns this
- */
-proto.todo.aggregates.v1.Todo.prototype.clearScheduledTime = function() {
-  return this.setScheduledTime(undefined);
-};
-
-
-/**
- * Returns whether this field is set.
- * @return {boolean}
- */
-proto.todo.aggregates.v1.Todo.prototype.hasScheduledTime = function() {
-  return jspb.Message.getField(this, 5) != null;
 };
 
 

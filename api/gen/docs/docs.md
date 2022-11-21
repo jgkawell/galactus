@@ -1166,8 +1166,7 @@ to only one client) Then a `client_id` should also be provided.
 | id | [string](#string) |  | values |
 | title | [string](#string) |  |  |
 | description | [string](#string) |  |  |
-| status | [TodoStatus](#todo-aggregates-v1-TodoStatus) |  |  |
-| scheduled_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | TODO: the proto will throw an error if you don&#39;t have a google.protobuf.Timestamp somewhere in the model. Need to figure out a way around this. |
+| status | [TodoStatus](#todo-aggregates-v1-TodoStatus) |  | example timestamp attribute google.protobuf.Timestamp scheduled_time = 5 [(gorm.field).tag = {type: &#34;timestamp&#34;}]; |
 
 
 

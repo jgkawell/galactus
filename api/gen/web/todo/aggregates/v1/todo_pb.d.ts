@@ -18,11 +18,6 @@ export class Todo extends jspb.Message {
   getStatus(): TodoStatus;
   setStatus(value: TodoStatus): Todo;
 
-  getScheduledTime(): google_protobuf_timestamp_pb.Timestamp | undefined;
-  setScheduledTime(value?: google_protobuf_timestamp_pb.Timestamp): Todo;
-  hasScheduledTime(): boolean;
-  clearScheduledTime(): Todo;
-
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): Todo.AsObject;
   static toObject(includeInstance: boolean, msg: Todo): Todo.AsObject;
@@ -37,7 +32,6 @@ export namespace Todo {
     title: string,
     description: string,
     status: TodoStatus,
-    scheduledTime?: google_protobuf_timestamp_pb.Timestamp.AsObject,
   }
 }
 

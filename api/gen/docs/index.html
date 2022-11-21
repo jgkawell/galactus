@@ -3482,14 +3482,8 @@ to send data to those connected clients whitout having to change the underlying 
                   <td>status</td>
                   <td><a href="#todo.aggregates.v1.TodoStatus">TodoStatus</a></td>
                   <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>scheduled_time</td>
-                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
-                  <td></td>
-                  <td><p>TODO: the proto will throw an error if you don&#39;t have a google.protobuf.Timestamp somewhere in the model. Need to figure out a way around this. </p></td>
+                  <td><p>example timestamp attribute
+google.protobuf.Timestamp scheduled_time = 5 [(gorm.field).tag = {type: &#34;timestamp&#34;}]; </p></td>
                 </tr>
               
             </tbody>
