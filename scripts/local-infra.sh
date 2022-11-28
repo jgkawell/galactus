@@ -8,13 +8,13 @@ if [ "$command" == "start" ]; then
 
     # mongodb
     docker run --name galactus-nosql-db \
-        -d --rm -it \
+        -d -it \
         -p 27017:27017 \
         mongo:4.2.21
 
     # postgresql
     docker run --name galactus-sql-db \
-        -d --rm -it \
+        -d -it \
         -e POSTGRES_PASSWORD=admin \
         -e POSTGRES_USER=admin \
         -e POSTGRES_DB=dev \
@@ -24,18 +24,21 @@ if [ "$command" == "start" ]; then
     # rabbitmq
     docker build --rm . -f ./third_party/rabbitmq/Dockerfile -t broker
     docker run --name galactus-broker \
-        -d --rm -it \
+        -d -it \
         -p 15672:15672 \
         -p 5672:5672 \
         broker
 
-    # envoy proxy
-    docker build --rm . -f ./third_party/proxy/Dockerfile -t proxy
-    docker run --name galactus-proxy \
-        -d --rm -it \
-        --net=host \
-        -p 10000:10000 \
-        proxy
+    # hasura
+    docker run --name galactus-queryhandler \
+        -d -it \
+        -p 8082:8080 \
+        -e HASURA_GRAPHQL_METADATA_DATABASE_URL='postgres://admin:admin@host.docker.internal:5434/dev' \
+        -e PG_DATABASE_URL='postgres://admin:admin@host.docker.internal:5434/dev' \
+        -e HASURA_GRAPHQL_ENABLE_CONSOLE='true' \
+        -e HASURA_GRAPHQL_ENABLED_LOG_TYPES='startup, http-log, webhook-log, websocket-log, query-log' \
+        -e HASURA_GRAPHQL_ENABLE_TELEMETRY='false' \
+        hasura/graphql-engine:v2.15.2
 
     # display results
     docker ps
@@ -57,7 +60,7 @@ if [ "$command" == "stop" ]; then
     docker stop galactus-broker
 
     # envoy proxy
-    docker stop galactus-proxy
+    docker stop galactus-queryhandler
 
     echo "Local infra stopped"
     exit 0
