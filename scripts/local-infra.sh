@@ -7,13 +7,13 @@ if [ "$command" == "start" ]; then
     echo "Starting local infra"
 
     # mongodb
-    docker run --name galactus-nosql-db \
+    docker run --name galactus-mongo \
         -d -it \
         -p 27017:27017 \
         mongo:4.2.21
 
     # postgresql
-    docker run --name galactus-sql-db \
+    docker run --name galactus-postgres \
         -d -it \
         -e POSTGRES_PASSWORD=admin \
         -e POSTGRES_USER=admin \
@@ -22,12 +22,12 @@ if [ "$command" == "start" ]; then
         postgres:14.4
 
     # rabbitmq
-    docker build --rm . -f ./third_party/rabbitmq/Dockerfile -t broker
-    docker run --name galactus-broker \
+    docker build --rm . -f ./third_party/rabbitmq/Dockerfile -t rabbitmq:galactus
+    docker run --name galactus-rabbitmq \
         -d -it \
         -p 15672:15672 \
         -p 5672:5672 \
-        broker
+        rabbitmq:galactus
 
     # hasura
     docker run --name galactus-queryhandler \
