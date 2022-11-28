@@ -3,11 +3,12 @@ package exec
 import (
 	"bufio"
 	"context"
-	"fmt"
 	"os/exec"
+
+	"gctl/output"
 )
 
-func ExecuteCommand(ctx context.Context, cmd *exec.Cmd) (err error) {
+func ExecuteCommand(ctx context.Context, name string, c output.Color, cmd *exec.Cmd) error {
 	// create a pipe for the output
 	cmdReader, err := cmd.StdoutPipe()
 	if err != nil {
@@ -23,7 +24,7 @@ func ExecuteCommand(ctx context.Context, cmd *exec.Cmd) (err error) {
 	scanner := bufio.NewScanner(cmdReader)
 	go func() {
 		for scanner.Scan() {
-			fmt.Println(scanner.Text())
+			output.PrintlnWithNameAndColor(name, scanner.Text(), c)
 		}
 	}()
 
@@ -31,8 +32,7 @@ func ExecuteCommand(ctx context.Context, cmd *exec.Cmd) (err error) {
 	scannerErr := bufio.NewScanner(cmdErrReader)
 	go func() {
 		for scannerErr.Scan() {
-			fmt.Println("---")
-			fmt.Println(scanner.Text())
+			output.PrintlnWithNameAndColor(name, scannerErr.Text(), c)
 		}
 	}()
 
