@@ -144,15 +144,3 @@ shawarma:
 shawarma-webhook:
 	docker build -f ./third_party/$@/Dockerfile -t $(DOCKER_REGISTRY)/$@:0.0.1-$(NAMESPACE)-$(BUILD_ID) ./third_party/$@; \
 	docker push $(DOCKER_REGISTRY)/$@:0.0.1-$(NAMESPACE)-$(BUILD_ID)
-
-# Uses the plantuml tool to generate .png files for the puml diagrams into an `out/` directory relative to the diagrams themselves.
-# Initial setup: make diagrams-docker
-# Every other time: make diagrams
-.PHONY: diagrams
-diagrams:
-	docker build -t diagramsbuilder:v1 -f ./third_party/plantuml/Dockerfile .
-	docker run --rm --name diagramsbuilder --volume $(ROOT_DIR):/workspace diagramsbuilder:v1 plantuml -tpng -duration -progress -recurse -o out/ /workspace/docs/diagrams/**.puml
-# on linux we have to change the ownership of the generated files to our user (since Docker runs as root)
-	@if [ "$(OS)" = "Linux" ]; then\
-		sudo chown -R $(USER):$(USER) $(ROOT_DIR)/docs/diagrams/;\
-    fi
