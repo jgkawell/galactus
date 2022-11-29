@@ -134,36 +134,6 @@ remote:
 consumer:
 	cd tools/hammer && go run main.go consumer --service_name="$(SERVICE)" --aggregate_name="$(AGGREGATE)" --command_name="$(COMMAND)" --output_path="../../services"
 
-# regenerates the code for the protos under /api into /api/gen
-# $ make api
-api:
-	cd api && make clean && make build
-
-# regenerates the Docker build image for generating code from protos
-# $ make api-compiler
-api-compiler:
-	cd api && make docker-clean && make docker-build
-
-###################
-# LOCAL DEVELOPMENT
-###################
-core:
-	./scripts/core-services.sh "start"
-
-core-stop:
-	./scripts/core-services.sh "stop"
-
-local-infra:
-	./scripts/local-infra.sh "start"
-
-local-infra-stop:
-	./scripts/local-infra.sh "stop"
-
-# Run one service locally using the default configuration from the local.yaml file
-# $ make service NAME=core/eventstore
-service:
-	cd ./services/$(NAME) && go run main.go
-
 ########################
 # BLUE/GREEN DEVELOPMENT
 ########################
