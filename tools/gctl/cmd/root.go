@@ -19,7 +19,7 @@ var rootCmd = &cobra.Command{
 	Short: "gctl (Galactus Controller) is the built-in CLI for managing everything in Galactus",
 	Long:  `gctl (Galactus Controller) is the built-in CLI for managing everything in Galactus.
 It does everything from generate code from Protobufs to spin up your local infrastructure for
-development. The long-term goal is to replace all scripts and Makefiles with this one CLI tool.`,
+development.`,
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.

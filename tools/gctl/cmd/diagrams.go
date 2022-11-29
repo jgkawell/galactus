@@ -6,13 +6,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// diagramsCmd represents the api command
 var diagramsCmd = &cobra.Command{
 	Use:   "diagrams",
 	Short: "Manage generated diagram (PlantUML) files within `docs/diagrams`",
 }
 
-// diagramsBuildCmd represents the build command
 var diagramsBuildCmd = &cobra.Command{
 	Use:   "build",
 	Short: "Compile all diagram source files into visual documents",
@@ -23,14 +21,12 @@ PDFs use the flag '-f=pdf' NOT '-f=-tpdf'`,
 	RunE:  diagrams.Build,
 }
 
-// diagramsCleanCmd represents the init command
 var diagramsCleanCmd = &cobra.Command{
 	Use:   "clean",
 	Short: "Delete all generated PlantUML diagram files",
 	RunE:  diagrams.Clean,
 }
 
-// diagramsInitCmd represents the init command
 var diagramsInitCmd = &cobra.Command{
 	Use:   "init",
 	Short: "Build the PlantUML builder Docker image",

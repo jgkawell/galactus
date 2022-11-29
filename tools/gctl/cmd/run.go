@@ -6,14 +6,12 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// runCmd represents the run command
 var runCmd = &cobra.Command{
 	Use:   "run",
 	Short: "Run a single service locally",
 	RunE:  run.Run,
 }
 
-// runCoreCmd represents the core command
 var runCoreCmd = &cobra.Command{
 	Use:   "core",
 	Short: "Run all core galactus services locally",

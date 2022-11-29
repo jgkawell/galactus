@@ -19,14 +19,20 @@ import (
 )
 
 type DockerController interface {
+	// BuildImage takes a file path and an image name and builds a Docker image using the Dockerfile in the given directory
 	BuildImage(ctx context.Context, path, image string) error
+	// RunContainer creates a container, starts it, waits for it to complete, and removes it if requested
 	RunContainer(ctx context.Context, containerName string, config *container.Config, host *container.HostConfig, showOutput, removeContainer bool) error
+	// StartContainer runs an existing container or creates a new one if none already exist with the given name. It exists without waiting for the container to exit
 	StartContainer(ctx context.Context, containerName string, config *container.Config, host *container.HostConfig, showOutput bool) (string, error)
+	// StopContainer stops a container by the given id
 	StopContainer(ctx context.Context, id string) error
+	// StopContainerByName stops a container by the given name
 	StopContainerByName(ctx context.Context, containerName string) error
+	// RemoveContainer removes a container by the given id
 	RemoveContainer(ctx context.Context, id string) error
+	// RemoveContainerByName removes a container by the given name
 	RemoveContainerByName(ctx context.Context, containerName string) error
-	GetContainerID(ctx context.Context, containerName string) (string, error)
 }
 
 type dockerController struct {
@@ -63,6 +69,8 @@ func (d *dockerController) BuildImage(ctx context.Context, path, image string) e
 }
 
 func (d *dockerController) RunContainer(ctx context.Context, containerName string, config *container.Config, host *container.HostConfig, showOutput, removeContainer bool) error {
+	output.Println("Running container: %s", containerName)
+
 	// configure and create container
 	if showOutput {
 		config.AttachStdout = true
@@ -146,12 +154,11 @@ func (d *dockerController) StartContainer(ctx context.Context, containerName str
 
 func (d *dockerController) StopContainer(ctx context.Context, id string) error {
 	timeout := 30 * time.Second
-	info, _ := d.cli.ContainerInspect(ctx, id)
-	output.Println("Stopping container: %s", strings.TrimPrefix(info.Name, "/"))
 	return d.cli.ContainerStop(ctx, id, &timeout)
 }
 
 func (d *dockerController) StopContainerByName(ctx context.Context, containerName string) error {
+	output.Println("Stopping container: %s", containerName)
 	id, err := d.getContainerID(ctx, containerName)
 	if err != nil {
 		return err
@@ -160,12 +167,11 @@ func (d *dockerController) StopContainerByName(ctx context.Context, containerNam
 }
 
 func (d *dockerController) RemoveContainer(ctx context.Context, id string) error {
-	info, _ := d.cli.ContainerInspect(ctx, id)
-	output.Println("Removing container: %s", strings.TrimPrefix(info.Name, "/"))
 	return d.cli.ContainerRemove(ctx, id, types.ContainerRemoveOptions{})
 }
 
 func (d *dockerController) RemoveContainerByName(ctx context.Context, containerName string) error {
+	output.Println("Removing container: %s", containerName)
 	id, err := d.getContainerID(ctx, containerName)
 	if err != nil {
 		return err
@@ -173,9 +179,7 @@ func (d *dockerController) RemoveContainerByName(ctx context.Context, containerN
 	return d.RemoveContainer(ctx, id)
 }
 
-func (d *dockerController) GetContainerID(ctx context.Context, containerName string) (string, error) {
-	return d.getContainerID(ctx, containerName)
-}
+// HELPER FUNCTIONS
 
 func (d *dockerController) getDockerContext(filePath string) (io.Reader, error) {
 	ctx, err := archive.TarWithOptions(filePath, &archive.TarOptions{})
