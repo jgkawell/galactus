@@ -5,13 +5,9 @@ A small example to display how the notifier service can be intergrated with a Re
 ## Getting Started
 
 ```shell
-# (from the root of galactus)
-
 # Make sure core services are up
-make local-infra
-make core
-
-# (from this directory)
+gctl infra start
+gctl run core
 
 # Install dependencies
 npm install

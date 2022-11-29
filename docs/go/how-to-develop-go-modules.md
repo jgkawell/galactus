@@ -12,17 +12,17 @@ This does mean that developing our modules is slightly more involved than before
 
 ## Creating new module
 
-If you want to create a new Go module, *go* [here](how-to-create-a-go-module.md)
+If you want to create a new Go module, _go_ [here](how-to-create-a-go-module.md)
 
 ## Modifying an existing module
 
 Let's assume you want to update the `logging` module. In order to do this you can simply open that directory `/pkg/logging` and start editing it as you would any go module.
 
-To test out your changes you *could* create a playground application to test run it, but even better you can modify an existing service to inherit it with a local replace and test out the updated module in a full remote namespace. Let's use an example of testing out `logging` using the `asset` service:
+To test out your changes you _could_ create a playground application to test run it, but even better you can modify an existing service to inherit it with a local replace and test out the updated module in a full remote namespace. Let's use an example of testing out `logging` using the `asset` service:
 
 ### Update the go.mod
 
-Update the file `/services/core/eventstore/go.mod` to include the replace call on the `logging` module (update versions accordingly):
+Update the file `/services/core/eventstore/v1/go.mod` to include the replace call on the `logging` module (update versions accordingly):
 
 ```go.mod
 module asset
@@ -31,7 +31,7 @@ go 1.19
 
 require (
     ...
-	github.com/jgkawell/galactus/pkg/logging/v2 v2.0.4
+    github.com/jgkawell/galactus/pkg/logging/v2 v2.0.4
     ...
 )
 
@@ -48,16 +48,16 @@ You can stop here if you're only going to build/run the service locally. For rem
 
 ### Update the Dockerfile
 
-Update the file `/services/core/eventstore/Dockerfile` so that you are copying over the `/pkg/logging` directory:
+Update the file `/services/core/eventstore/v1/Dockerfile` so that you are copying over the `/pkg/logging` directory:
 
 ```Dockerfile
 # We want to populate the module cache based on the go.{mod,sum} files.
 COPY ./pkg/logging ./pkg/logging
-COPY ./services/core/eventstore/go.mod ./services/core/eventstore/
-COPY ./services/core/eventstore/go.sum ./services/core/eventstore/
+COPY ./services/core/eventstore/v1/go.mod ./services/core/eventstore/v1/go.mod
+COPY ./services/core/eventstore/v1/go.sum ./services/core/eventstore/v1/go.sum
 ```
 
-Now you can run the service remotely using `make eventstore`
+Now you can run the service remotely using: TODO
 
 ## Open a PR
 

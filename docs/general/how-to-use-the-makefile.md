@@ -5,22 +5,23 @@ Most everything you need to do in `galactus` is automated through the main `Make
 
 ## Local Development
 
-Working on services locally is sometimes needed, we have a few dependencies that are required by the framework.
-
-(RabbitMQ, Postgres, Mongo). Running all the se dependencies locally is automated with a few `make` targets.
+Working on services locally is sometimes needed, we have a few dependencies that are required by the framework (RabbitMQ, Postgres, Mongo, etc.). Running all these dependencies locally is automated with through the `gctl` tool.
 
 Below is an example workflow:
 
 ```sh
 # deploy core infrastructure with docker
-make local
+gctl infra init # only run this once
+gctl infra start
 
-# deploy the services you are working on (user service in the example)
-# NOTE: This needs to be run from a differnt terminal window
-make service NAME=user
+# deploy core services (ctrl+c will shut these down))
+gctl run core
 
-# once your done, clean up your services
-make clean-local
+# deploy the service(s) you are working on (user service in the example)
+gctl run --domain=orders --service=shipping --version=v2
+
+# once your done, clean up resources
+gctl infra stop
 ```
 
 ## Remote Development
