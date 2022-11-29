@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/circadence-official/galactus/pkg/chassis/db"
-	"github.com/circadence-official/galactus/pkg/chassis/terminator"
-	l "github.com/circadence-official/galactus/pkg/logging/v2"
+	"github.com/jgkawell/galactus/pkg/chassis/db"
+	"github.com/jgkawell/galactus/pkg/chassis/terminator"
+	l "github.com/jgkawell/galactus/pkg/logging/v2"
 
 	"github.com/DeanThompson/ginpprof"
 	"github.com/gin-gonic/gin"

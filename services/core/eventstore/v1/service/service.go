@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"time"
 
-	agpb "github.com/circadence-official/galactus/api/gen/go/core/aggregates/v1"
-	pb "github.com/circadence-official/galactus/api/gen/go/core/eventstore/v1"
+	agpb "github.com/jgkawell/galactus/api/gen/go/core/aggregates/v1"
+	pb "github.com/jgkawell/galactus/api/gen/go/core/eventstore/v1"
 
-	ct "github.com/circadence-official/galactus/pkg/chassis/context"
-	"github.com/circadence-official/galactus/pkg/chassis/messagebus"
-	l "github.com/circadence-official/galactus/pkg/logging/v2"
+	ct "github.com/jgkawell/galactus/pkg/chassis/context"
+	"github.com/jgkawell/galactus/pkg/chassis/messagebus"
+	l "github.com/jgkawell/galactus/pkg/logging/v2"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"

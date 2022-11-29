@@ -1,11 +1,11 @@
 package service
 
 import (
-	chpb "github.com/circadence-official/galactus/api/gen/go/core/commandhandler/v1"
-	espb "github.com/circadence-official/galactus/api/gen/go/core/eventstore/v1"
+	chpb "github.com/jgkawell/galactus/api/gen/go/core/commandhandler/v1"
+	espb "github.com/jgkawell/galactus/api/gen/go/core/eventstore/v1"
 
-	ct "github.com/circadence-official/galactus/pkg/chassis/context"
-	l "github.com/circadence-official/galactus/pkg/logging/v2"
+	ct "github.com/jgkawell/galactus/pkg/chassis/context"
+	l "github.com/jgkawell/galactus/pkg/logging/v2"
 )
 
 type service struct {

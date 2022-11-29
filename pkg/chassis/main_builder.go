@@ -17,23 +17,23 @@ import (
 
 	// chassis packages
 	runtime "github.com/banzaicloud/logrus-runtime-formatter"
-	"github.com/circadence-official/galactus/pkg/chassis/broker"
-	cf "github.com/circadence-official/galactus/pkg/chassis/clientfactory"
-	ct "github.com/circadence-official/galactus/pkg/chassis/context"
-	"github.com/circadence-official/galactus/pkg/chassis/db"
-	ec "github.com/circadence-official/galactus/pkg/chassis/env"
-	"github.com/circadence-official/galactus/pkg/chassis/events"
-	messagebus "github.com/circadence-official/galactus/pkg/chassis/messagebus"
-	"github.com/circadence-official/galactus/pkg/chassis/terminator"
+	"github.com/jgkawell/galactus/pkg/chassis/broker"
+	cf "github.com/jgkawell/galactus/pkg/chassis/clientfactory"
+	ct "github.com/jgkawell/galactus/pkg/chassis/context"
+	"github.com/jgkawell/galactus/pkg/chassis/db"
+	ec "github.com/jgkawell/galactus/pkg/chassis/env"
+	"github.com/jgkawell/galactus/pkg/chassis/events"
+	messagebus "github.com/jgkawell/galactus/pkg/chassis/messagebus"
+	"github.com/jgkawell/galactus/pkg/chassis/terminator"
 
 	// other galactus modules
-	azkeyvault "github.com/circadence-official/galactus/pkg/azkeyvault"
-	l "github.com/circadence-official/galactus/pkg/logging/v2"
+	azkeyvault "github.com/jgkawell/galactus/pkg/azkeyvault"
+	l "github.com/jgkawell/galactus/pkg/logging/v2"
 
 	// galactus api packages
-	agpb "github.com/circadence-official/galactus/api/gen/go/core/aggregates/v1"
-	rgpb "github.com/circadence-official/galactus/api/gen/go/core/registry/v1"
-	evpb "github.com/circadence-official/galactus/api/gen/go/generic/events/v1"
+	agpb "github.com/jgkawell/galactus/api/gen/go/core/aggregates/v1"
+	rgpb "github.com/jgkawell/galactus/api/gen/go/core/registry/v1"
+	evpb "github.com/jgkawell/galactus/api/gen/go/generic/events/v1"
 
 	// third party libraries
 	"github.com/gin-gonic/gin"

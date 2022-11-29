@@ -3,13 +3,13 @@ package events
 import (
 	"encoding/json"
 
-	agpb "github.com/circadence-official/galactus/api/gen/go/core/aggregates/v1"
-	es "github.com/circadence-official/galactus/api/gen/go/core/eventstore/v1"
-	ev "github.com/circadence-official/galactus/api/gen/go/generic/events/v1"
+	agpb "github.com/jgkawell/galactus/api/gen/go/core/aggregates/v1"
+	es "github.com/jgkawell/galactus/api/gen/go/core/eventstore/v1"
+	ev "github.com/jgkawell/galactus/api/gen/go/generic/events/v1"
 
-	c "github.com/circadence-official/galactus/pkg/chassis/context"
-	"github.com/circadence-official/galactus/pkg/chassis/messagebus"
-	l "github.com/circadence-official/galactus/pkg/logging/v2"
+	c "github.com/jgkawell/galactus/pkg/chassis/context"
+	"github.com/jgkawell/galactus/pkg/chassis/messagebus"
+	l "github.com/jgkawell/galactus/pkg/logging/v2"
 )
 
 type EventManager interface {

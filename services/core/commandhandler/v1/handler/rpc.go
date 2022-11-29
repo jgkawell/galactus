@@ -5,10 +5,10 @@ import (
 
 	s "commandhandler/service"
 
-	pb "github.com/circadence-official/galactus/api/gen/go/core/commandhandler/v1"
+	pb "github.com/jgkawell/galactus/api/gen/go/core/commandhandler/v1"
 
-	ct "github.com/circadence-official/galactus/pkg/chassis/context"
-	l "github.com/circadence-official/galactus/pkg/logging/v2"
+	ct "github.com/jgkawell/galactus/pkg/chassis/context"
+	l "github.com/jgkawell/galactus/pkg/logging/v2"
 
 	"github.com/google/uuid"
 )

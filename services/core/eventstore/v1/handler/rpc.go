@@ -7,9 +7,9 @@ import (
 
 	s "eventstore/service"
 
-	pb "github.com/circadence-official/galactus/api/gen/go/core/eventstore/v1"
-	ct "github.com/circadence-official/galactus/pkg/chassis/context"
-	l "github.com/circadence-official/galactus/pkg/logging/v2"
+	pb "github.com/jgkawell/galactus/api/gen/go/core/eventstore/v1"
+	ct "github.com/jgkawell/galactus/pkg/chassis/context"
+	l "github.com/jgkawell/galactus/pkg/logging/v2"
 
 	"github.com/google/uuid"
 	"google.golang.org/grpc/codes"

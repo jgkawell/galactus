@@ -1,4 +1,4 @@
-module github.com/circadence-official/galactus/api/gen/go
+module github.com/jgkawell/galactus/api/gen/go
 
 go 1.19
 

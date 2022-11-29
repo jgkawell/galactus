@@ -6,7 +6,7 @@ package core.eventstore.v1;
 import "validate/validate.proto";
 import "google/protobuf/timestamp.proto";
 
-option go_package = "github.com/circadence-official/galactus/api/gen/go/core/eventstore/v1";
+option go_package = "github.com/jgkawell/galactus/api/gen/go/core/eventstore/v1";
 
 service EventStore {
   // Create a new event in the event store

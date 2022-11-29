@@ -3,7 +3,7 @@ syntax = "proto3";
 
 package core.registry.v1;
 
-option go_package = "github.com/circadence-official/galactus/api/gen/go/core/registry/v1";
+option go_package = "github.com/jgkawell/galactus/api/gen/go/core/registry/v1";
 
 import "core/aggregates/v1/registry.proto";
 

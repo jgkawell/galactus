@@ -5,7 +5,7 @@ import (
 	"net"
 	_ "net/http/pprof"
 
-	"github.com/circadence-official/galactus/pkg/chassis/terminator"
+	"github.com/jgkawell/galactus/pkg/chassis/terminator"
 
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	"google.golang.org/grpc"

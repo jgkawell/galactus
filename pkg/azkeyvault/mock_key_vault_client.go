@@ -5,7 +5,7 @@ package azkeyvault
 import (
 	context "context"
 
-	logging "github.com/circadence-official/galactus/pkg/logging/v2"
+	logging "github.com/jgkawell/galactus/pkg/logging/v2"
 	mock "github.com/stretchr/testify/mock"
 )
 

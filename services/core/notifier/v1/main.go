@@ -4,11 +4,11 @@ import (
 	h "notifier/handler"
 	s "notifier/service"
 
-	pb "github.com/circadence-official/galactus/api/gen/go/core/notifier/v1"
-	evpb "github.com/circadence-official/galactus/api/gen/go/generic/events/v1"
+	pb "github.com/jgkawell/galactus/api/gen/go/core/notifier/v1"
+	evpb "github.com/jgkawell/galactus/api/gen/go/generic/events/v1"
 
-	"github.com/circadence-official/galactus/pkg/chassis"
-	mb "github.com/circadence-official/galactus/pkg/chassis/messagebus"
+	"github.com/jgkawell/galactus/pkg/chassis"
+	mb "github.com/jgkawell/galactus/pkg/chassis/messagebus"
 )
 
 func main() {

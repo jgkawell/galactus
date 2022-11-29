@@ -18,7 +18,7 @@ import (
 
 	"google.golang.org/protobuf/types/known/anypb"
 
-	v1 "github.com/circadence-official/galactus/api/gen/go/core/aggregates/v1"
+	v1 "github.com/jgkawell/galactus/api/gen/go/core/aggregates/v1"
 )
 
 // ensure the imports are used

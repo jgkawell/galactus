@@ -6,7 +6,7 @@ import (
 	"reflect"
 	"strings"
 
-	evpb "github.com/circadence-official/galactus/api/gen/go/generic/events/v1"
+	evpb "github.com/jgkawell/galactus/api/gen/go/generic/events/v1"
 )
 
 func AggregateTypeAsString(aggregateType evpb.AggregateType) string {

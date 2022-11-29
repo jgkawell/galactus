@@ -19,7 +19,7 @@ cd pkg/basketball
 Initialize your new module:
 
 ```shell
-go mod init github.com/circadence-official/galactus/pkg/basketball
+go mod init github.com/jgkawell/galactus/pkg/basketball
 ```
 
 ## Write the module code

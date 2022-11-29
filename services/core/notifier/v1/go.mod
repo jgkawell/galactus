@@ -2,18 +2,18 @@ module notifier
 
 go 1.19
 
-replace github.com/circadence-official/galactus/api/gen/go v0.0.0 => ../../../../api/gen/go
+replace github.com/jgkawell/galactus/api/gen/go v0.0.0 => ../../../../api/gen/go
 
-replace github.com/circadence-official/galactus/pkg/azkeyvault v0.0.0 => ../../../../pkg/azkeyvault
+replace github.com/jgkawell/galactus/pkg/azkeyvault v0.0.0 => ../../../../pkg/azkeyvault
 
-replace github.com/circadence-official/galactus/pkg/chassis v0.0.0 => ../../../../pkg/chassis
+replace github.com/jgkawell/galactus/pkg/chassis v0.0.0 => ../../../../pkg/chassis
 
-replace github.com/circadence-official/galactus/pkg/logging/v2 v2.0.0 => ../../../../pkg/logging
+replace github.com/jgkawell/galactus/pkg/logging/v2 v2.0.0 => ../../../../pkg/logging
 
 require (
-	github.com/circadence-official/galactus/api/gen/go v0.0.0
-	github.com/circadence-official/galactus/pkg/chassis v0.0.0
-	github.com/circadence-official/galactus/pkg/logging/v2 v2.0.0
+	github.com/jgkawell/galactus/api/gen/go v0.0.0
+	github.com/jgkawell/galactus/pkg/chassis v0.0.0
+	github.com/jgkawell/galactus/pkg/logging/v2 v2.0.0
 	github.com/google/uuid v1.3.0
 )
 
@@ -34,7 +34,7 @@ require (
 	github.com/banzaicloud/logrus-runtime-formatter v0.0.0-20190729070250-5ae5475bae5e // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.1.1 // indirect
-	github.com/circadence-official/galactus/pkg/azkeyvault v0.0.0 // indirect
+	github.com/jgkawell/galactus/pkg/azkeyvault v0.0.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dgrijalva/jwt-go v3.2.1-0.20200107013213-dc14462fd587+incompatible // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect

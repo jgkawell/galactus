@@ -3,7 +3,7 @@ package token
 import (
 	"testing"
 
-	m "github.com/circadence-official/galactus/pkg/azkeyvault/model"
+	m "github.com/jgkawell/galactus/pkg/azkeyvault/model"
 
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/pkg/errors"

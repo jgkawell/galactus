@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package todo.aggregates.v1;
 
-option go_package = "github.com/circadence-official/galactus/api/gen/go/todo/aggregates/v1";
+option go_package = "github.com/jgkawell/galactus/api/gen/go/todo/aggregates/v1";
 
 import "validate/validate.proto";
 import "options/gorm.proto";

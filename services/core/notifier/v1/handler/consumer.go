@@ -5,10 +5,10 @@ import (
 
 	s "notifier/service"
 
-	ct "github.com/circadence-official/galactus/pkg/chassis/context"
-	ev "github.com/circadence-official/galactus/pkg/chassis/events"
-	mb "github.com/circadence-official/galactus/pkg/chassis/messagebus"
-	l "github.com/circadence-official/galactus/pkg/logging/v2"
+	ct "github.com/jgkawell/galactus/pkg/chassis/context"
+	ev "github.com/jgkawell/galactus/pkg/chassis/events"
+	mb "github.com/jgkawell/galactus/pkg/chassis/messagebus"
+	l "github.com/jgkawell/galactus/pkg/logging/v2"
 )
 
 type consumer struct {

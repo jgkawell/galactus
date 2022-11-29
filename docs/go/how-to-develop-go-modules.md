@@ -31,7 +31,7 @@ go 1.19
 
 require (
     ...
-	github.com/circadence-official/galactus/pkg/logging/v2 v2.0.4
+	github.com/jgkawell/galactus/pkg/logging/v2 v2.0.4
     ...
 )
 
@@ -40,7 +40,7 @@ require (
     ...
 )
 
-replace github.com/circadence-official/galactus/pkg/logging/v2 v2.0.4 => ../../pkg/logging
+replace github.com/jgkawell/galactus/pkg/logging/v2 v2.0.4 => ../../pkg/logging
 
 ```
 

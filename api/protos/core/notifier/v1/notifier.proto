@@ -3,7 +3,7 @@ syntax = "proto3";
 
 package core.notifier.v1;
 
-option go_package = "github.com/circadence-official/galactus/api/gen/go/core/notifier/v1";
+option go_package = "github.com/jgkawell/galactus/api/gen/go/core/notifier/v1";
 
 // `Connect` - A rpc method that can push a notification to a connected `web-client`.
 // A map of `session_id`'s and `user_id`'s is maintained to know how a notification

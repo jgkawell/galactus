@@ -7,8 +7,8 @@ import (
 	"net/http/httputil"
 	"time"
 
-	m "github.com/circadence-official/galactus/pkg/azkeyvault/model"
-	l "github.com/circadence-official/galactus/pkg/logging/v2"
+	m "github.com/jgkawell/galactus/pkg/azkeyvault/model"
+	l "github.com/jgkawell/galactus/pkg/logging/v2"
 
 	kv "github.com/Azure/azure-sdk-for-go/services/keyvault/2016-10-01/keyvault"
 	kvmgmt "github.com/Azure/azure-sdk-for-go/services/keyvault/mgmt/2016-10-01/keyvault"

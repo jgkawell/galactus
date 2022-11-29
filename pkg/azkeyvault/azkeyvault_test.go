@@ -4,9 +4,9 @@ import (
 	"errors"
 	"testing"
 
-	m "github.com/circadence-official/galactus/pkg/azkeyvault/model"
-	ts "github.com/circadence-official/galactus/pkg/azkeyvault/token"
-	l "github.com/circadence-official/galactus/pkg/logging/v2"
+	m "github.com/jgkawell/galactus/pkg/azkeyvault/model"
+	ts "github.com/jgkawell/galactus/pkg/azkeyvault/token"
+	l "github.com/jgkawell/galactus/pkg/logging/v2"
 
 	"github.com/stretchr/testify/assert"
 )

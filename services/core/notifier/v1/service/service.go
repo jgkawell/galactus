@@ -6,13 +6,13 @@ import (
 	"sync"
 	"time"
 
-	agpb "github.com/circadence-official/galactus/api/gen/go/core/aggregates/v1"
-	ntpb "github.com/circadence-official/galactus/api/gen/go/core/notifier/v1"
-	evpb "github.com/circadence-official/galactus/api/gen/go/generic/events/v1"
+	agpb "github.com/jgkawell/galactus/api/gen/go/core/aggregates/v1"
+	ntpb "github.com/jgkawell/galactus/api/gen/go/core/notifier/v1"
+	evpb "github.com/jgkawell/galactus/api/gen/go/generic/events/v1"
 
-	ct "github.com/circadence-official/galactus/pkg/chassis/context"
-	ev "github.com/circadence-official/galactus/pkg/chassis/events"
-	l "github.com/circadence-official/galactus/pkg/logging/v2"
+	ct "github.com/jgkawell/galactus/pkg/chassis/context"
+	ev "github.com/jgkawell/galactus/pkg/chassis/events"
+	l "github.com/jgkawell/galactus/pkg/logging/v2"
 )
 
 type service struct {

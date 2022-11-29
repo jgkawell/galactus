@@ -3,7 +3,7 @@ syntax = "proto3";
 
 package core.commandhandler.v1;
 
-option go_package = "github.com/circadence-official/galactus/api/gen/go/core/commandhandler/v1";
+option go_package = "github.com/jgkawell/galactus/api/gen/go/core/commandhandler/v1";
 
 import "validate/validate.proto";
 import "google/protobuf/timestamp.proto";

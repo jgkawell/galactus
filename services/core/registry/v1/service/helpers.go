@@ -6,10 +6,10 @@ import (
 	"math/rand"
 	"strings"
 
-	agpb "github.com/circadence-official/galactus/api/gen/go/core/aggregates/v1"
-	pb "github.com/circadence-official/galactus/api/gen/go/core/registry/v1"
+	agpb "github.com/jgkawell/galactus/api/gen/go/core/aggregates/v1"
+	pb "github.com/jgkawell/galactus/api/gen/go/core/registry/v1"
 
-	l "github.com/circadence-official/galactus/pkg/logging/v2"
+	l "github.com/jgkawell/galactus/pkg/logging/v2"
 
 	"github.com/google/uuid"
 )

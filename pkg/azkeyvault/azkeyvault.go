@@ -7,10 +7,10 @@ import (
 	"io/ioutil"
 	"time"
 
-	m "github.com/circadence-official/galactus/pkg/azkeyvault/model"
-	s "github.com/circadence-official/galactus/pkg/azkeyvault/service"
-	t "github.com/circadence-official/galactus/pkg/azkeyvault/token"
-	l "github.com/circadence-official/galactus/pkg/logging/v2"
+	m "github.com/jgkawell/galactus/pkg/azkeyvault/model"
+	s "github.com/jgkawell/galactus/pkg/azkeyvault/service"
+	t "github.com/jgkawell/galactus/pkg/azkeyvault/token"
+	l "github.com/jgkawell/galactus/pkg/logging/v2"
 )
 
 // KeyVaultClient key vault client interface

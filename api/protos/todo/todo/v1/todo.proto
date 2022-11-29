@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package todo.todo.v1;
 
-option go_package = "github.com/circadence-official/galactus/api/gen/go/todo/todo/v1";
+option go_package = "github.com/jgkawell/galactus/api/gen/go/todo/todo/v1";
 
 import "todo/aggregates/v1/todo.proto";
 

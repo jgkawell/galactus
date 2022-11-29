@@ -1,14 +1,14 @@
-module github.com/circadence-official/galactus/pkg/azkeyvault
+module github.com/jgkawell/galactus/pkg/azkeyvault
 
 go 1.19
 
-replace github.com/circadence-official/galactus/pkg/logging/v2 v2.0.0 => ../logging
+replace github.com/jgkawell/galactus/pkg/logging/v2 v2.0.0 => ../logging
 
 require (
 	github.com/Azure/azure-sdk-for-go v30.1.0+incompatible
 	github.com/Azure/go-autorest/autorest v0.9.2
 	github.com/Azure/go-autorest/autorest/adal v0.8.0
-	github.com/circadence-official/galactus/pkg/logging/v2 v2.0.0
+	github.com/jgkawell/galactus/pkg/logging/v2 v2.0.0
 	github.com/hashicorp/golang-lru v0.5.4
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.6.1

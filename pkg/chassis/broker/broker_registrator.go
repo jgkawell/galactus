@@ -3,9 +3,9 @@ package broker
 import (
 	"context"
 
-	"github.com/circadence-official/galactus/pkg/chassis/messagebus"
+	"github.com/jgkawell/galactus/pkg/chassis/messagebus"
 
-	l "github.com/circadence-official/galactus/pkg/logging/v2"
+	l "github.com/jgkawell/galactus/pkg/logging/v2"
 )
 
 type BrokerDefinition struct {

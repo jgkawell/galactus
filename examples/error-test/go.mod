@@ -2,9 +2,9 @@ module examples
 
 go 1.19
 
-replace github.com/circadence-official/galactus/pkg/logging/v2 v2.0.0 => ../../pkg/logging
+replace github.com/jgkawell/galactus/pkg/logging/v2 v2.0.0 => ../../pkg/logging
 
-require github.com/circadence-official/galactus/pkg/logging/v2 v2.0.0
+require github.com/jgkawell/galactus/pkg/logging/v2 v2.0.0
 
 require (
 	github.com/DataDog/datadog-go v4.8.3+incompatible // indirect

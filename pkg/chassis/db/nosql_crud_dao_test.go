@@ -8,7 +8,7 @@ import (
 	"reflect"
 	"testing"
 
-	l "github.com/circadence-official/galactus/pkg/logging/v2"
+	l "github.com/jgkawell/galactus/pkg/logging/v2"
 
 	spy "bou.ke/monkey"
 	"github.com/sirupsen/logrus/hooks/test"

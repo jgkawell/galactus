@@ -3,8 +3,8 @@ package token
 import (
 	"fmt"
 
-	m "github.com/circadence-official/galactus/pkg/azkeyvault/model"
-	l "github.com/circadence-official/galactus/pkg/logging/v2"
+	m "github.com/jgkawell/galactus/pkg/azkeyvault/model"
+	l "github.com/jgkawell/galactus/pkg/logging/v2"
 
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/adal"

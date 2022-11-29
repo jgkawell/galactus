@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	l "github.com/circadence-official/galactus/pkg/logging/v2"
+	l "github.com/jgkawell/galactus/pkg/logging/v2"
 
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"

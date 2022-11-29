@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	l "github.com/circadence-official/galactus/pkg/logging/v2"
+	l "github.com/jgkawell/galactus/pkg/logging/v2"
 
 	"github.com/google/uuid"
 	amqp "github.com/rabbitmq/amqp091-go"

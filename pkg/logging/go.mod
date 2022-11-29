@@ -1,4 +1,4 @@
-module github.com/circadence-official/galactus/pkg/logging/v2
+module github.com/jgkawell/galactus/pkg/logging/v2
 
 go 1.19
 

@@ -1,19 +1,19 @@
-module github.com/circadence-official/galactus/pkg/chassis
+module github.com/jgkawell/galactus/pkg/chassis
 
 go 1.19
 
-replace github.com/circadence-official/galactus/api/gen/go v0.0.0 => ../../api/gen/go
+replace github.com/jgkawell/galactus/api/gen/go v0.0.0 => ../../api/gen/go
 
-replace github.com/circadence-official/galactus/pkg/azkeyvault v0.0.0 => ../azkeyvault
+replace github.com/jgkawell/galactus/pkg/azkeyvault v0.0.0 => ../azkeyvault
 
-replace github.com/circadence-official/galactus/pkg/logging/v2 v2.0.0 => ../logging
+replace github.com/jgkawell/galactus/pkg/logging/v2 v2.0.0 => ../logging
 
 require (
 	bou.ke/monkey v1.0.1
 	github.com/DeanThompson/ginpprof v0.0.0-20201112072838-007b1e56b2e1
-	github.com/circadence-official/galactus/api/gen/go v0.0.0
-	github.com/circadence-official/galactus/pkg/azkeyvault v0.0.0
-	github.com/circadence-official/galactus/pkg/logging/v2 v2.0.0
+	github.com/jgkawell/galactus/api/gen/go v0.0.0
+	github.com/jgkawell/galactus/pkg/azkeyvault v0.0.0
+	github.com/jgkawell/galactus/pkg/logging/v2 v2.0.0
 	github.com/gin-gonic/gin v1.6.3
 	github.com/go-redis/redis/v8 v8.8.3
 	github.com/google/uuid v1.3.0

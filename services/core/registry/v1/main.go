@@ -4,10 +4,10 @@ import (
 	h "registry/handler"
 	s "registry/service"
 
-	"github.com/circadence-official/galactus/pkg/chassis"
+	"github.com/jgkawell/galactus/pkg/chassis"
 
-	agpb "github.com/circadence-official/galactus/api/gen/go/core/aggregates/v1"
-	pb "github.com/circadence-official/galactus/api/gen/go/core/registry/v1"
+	agpb "github.com/jgkawell/galactus/api/gen/go/core/aggregates/v1"
+	pb "github.com/jgkawell/galactus/api/gen/go/core/registry/v1"
 )
 
 func main() {

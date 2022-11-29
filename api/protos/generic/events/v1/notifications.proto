@@ -3,7 +3,7 @@ syntax = "proto3";
 
 package generic.events.v1;
 
-option go_package = "github.com/circadence-official/galactus/api/gen/go/generic/events/v1";
+option go_package = "github.com/jgkawell/galactus/api/gen/go/generic/events/v1";
 
 import "core/notifier/v1/notifier.proto";
 
