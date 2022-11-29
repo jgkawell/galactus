@@ -9,7 +9,7 @@ import (
 // infraCmd represents the run command
 var infraCmd = &cobra.Command{
 	Use:   "infra",
-	Short: "Parent",
+	Short: "Manage all local galactus infra (Docker containers)",
 }
 
 // infraStartCmd represents the infra command
@@ -22,21 +22,21 @@ var infraStartCmd = &cobra.Command{
 // infraStopCmd represents the infra command
 var infraStopCmd = &cobra.Command{
 	Use:   "stop",
-	Short: "Stop all galactus infra",
+	Short: "Stop all running galactus infra",
 	RunE:  infra.Stop,
 }
 
 // infraInitCmd represents the infra command
 var infraInitCmd = &cobra.Command{
 	Use:   "init",
-	Short: "Initialize infra (build Docker images, etc.)",
+	Short: "Build all custom galactus infra Docker images",
 	RunE:  infra.Init,
 }
 
 // infraCleanCmd represents the infra command
 var infraCleanCmd = &cobra.Command{
 	Use:   "clean",
-	Short: "Clean up infra resources (Docker images, containers, etc.)",
+	Short: "Clean up infra resources (Docker containers)",
 	RunE:  infra.Clean,
 }
 
@@ -45,7 +45,7 @@ func init() {
 	rootCmd.AddCommand(infraCmd)
 	// run
 	infraCmd.AddCommand(infraStartCmd)
-	infraStartCmd.Flags().BoolVarP(&infra.Follow, "follow", "f", false, "whether or not to follow the output of the infra docker containers")
+	infraStartCmd.Flags().BoolVarP(&infra.Follow, "follow", "f", false, "whether or not to follow the output of the infra docker containers (true/false)")
 	infraCmd.AddCommand(infraStopCmd)
 	infraCmd.AddCommand(infraInitCmd)
 	infraCmd.AddCommand(infraCleanCmd)

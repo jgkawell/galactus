@@ -10,7 +10,9 @@ import (
 	"github.com/spf13/viper"
 )
 
-// TODO: have a command to remove generated Docker images?
+const (
+	protoImage = "proto:galactus"
+)
 
 func Init(cmd *cobra.Command, args []string) error {
 	ctx := cmd.Context()
@@ -23,7 +25,7 @@ func Init(cmd *cobra.Command, args []string) error {
 	rootPath := viper.GetString("config.root")
 	fullPath := filepath.Join(rootPath, "api")
 
-	err = dctl.BuildImage(ctx, fullPath, "proto-builder:v3")
+	err = dctl.BuildImage(ctx, fullPath, protoImage)
 	if err != nil {
 		output.Error(err)
 		return err

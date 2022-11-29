@@ -1,6 +1,7 @@
 package diagrams
 
 import (
+	"fmt"
 	"path/filepath"
 
 	"gctl/docker"
@@ -14,6 +15,10 @@ import (
 
 const (
 	diagramsContainer = "diagrams-builder"
+)
+
+var (
+	Type string
 )
 
 func Build(cmd *cobra.Command, args []string) (err error) {
@@ -42,7 +47,8 @@ func Build(cmd *cobra.Command, args []string) (err error) {
 		},
 	}
 
-	config.Cmd = []string{"plantuml", "-tpng", "-duration", "-progress", "-recurse", "-o", "gen/", "./**.puml"}
+	fileType := fmt.Sprintf("-t%s", Type)
+	config.Cmd = []string{"plantuml", fileType, "-duration", "-progress", "-recurse", "-o", "gen/", "./**.puml"}
 	err = dctl.RunContainer(ctx, diagramsContainer, config, hostConfig, true, true)
 	if err != nil {
 		output.Error(err)

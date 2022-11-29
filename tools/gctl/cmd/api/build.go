@@ -15,6 +15,10 @@ import (
 	"github.com/spf13/viper"
 )
 
+const (
+	protoContainer = "proto-builder"
+)
+
 func Build(cmd *cobra.Command, args []string) (err error) {
 	ctx := cmd.Context()
 	dctl, err := docker.NewDockerController()
@@ -34,11 +38,11 @@ func Build(cmd *cobra.Command, args []string) (err error) {
 	}
 
 	// run docker proto-builder image
-	output.Println("Building `api/`...")
+	output.Println("Building api...")
 
 	// base configuration for docker container runs
 	config := &container.Config{
-		Image:      "proto-builder:v3",
+		Image:      protoImage,
 		WorkingDir: "/workspace",
 	}
 	hostConfig := &container.HostConfig{
@@ -53,7 +57,7 @@ func Build(cmd *cobra.Command, args []string) (err error) {
 
 	// mod update
 	config.Cmd = []string{"mod", "update"}
-	err = dctl.RunContainer(ctx, "proto-builder", config, hostConfig, true, true)
+	err = dctl.RunContainer(ctx, protoContainer, config, hostConfig, true, true)
 	if err != nil {
 		output.Error(err)
 		return err
@@ -61,7 +65,7 @@ func Build(cmd *cobra.Command, args []string) (err error) {
 
 	// generate
 	config.Cmd = []string{"generate"}
-	err = dctl.RunContainer(ctx, "proto-builder", config, hostConfig, true, true)
+	err = dctl.RunContainer(ctx, protoContainer, config, hostConfig, true, true)
 	if err != nil {
 		output.Error(err)
 		return err

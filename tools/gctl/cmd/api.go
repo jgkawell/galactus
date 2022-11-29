@@ -9,33 +9,27 @@ import (
 // apiCmd represents the api command
 var apiCmd = &cobra.Command{
 	Use:   "api",
-	Short: "The parent to all api commands",
+	Short: "Commands for managing the galactus API (protobufs)",
 }
 
 // apiBuildCmd represents the build command
 var apiBuildCmd = &cobra.Command{
 	Use:   "build",
-	Short: "A brief description of your command",
+	Short: "Compile all protobuf files",
 	RunE:  api.Build,
 }
 
 // apiCleanCmd represents the clean command
 var apiCleanCmd = &cobra.Command{
 	Use:   "clean",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short: "Clean up all compiled (generated) protobuf files",
 	RunE: api.Clean,
 }
 
 // apiInitCmd represents the init command
 var apiInitCmd = &cobra.Command{
 	Use:   "init",
-	Short: "A brief description of your command",
+	Short: "Build the Docker image that compiles protobufs",
 	RunE:  api.Init,
 }
 
