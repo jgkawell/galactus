@@ -1,4 +1,4 @@
-package api
+package run
 
 import (
 	"path/filepath"
@@ -13,15 +13,14 @@ import (
 // TODO: have a command to remove generated Docker images?
 
 func Init(cmd *cobra.Command, args []string) error {
-	output.Println("init called")
-
 	ctx := cmd.Context()
 
-	// build out execution path
 	rootPath := viper.GetString("config.root")
-	fullPath := filepath.Join(rootPath, "api")
 
-	err := docker.BuildImage(ctx, fullPath, "proto-builder:v3")
+	// build custom rabbitmq image
+	output.Println("Building custom RabbitMQ Docker image...")
+	fullPath := filepath.Join(rootPath, "third_party", "rabbitmq")
+	err := docker.BuildImage(ctx, fullPath, "rabbitmq:galactus")
 	if err != nil {
 		output.Error(err)
 		return err

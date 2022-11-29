@@ -12,15 +12,15 @@ var apiCmd = &cobra.Command{
 	Short: "The parent to all api commands",
 }
 
-// buildCmd represents the build command
-var buildCmd = &cobra.Command{
+// apiBuildCmd represents the build command
+var apiBuildCmd = &cobra.Command{
 	Use:   "build",
 	Short: "A brief description of your command",
 	RunE:  api.Build,
 }
 
-// cleanCmd represents the clean command
-var cleanCmd = &cobra.Command{
+// apiCleanCmd represents the clean command
+var apiCleanCmd = &cobra.Command{
 	Use:   "clean",
 	Short: "A brief description of your command",
 	Long: `A longer description that spans multiple lines and likely contains examples
@@ -32,8 +32,8 @@ to quickly create a Cobra application.`,
 	RunE: api.Clean,
 }
 
-// initCmd represents the init command
-var initCmd = &cobra.Command{
+// apiInitCmd represents the init command
+var apiInitCmd = &cobra.Command{
 	Use:   "init",
 	Short: "A brief description of your command",
 	RunE:  api.Init,
@@ -43,7 +43,7 @@ func init() {
 	// add parent
 	rootCmd.AddCommand(apiCmd)
 	// add children
-	apiCmd.AddCommand(buildCmd)
-	apiCmd.AddCommand(cleanCmd)
-	apiCmd.AddCommand(initCmd)
+	apiCmd.AddCommand(apiBuildCmd)
+	apiCmd.AddCommand(apiCleanCmd)
+	apiCmd.AddCommand(apiInitCmd)
 }
