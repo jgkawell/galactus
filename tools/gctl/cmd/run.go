@@ -20,20 +20,6 @@ var runCoreCmd = &cobra.Command{
 	RunE:  run.Core,
 }
 
-// runInfraCmd represents the infra command
-var runInfraCmd = &cobra.Command{
-	Use:   "infra",
-	Short: "Run all galactus infra locally",
-	RunE:  run.Infra,
-}
-
-// runInitCmd represents the infra command
-var runInitCmd = &cobra.Command{
-	Use:   "init",
-	Short: "Initialize local machine for running infra and services",
-	RunE:  run.Init,
-}
-
 func init() {
 	// add parent
 	rootCmd.AddCommand(runCmd)
@@ -42,6 +28,4 @@ func init() {
 	runCmd.Flags().StringVarP(&run.Domain, "domain", "d", "core", "domain for service")
 	runCmd.Flags().StringVarP(&run.Service, "service", "s", "registry", "service to run")
 	runCmd.Flags().StringVarP(&run.Version, "version", "v", "v1", "version of service to run")
-	runCmd.AddCommand(runInfraCmd)
-	runCmd.AddCommand(runInitCmd)
 }

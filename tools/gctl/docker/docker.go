@@ -18,20 +18,40 @@ import (
 	"github.com/moby/term"
 )
 
-func BuildImage(ctx context.Context, path, image string) error {
+type DockerController interface {
+	BuildImage(ctx context.Context, path, image string) error
+	RunContainer(ctx context.Context, containerName string, config *container.Config, host *container.HostConfig, showOutput, removeContainer bool) error
+	StartContainer(ctx context.Context, containerName string, config *container.Config, host *container.HostConfig, showOutput bool) (string, error)
+	StopContainer(ctx context.Context, id string) error
+	StopContainerByName(ctx context.Context, containerName string) error
+	RemoveContainer(ctx context.Context, id string) error
+	RemoveContainerByName(ctx context.Context, containerName string) error
+	GetContainerID(ctx context.Context, containerName string) (string, error)
+}
+
+type dockerController struct {
+	cli *client.Client
+}
+
+func NewDockerController() (DockerController, error) {
 	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 	if err != nil {
-		return err
+		return nil, err
 	}
+	return &dockerController{
+		cli: cli,
+	}, nil
+}
 
-	buildContext, err := getDockerContext(path)
+func (d *dockerController) BuildImage(ctx context.Context, path, image string) error {
+	buildContext, err := d.getDockerContext(path)
 	if err != nil {
 		return err
 	}
 	opt := types.ImageBuildOptions{
 		Tags: []string{image},
 	}
-	resp, err := cli.ImageBuild(ctx, buildContext, opt)
+	resp, err := d.cli.ImageBuild(ctx, buildContext, opt)
 	if err != nil {
 		return err
 	}
@@ -42,46 +62,41 @@ func BuildImage(ctx context.Context, path, image string) error {
 	return nil
 }
 
-func RunContainer(ctx context.Context, containerName string, config *container.Config, host *container.HostConfig, showOutput, removeContainer bool) error {
-	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
-	if err != nil {
-		return err
-	}
-
+func (d *dockerController) RunContainer(ctx context.Context, containerName string, config *container.Config, host *container.HostConfig, showOutput, removeContainer bool) error {
 	// configure and create container
 	if showOutput {
 		config.AttachStdout = true
 		config.AttachStderr = true
 		config.Tty = true
 	}
-	resp, err := cli.ContainerCreate(ctx, config, host, nil, nil, containerName)
+	resp, err := d.cli.ContainerCreate(ctx, config, host, nil, nil, containerName)
 	if err != nil {
 		return err
 	}
 
 	// start container
-	err = cli.ContainerStart(ctx, resp.ID, types.ContainerStartOptions{})
+	err = d.cli.ContainerStart(ctx, resp.ID, types.ContainerStartOptions{})
 	if err != nil {
 		return err
 	}
 
 	if showOutput {
 		// retrieve and print logs
-		err := printContainerLogs(ctx, cli, containerName)
+		err := d.printContainerLogs(ctx, containerName)
 		if err != nil {
 			return err
 		}
 	}
 
 	// wait for container to complete
-	_, err = waitForContainer(ctx, cli, resp.ID)
+	_, err = d.waitForContainer(ctx, resp.ID)
 	if err != nil {
 		return err
 	}
 
 	if removeContainer {
 		// remove completed container
-		err = cli.ContainerRemove(ctx, resp.ID, types.ContainerRemoveOptions{})
+		err = d.cli.ContainerRemove(ctx, resp.ID, types.ContainerRemoveOptions{})
 		if err != nil {
 			return err
 		}
@@ -89,34 +104,23 @@ func RunContainer(ctx context.Context, containerName string, config *container.C
 	return nil
 }
 
-func StartContainer(ctx context.Context, containerName string, config *container.Config, host *container.HostConfig, showOutput, removeContainer bool) (string, error) {
-	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+func (d *dockerController) StartContainer(ctx context.Context, containerName string, config *container.Config, host *container.HostConfig, showOutput bool) (string, error) {
+	output.Println("Starting container: %s", containerName)
+
+	id, err := d.getContainerID(ctx, containerName)
 	if err != nil {
-		return "", err
+		return "", nil
 	}
 
-	id := ""
-	exists := false
-	list, _ := cli.ContainerList(ctx, types.ContainerListOptions{All: true})
-	for _, c := range list {
-		for _, n := range c.Names {
-			if strings.TrimPrefix(n, "/") == containerName {
-				output.Println("Found existing container for %s with ID %s", containerName, c.ID)
-				exists = true
-				id = c.ID
-			}
-		}
-	}
-
-	if !exists {
-		output.Println("No existing container found for %s. Creating new container...")
+	if id == "" {
+		output.Println("No existing container found for %s. Creating new container...", containerName)
 		// configure and create container
 		if showOutput {
 			config.AttachStdout = true
 			config.AttachStderr = true
 			config.Tty = true
 		}
-		resp, err := cli.ContainerCreate(ctx, config, host, nil, nil, containerName)
+		resp, err := d.cli.ContainerCreate(ctx, config, host, nil, nil, containerName)
 		if err != nil {
 			return "", err
 		}
@@ -124,14 +128,14 @@ func StartContainer(ctx context.Context, containerName string, config *container
 	}
 
 	// start container
-	err = cli.ContainerStart(ctx, id, types.ContainerStartOptions{})
+	err = d.cli.ContainerStart(ctx, id, types.ContainerStartOptions{})
 	if err != nil {
 		return "", err
 	}
 
 	if showOutput {
 		// retrieve and print logs
-		err := printContainerLogs(ctx, cli, containerName)
+		err := d.printContainerLogs(ctx, containerName)
 		if err != nil {
 			return "", err
 		}
@@ -140,28 +144,40 @@ func StartContainer(ctx context.Context, containerName string, config *container
 	return id, nil
 }
 
-func StopContainer(ctx context.Context, id string) error {
-	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
-	if err != nil {
-		return err
-	}
+func (d *dockerController) StopContainer(ctx context.Context, id string) error {
 	timeout := 30 * time.Second
-	info, _ := cli.ContainerInspect(ctx, id)
+	info, _ := d.cli.ContainerInspect(ctx, id)
 	output.Println("Stopping container: %s", strings.TrimPrefix(info.Name, "/"))
-	return cli.ContainerStop(ctx, id, &timeout)
+	return d.cli.ContainerStop(ctx, id, &timeout)
 }
 
-func RemoveContainer(ctx context.Context, id string) error {
-	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+func (d *dockerController) StopContainerByName(ctx context.Context, containerName string) error {
+	id, err := d.getContainerID(ctx, containerName)
 	if err != nil {
 		return err
 	}
-	info, _ := cli.ContainerInspect(ctx, id)
-	output.Println("Removing container: %s", strings.TrimPrefix(info.Name, "/"))
-	return cli.ContainerRemove(ctx, id, types.ContainerRemoveOptions{})
+	return d.StopContainer(ctx, id)
 }
 
-func getDockerContext(filePath string) (io.Reader, error) {
+func (d *dockerController) RemoveContainer(ctx context.Context, id string) error {
+	info, _ := d.cli.ContainerInspect(ctx, id)
+	output.Println("Removing container: %s", strings.TrimPrefix(info.Name, "/"))
+	return d.cli.ContainerRemove(ctx, id, types.ContainerRemoveOptions{})
+}
+
+func (d *dockerController) RemoveContainerByName(ctx context.Context, containerName string) error {
+	id, err := d.getContainerID(ctx, containerName)
+	if err != nil {
+		return err
+	}
+	return d.RemoveContainer(ctx, id)
+}
+
+func (d *dockerController) GetContainerID(ctx context.Context, containerName string) (string, error) {
+	return d.getContainerID(ctx, containerName)
+}
+
+func (d *dockerController) getDockerContext(filePath string) (io.Reader, error) {
 	ctx, err := archive.TarWithOptions(filePath, &archive.TarOptions{})
 	if err != nil {
 		return nil, err
@@ -169,8 +185,8 @@ func getDockerContext(filePath string) (io.Reader, error) {
 	return ctx, nil
 }
 
-func waitForContainer(ctx context.Context, cli *client.Client, id string) (state int64, err error) {
-	resultC, errC := cli.ContainerWait(ctx, id, "")
+func (d *dockerController) waitForContainer(ctx context.Context, id string) (state int64, err error) {
+	resultC, errC := d.cli.ContainerWait(ctx, id, "")
 	select {
 	case err := <-errC:
 		return 0, err
@@ -179,8 +195,8 @@ func waitForContainer(ctx context.Context, cli *client.Client, id string) (state
 	}
 }
 
-func printContainerLogs(ctx context.Context, cli *client.Client, containerName string) error {
-	reader, err := cli.ContainerLogs(ctx, containerName, types.ContainerLogsOptions{
+func (d *dockerController) printContainerLogs(ctx context.Context, containerName string) error {
+	reader, err := d.cli.ContainerLogs(ctx, containerName, types.ContainerLogsOptions{
 		ShowStdout: true,
 		ShowStderr: true,
 		Follow:     true,
@@ -197,4 +213,26 @@ func printContainerLogs(ctx context.Context, cli *client.Client, containerName s
 	}()
 
 	return nil
+}
+
+func (d *dockerController) getContainerID(ctx context.Context, containerName string) (string, error) {
+	id := ""
+	exists := false
+	list, err := d.cli.ContainerList(ctx, types.ContainerListOptions{All: true})
+	if err != nil {
+		return id, err
+	}
+	for _, c := range list {
+		for _, n := range c.Names {
+			if strings.TrimPrefix(n, "/") == containerName {
+				exists = true
+				id = c.ID
+				break
+			}
+		}
+		if exists {
+			break
+		}
+	}
+	return id, nil
 }

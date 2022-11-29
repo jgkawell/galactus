@@ -17,6 +17,10 @@ import (
 
 func Build(cmd *cobra.Command, args []string) (err error) {
 	ctx := cmd.Context()
+	dctl, err := docker.NewDockerController()
+	if err != nil {
+		return nil
+	}
 
 	// build out execution path
 	rootPath := viper.GetString("config.root")
@@ -50,7 +54,7 @@ func Build(cmd *cobra.Command, args []string) (err error) {
 
 	// mod update
 	config.Cmd = []string{"mod", "update"}
-	err = docker.RunContainer(ctx, "proto-builder", config, hostConfig, true, true)
+	err = dctl.RunContainer(ctx, "proto-builder", config, hostConfig, true, true)
 	if err != nil {
 		output.Error(err)
 		return err
@@ -58,7 +62,7 @@ func Build(cmd *cobra.Command, args []string) (err error) {
 
 	// generate
 	config.Cmd = []string{"generate"}
-	err = docker.RunContainer(ctx, "proto-builder", config, hostConfig, true, true)
+	err = dctl.RunContainer(ctx, "proto-builder", config, hostConfig, true, true)
 	if err != nil {
 		output.Error(err)
 		return err

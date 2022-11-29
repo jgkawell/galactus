@@ -1,4 +1,4 @@
-package run
+package infra
 
 import (
 	"context"
@@ -12,18 +12,28 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const (
-	mongoImage    = "mongo:4.2.21"
-	postgresImage = "postgres:14.4"
-	rabbitImage   = "rabbitmq:galactus"
-	hasuraImage   = "hasura/graphql-engine:v2.15.2"
+var (
+	Follow bool
 )
-// TODO: add a flag whether to tail output or not
-// TODO: after the above, add a command to stop all infra if started without a tail
-// TODO: after the above, add a command to clean up all containers
 
-func Infra(cmd *cobra.Command, args []string) (err error) {
+const (
+	mongoImage        = "mongo:4.2.21"
+	mongoContainer    = "galactus-mongo"
+	postgresImage     = "postgres:14.4"
+	postgresContainer = "galactus-postgres"
+	rabbitImage       = "rabbitmq:galactus"
+	rabbitContainer   = "galactus-rabbitmq"
+	hasuraImage       = "hasura/graphql-engine:v2.15.2"
+	hasuraContainer   = "galactus-hasura"
+)
+
+func Start(cmd *cobra.Command, args []string) (err error) {
 	ctx := cmd.Context()
+
+	dctl, err := docker.NewDockerController()
+	if err != nil {
+		return nil
+	}
 
 	var config *container.Config
 	var hostConfig *container.HostConfig
@@ -49,12 +59,14 @@ func Infra(cmd *cobra.Command, args []string) (err error) {
 			},
 		},
 	}
-	id, err := docker.StartContainer(ctx, "galactus-postgres", config, hostConfig, true, true)
+	id, err := dctl.StartContainer(ctx, postgresContainer, config, hostConfig, Follow)
 	if err != nil {
 		output.Error(err)
 		return err
 	}
-	defer stop(context.Background(), id)
+	if Follow {
+		defer stop(context.Background(), dctl, id)
+	}
 
 	// mongo
 	config = &container.Config{
@@ -73,12 +85,14 @@ func Infra(cmd *cobra.Command, args []string) (err error) {
 			},
 		},
 	}
-	id, err = docker.StartContainer(ctx, "galactus-mongo", config, hostConfig, true, true)
+	id, err = dctl.StartContainer(ctx, mongoContainer, config, hostConfig, Follow)
 	if err != nil {
 		output.Error(err)
 		return err
 	}
-	defer stop(context.Background(), id)
+	if Follow {
+		defer stop(context.Background(), dctl, id)
+	}
 
 	// rabbitmq
 	config = &container.Config{
@@ -105,12 +119,14 @@ func Infra(cmd *cobra.Command, args []string) (err error) {
 			},
 		},
 	}
-	id, err = docker.StartContainer(ctx, "galactus-rabbitmq", config, hostConfig, true, true)
+	id, err = dctl.StartContainer(ctx, rabbitContainer, config, hostConfig, Follow)
 	if err != nil {
 		output.Error(err)
 		return err
 	}
-	defer stop(context.Background(), id)
+	if Follow {
+		defer stop(context.Background(), dctl, id)
+	}
 
 	time.Sleep(5 * time.Second)
 
@@ -138,20 +154,25 @@ func Infra(cmd *cobra.Command, args []string) (err error) {
 			},
 		},
 	}
-	id, err = docker.StartContainer(ctx, "galactus-hasura", config, hostConfig, true, true)
+	id, err = dctl.StartContainer(ctx, hasuraContainer, config, hostConfig, Follow)
 	if err != nil {
 		output.Error(err)
 		return err
 	}
-	defer stop(context.Background(), id)
+	if Follow {
+		defer stop(context.Background(), dctl, id)
+	}
 
-	<-ctx.Done()
+	if Follow {
+		<-ctx.Done()
+	}
 
 	return nil
 }
 
-func stop(ctx context.Context, id string) {
-	err := docker.StopContainer(ctx, id)
+
+func stop(ctx context.Context, dctl docker.DockerController, id string) {
+	err := dctl.StopContainer(ctx, id)
 	if err != nil {
 		output.Error(err)
 	}
