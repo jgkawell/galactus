@@ -4,6 +4,7 @@ go 1.19
 
 require (
 	github.com/docker/docker v20.10.21+incompatible
+	github.com/docker/go-connections v0.4.0
 	github.com/moby/term v0.0.0-20221105221325-4eb28fa6025c
 	github.com/spf13/cobra v1.6.1
 	github.com/spf13/viper v1.14.0
@@ -16,7 +17,6 @@ require (
 	github.com/containerd/cgroups v1.0.3 // indirect
 	github.com/containerd/containerd v1.6.10 // indirect
 	github.com/docker/distribution v2.8.1+incompatible // indirect
-	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
