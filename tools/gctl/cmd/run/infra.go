@@ -18,6 +18,9 @@ const (
 	rabbitImage   = "rabbitmq:galactus"
 	hasuraImage   = "hasura/graphql-engine:v2.15.2"
 )
+// TODO: add a flag whether to tail output or not
+// TODO: after the above, add a command to stop all infra if started without a tail
+// TODO: after the above, add a command to clean up all containers
 
 func Infra(cmd *cobra.Command, args []string) (err error) {
 	ctx := cmd.Context()
