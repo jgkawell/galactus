@@ -11,7 +11,7 @@ import (
 )
 
 func Clean(cmd *cobra.Command, args []string) (err error) {
-	output.Println("Cleaning `api/`...")
+	output.Println("Cleaning api...")
 
 	// build out execution path
 	rootPath := viper.GetString("config.root")

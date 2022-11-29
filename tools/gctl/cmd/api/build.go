@@ -27,7 +27,6 @@ func Build(cmd *cobra.Command, args []string) (err error) {
 	apiPath := filepath.Join(rootPath, "api")
 
 	// clean the api directory
-	output.Println("Cleaning `api/` before building...")
 	err = Clean(cmd, args)
 	if err != nil {
 		// don't print as it already has been
