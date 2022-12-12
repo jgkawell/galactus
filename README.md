@@ -25,7 +25,39 @@ TL;DR: `galactus` is a generic development framework for modern applications.
 The absolute basic tooling you need need to develop with `galactus` is:
 
 - `docker`: install instructions [here](https://docs.docker.com/get-docker/)
-- `go`: it is suggested to use [gvm](https://github.com/moovweb/gvm)
+- `go` (*1.19+*): it is suggested to use [gvm](https://github.com/moovweb/gvm)
+
+### Getting started
+
+First install the `gctl` tool:
+
+```shell
+cd tools/gctl
+go install
+```
+
+Now move to the root of the repository and initialize the `gctl` configuration:
+
+```shell
+cd ../..
+gctl config
+```
+
+You're now ready to initialize and start your local infra (databases, brokers, etc.):
+
+```shell
+gctl infra init
+gctl infra start
+```
+
+Once all the infra is running, you can start your core services:
+
+```shell
+# tip: this will take a bit to run the first time, but will be quick after that
+gctl run core
+```
+
+Everything is now running! To learn more, try out this demo: **TODO**
 
 ### Overview
 
