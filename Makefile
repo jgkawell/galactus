@@ -20,18 +20,13 @@ SVCS=$(SVC_DIRS:services/core/%=%)
 PKG_DIRS=\
 	pkg/azkeyvault \
 	pkg/chassis \
-	pkg/clientcredentials \
 	pkg/logging \
-	pkg/messagebus
 TOOLS_DIRS=\
 	tools/hammer
 # Setting default values for key vault configuration. export env vars to overwrite.
 KEYVAULT?=dev-keyvault
 RESOURCEGROUP?=cluster-resources
 OVERRIDE_VALUES?=developer-namespace
-# for linux shenanigans
-USER := $(shell whoami)
-OS := $(shell uname)
 
 .PHONY: all
 all: $(SVCS)
