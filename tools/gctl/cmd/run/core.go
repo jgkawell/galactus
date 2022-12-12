@@ -23,7 +23,6 @@ const (
 	registryVersion       = "v1"
 
 	registryHealthEndpoint               = "http://localhost:35000/health"
-	registryHealthCheckRetries           = 3
 	registryHealthCheckRetryDelaySeconds = 3
 )
 
@@ -35,14 +34,12 @@ func Core(cmd *cobra.Command, args []string) error {
 
 	// block until registry is up and healthy
 	healthy := false
-	retries := 0
-	for !healthy && retries < registryHealthCheckRetries {
+	for !healthy {
 		resp, _ := http.Get(registryHealthEndpoint)
 		if resp != nil && resp.StatusCode == http.StatusOK {
 			healthy = true
 		}
 		time.Sleep(registryHealthCheckRetryDelaySeconds * time.Second)
-		retries++
 		output.Println("retrying registry health check")
 	}
 	if !healthy {
