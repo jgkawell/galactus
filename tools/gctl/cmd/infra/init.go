@@ -28,6 +28,26 @@ func Init(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	// pull needed images
+	output.Println("Pulling Mongo Docker image...")
+	err = dctl.PullImage(ctx, mongoImage)
+	if err != nil {
+		output.Error(err)
+		return err
+	}
+	output.Println("Pulling Postgres Docker image...")
+	err = dctl.PullImage(ctx, postgresImage)
+	if err != nil {
+		output.Error(err)
+		return err
+	}
+	output.Println("Pulling Hasura Docker image...")
+	err = dctl.PullImage(ctx, hasuraImage)
+	if err != nil {
+		output.Error(err)
+		return err
+	}
+
 	output.Println("Finished")
 	return nil
 }

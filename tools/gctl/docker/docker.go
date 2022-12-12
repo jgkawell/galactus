@@ -21,6 +21,8 @@ import (
 type DockerController interface {
 	// BuildImage takes a file path and an image name and builds a Docker image using the Dockerfile in the given directory
 	BuildImage(ctx context.Context, path, image string) error
+	// PullImage pulls the given image down from the Docker registry
+	PullImage(ctx context.Context, image string) error
 	// RunContainer creates a container, starts it, waits for it to complete, and removes it if requested
 	RunContainer(ctx context.Context, containerName string, config *container.Config, host *container.HostConfig, showOutput, removeContainer bool) error
 	// StartContainer runs an existing container or creates a new one if none already exist with the given name. It exists without waiting for the container to exit
@@ -64,6 +66,18 @@ func (d *dockerController) BuildImage(ctx context.Context, path, image string) e
 
 	id, isTerm := term.GetFdInfo(os.Stdout)
 	_ = jsonmessage.DisplayJSONMessagesStream(resp.Body, os.Stdout, id, isTerm, nil)
+
+	return nil
+}
+
+func (d *dockerController) PullImage(ctx context.Context, image string) error {
+	resp, err := d.cli.ImagePull(ctx, image, types.ImagePullOptions{})
+	if err != nil {
+		return err
+	}
+
+	id, isTerm := term.GetFdInfo(os.Stdout)
+	_ = jsonmessage.DisplayJSONMessagesStream(resp, os.Stdout, id, isTerm, nil)
 
 	return nil
 }
