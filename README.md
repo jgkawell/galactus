@@ -59,7 +59,7 @@ gctl run core
 
 Everything is now running! To learn more, try out this demo: **TODO**
 
-### Overview
+### Structure
 
 A quick overview of the directories is below:
 
