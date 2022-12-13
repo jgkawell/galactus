@@ -11,13 +11,13 @@ import (
 	"github.com/sirupsen/logrus/hooks/test"
 )
 
-var globalLogger *CustomLogger
+var globalLogger *customLogger
 
 // CreateLogger creates a service level logger
 // level = the log level to instantiate the logger with
 //   Possible values for level are "panic", "fatal", "error", "warn", "warning", "info", "debug", and "trace"
 // service = the service name to include with all logs
-func CreateLogger(level string, service string) *CustomLogger {
+func CreateLogger(level string, service string) *customLogger {
 	logrus.SetFormatter(&runtime.Formatter{
 		ChildFormatter: &logrus.JSONFormatter{
 			DisableHTMLEscape: true,
@@ -29,7 +29,7 @@ func CreateLogger(level string, service string) *CustomLogger {
 	newEntry := logrus.WithField("service", service)
 
 	// Create new logger
-	newLogger := NewCustomLogger(newEntry)
+	newLogger := newCustomLogger(newEntry)
 	globalLogger = &newLogger
 
 	// Set starting log level and return
@@ -39,9 +39,9 @@ func CreateLogger(level string, service string) *CustomLogger {
 }
 
 // CreateNullLogger creates a logger for testing that wraps the null logger provided by logrus
-func CreateNullLogger() (*CustomLogger, *test.Hook) {
+func CreateNullLogger() (*customLogger, *test.Hook) {
 	nullLogger, logHook := test.NewNullLogger()
-	newLogger := NewCustomLogger(nullLogger.WithField("", ""))
+	newLogger := newCustomLogger(nullLogger.WithField("", ""))
 	globalLogger = &newLogger
 	return globalLogger, logHook
 }

@@ -36,7 +36,7 @@ type Logger interface {
 	// after the call. For example:
 	//
 	//  logger.WithHTTPContext(ctx).WithField("animal", "dog").Warn("Invalid species")
-	WithHTTPContext(ctx *gin.Context) *CustomLogger
+	WithHTTPContext(ctx *gin.Context) *customLogger
 	// WithRPCContext injects tracing IDs into logs from context
 	// Since it returns type CustomLogger you can continue dot operations
 	// after the call. For example:
@@ -47,17 +47,17 @@ type Logger interface {
 	//
 	//     func (h handlerImpl) GetContent(ctx context.Context, req *pb.GetContentRequest) (response *pb.GetContentResponse, err error) {
 	//       logger := h.logger.WithRPCContext(ctx)
-	WithRPCContext(ctx context.Context) *CustomLogger
+	WithRPCContext(ctx context.Context) *customLogger
 	// WithError - Add an error as single field (using the key defined in ErrorKey) to the Entry.
-	WithError(err error) *CustomLogger
+	WithError(err error) *customLogger
 	// WithContext - Add a context to the Entry.
-	WithContext(ctx context.Context) *CustomLogger
+	WithContext(ctx context.Context) *customLogger
 	// WithField - Add a single field to the Entry.
-	WithField(key string, value interface{}) *CustomLogger
+	WithField(key string, value interface{}) *customLogger
 	// WithFields - Add a map of fields to the Entry.
-	WithFields(fields Fields) *CustomLogger
+	WithFields(fields Fields) *customLogger
 	// WithTime - Overrides the time of the Entry.
-	WithTime(t time.Time) *CustomLogger
+	WithTime(t time.Time) *customLogger
 
 	// Trace - Definition:
 	// "Seriously, WTF is going on here?!?!
@@ -91,7 +91,7 @@ type Logger interface {
 	//   logger.WithFields(logger.WrapError(err).Fields()).WithError(logger.WrapError(err)).Error("failed to process request")
 	// but instead has a much simpler oneliner of:
 	//   logger.WrappedError(err, "failed to process request")
-	WrappedError(Error, string) *CustomLogger
+	WrappedError(Error, string) *customLogger
 	// Fatal - Definition:
 	// the app (or at the very least a thread) is about to die horribly.
 	// This is where the info explaining why that's happening goes.
@@ -106,28 +106,28 @@ type Logger interface {
 	Panic(msg string)
 }
 
-// CustomLogger wraps around logrus with added functionality
-type CustomLogger struct {
+// customLogger wraps around logrus with added functionality
+type customLogger struct {
 	entry *logrus.Entry
 }
 
 // Fields type, used to pass to WithFields()
 type Fields map[string]interface{}
 
-// NewCustomLogger creates a Logger with defined logrus Entry
-func NewCustomLogger(e *logrus.Entry) CustomLogger {
-	return CustomLogger{entry: e}
+// newCustomLogger creates a Logger with defined logrus Entry
+func newCustomLogger(e *logrus.Entry) customLogger {
+	return customLogger{entry: e}
 }
 
 // AddGlobalField adds a key:value pair to every log written with this logger
 // This is helpful for service-wide values
-func (l *CustomLogger) AddGlobalField(key string, val string) {
+func (l *customLogger) AddGlobalField(key string, val string) {
 	l.WithField(key, val).Info("Adding field to global logger")
 	l.entry = l.entry.WithField(key, val)
 }
 
 // SetLevel sets the logging level for the logger
-func (l *CustomLogger) SetLevel(level logrus.Level) {
+func (l *customLogger) SetLevel(level logrus.Level) {
 	l.entry.Logger.SetLevel(level)
 }
 
@@ -135,13 +135,13 @@ func (l *CustomLogger) SetLevel(level logrus.Level) {
 // NOTE: Only use the base logrus.Entry when absolutely necessary.
 // Logging should really be done through the CustomLogger wrapper,
 // NOT through logrus directly.
-func (l *CustomLogger) GetEntry() *logrus.Entry {
+func (l *customLogger) GetEntry() *logrus.Entry {
 	return l.entry
 }
 
 // WrapError wraps a standard Go error (OR `logging.Error`) into a custom error with the
 // additional context of current logger fields and call stack information.
-func (l *CustomLogger) WrapError(err error) Error {
+func (l *customLogger) WrapError(err error) Error {
 	wrappedError := wrap(err, Fields(l.entry.Data))
 	if wrappedError == nil {
 		l.entry.Error("failed to wrap error")
@@ -154,38 +154,38 @@ func (l *CustomLogger) WrapError(err error) Error {
 }
 
 // WithError - Add an error as single field (using the key defined in ErrorKey) to the Entry.
-func (l *CustomLogger) WithError(err error) *CustomLogger {
-	newLogger := NewCustomLogger(l.entry.WithError(err))
+func (l *customLogger) WithError(err error) *customLogger {
+	newLogger := newCustomLogger(l.entry.WithError(err))
 	return &newLogger
 }
 
 // WithContext - Add a context to the Entry.
-func (l *CustomLogger) WithContext(ctx context.Context) *CustomLogger {
-	newLogger := NewCustomLogger(l.entry.WithContext(ctx))
+func (l *customLogger) WithContext(ctx context.Context) *customLogger {
+	newLogger := newCustomLogger(l.entry.WithContext(ctx))
 	return &newLogger
 }
 
 // WithField - Add a single field to the Entry.
-func (l *CustomLogger) WithField(key string, value interface{}) *CustomLogger {
-	newLogger := NewCustomLogger(l.entry.WithField(key, value))
+func (l *customLogger) WithField(key string, value interface{}) *customLogger {
+	newLogger := newCustomLogger(l.entry.WithField(key, value))
 	return &newLogger
 }
 
 // WithFields - Add a map of fields to the Entry.
-func (l *CustomLogger) WithFields(fields Fields) *CustomLogger {
+func (l *customLogger) WithFields(fields Fields) *customLogger {
 	// Copy custom fields into logrus fields
 	logrusFields := logrus.Fields{}
 	for index, element := range fields {
 		logrusFields[index] = element
 	}
 	// Create new logger with given fields
-	newLogger := NewCustomLogger(l.entry.WithFields(logrusFields))
+	newLogger := newCustomLogger(l.entry.WithFields(logrusFields))
 	return &newLogger
 }
 
 // WithTime - Overrides the time of the Entry.
-func (l *CustomLogger) WithTime(t time.Time) *CustomLogger {
-	newLogger := NewCustomLogger(l.entry.WithTime(t))
+func (l *customLogger) WithTime(t time.Time) *customLogger {
+	newLogger := newCustomLogger(l.entry.WithTime(t))
 	return &newLogger
 }
 
@@ -194,7 +194,7 @@ func (l *CustomLogger) WithTime(t time.Time) *CustomLogger {
 // after the call. For example:
 //
 //  logger.WithHTTPContext(ctx).WithField("animal", "dog").Warn("Invalid species")
-func (l *CustomLogger) WithHTTPContext(ctx *gin.Context) *CustomLogger {
+func (l *customLogger) WithHTTPContext(ctx *gin.Context) *customLogger {
 	span, found := tracer.SpanFromContext(ctx.Request.Context())
 	if found {
 		return l.WithFields(Fields{
@@ -203,7 +203,7 @@ func (l *CustomLogger) WithHTTPContext(ctx *gin.Context) *CustomLogger {
 		})
 	}
 	l.withLogContext().entry.Debug("Failed to find find span from HTTP context for logger")
-	newLogger := NewCustomLogger(l.entry)
+	newLogger := newCustomLogger(l.entry)
 	return &newLogger
 }
 
@@ -217,7 +217,7 @@ func (l *CustomLogger) WithHTTPContext(ctx *gin.Context) *CustomLogger {
 //
 //     func (h handlerImpl) GetContent(ctx context.Context, req *pb.GetContentRequest) (response *pb.GetContentResponse, err error) {
 //       logger := h.logger.WithRPCContext(ctx)
-func (l *CustomLogger) WithRPCContext(ctx context.Context) *CustomLogger {
+func (l *customLogger) WithRPCContext(ctx context.Context) *customLogger {
 	span, found := tracer.SpanFromContext(ctx)
 	if found {
 		return l.WithFields(Fields{
@@ -226,13 +226,13 @@ func (l *CustomLogger) WithRPCContext(ctx context.Context) *CustomLogger {
 		})
 	}
 	l.withLogContext().entry.Debug("Failed to find find span from RPC context for logger")
-	newLogger := NewCustomLogger(l.entry)
+	newLogger := newCustomLogger(l.entry)
 	return &newLogger
 }
 
 // withLogContext makes sure that the external logger module uses
 // the function name of the caller instead of CustomLogger (ex. Debug())
-func (l *CustomLogger) withLogContext() *CustomLogger {
+func (l *customLogger) withLogContext() *customLogger {
 	pc, _, _, ok := runtime.Caller(2)
 	if !ok {
 		return nil
@@ -247,7 +247,7 @@ func (l *CustomLogger) withLogContext() *CustomLogger {
 // Trace - Definition:
 // "Seriously, WTF is going on here?!?!
 // I need to log every single statement I execute to find this @#$@ing memory corruption bug before I go insane"
-func (l *CustomLogger) Trace(msg string) {
+func (l *customLogger) Trace(msg string) {
 	l.withLogContext().entry.Trace(msg)
 }
 
@@ -255,7 +255,7 @@ func (l *CustomLogger) Trace(msg string) {
 // Off by default, able to be turned on for debugging specific unexpected problems.
 // This is where you might log detailed information about key method parameters or
 // other information that is useful for finding likely problems in specific 'problematic' areas of the code.
-func (l *CustomLogger) Debug(msg string) {
+func (l *customLogger) Debug(msg string) {
 	l.withLogContext().entry.Debug(msg)
 }
 
@@ -263,7 +263,7 @@ func (l *CustomLogger) Debug(msg string) {
 // Normal logging that's part of the normal operation of the app;
 // diagnostic stuff so you can go back and say 'how often did this broad-level operation happen?',
 // or 'how did the user's data get into this state?'
-func (l *CustomLogger) Info(msg string) {
+func (l *customLogger) Info(msg string) {
 	l.withLogContext().entry.Info(msg)
 }
 
@@ -272,7 +272,7 @@ func (l *CustomLogger) Info(msg string) {
 // # of connections in the DB pool getting low, an unusual-but-expected timeout in an operation, etc.
 // Think of 'WARN' as something that's useful in aggregate; e.g. grep, group,
 // and count them to get a picture of what's affecting the system health
-func (l *CustomLogger) Warn(msg string) {
+func (l *customLogger) Warn(msg string) {
 	l.withLogContext().entry.Warn(msg)
 }
 
@@ -281,7 +281,7 @@ func (l *CustomLogger) Warn(msg string) {
 // This isn't a user error ('invalid search query');
 // it's an assertion failure, network problem, etc etc.,
 // probably one that is going to abort the current operation
-func (l *CustomLogger) Error(msg string) {
+func (l *customLogger) Error(msg string) {
 	l.withLogContext().entry.Error(msg)
 }
 
@@ -291,7 +291,7 @@ func (l *CustomLogger) Error(msg string) {
 //   logger.WithFields(logger.WrapError(err).Fields()).WithError(logger.WrapError(err)).Error("failed to process request")
 // but instead has a much simpler oneliner of:
 //   logger.WrappedError(err, "failed to process request")
-func (l *CustomLogger) WrappedError(err Error, msg string) *CustomLogger {
+func (l *customLogger) WrappedError(err Error, msg string) *customLogger {
 	err = wrap(err, Fields(l.entry.Data))
 	l.WithFields(err.Fields()).WithError(err).withLogContext().entry.Error(msg)
 	return l
@@ -300,7 +300,7 @@ func (l *CustomLogger) WrappedError(err Error, msg string) *CustomLogger {
 // Fatal - Definition:
 // the app (or at the very least a thread) is about to die horribly.
 // This is where the info explaining why that's happening goes.
-func (l *CustomLogger) Fatal(msg string) {
+func (l *customLogger) Fatal(msg string) {
 	l.withLogContext().entry.Fatal(msg)
 }
 
@@ -311,6 +311,6 @@ func (l *CustomLogger) Fatal(msg string) {
 // - Defers will be executed when a program panics, but calling os.Exit exits immediately, and deferred functions can't be run.
 // In general, only use panic for programming errors, where the stack trace is important to the context of the error.
 // If the message isn't targeted at the programmer, you're simply hiding the message in superfluous data.
-func (l *CustomLogger) Panic(msg string) {
+func (l *customLogger) Panic(msg string) {
 	l.withLogContext().entry.Panic(msg)
 }
