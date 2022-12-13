@@ -11,13 +11,13 @@ import (
 	"github.com/sirupsen/logrus/hooks/test"
 )
 
-var globalLogger *customLogger
+var globalLogger *logger
 
 // CreateLogger creates a service level logger
 // level = the log level to instantiate the logger with
 //   Possible values for level are "panic", "fatal", "error", "warn", "warning", "info", "debug", and "trace"
 // service = the service name to include with all logs
-func CreateLogger(level string, service string) *customLogger {
+func CreateLogger(level string, service string) *logger {
 	logrus.SetFormatter(&runtime.Formatter{
 		ChildFormatter: &logrus.JSONFormatter{
 			DisableHTMLEscape: true,
@@ -29,7 +29,7 @@ func CreateLogger(level string, service string) *customLogger {
 	newEntry := logrus.WithField("service", service)
 
 	// Create new logger
-	newLogger := newCustomLogger(newEntry)
+	newLogger := newLogger(newEntry)
 	globalLogger = &newLogger
 
 	// Set starting log level and return
@@ -39,9 +39,9 @@ func CreateLogger(level string, service string) *customLogger {
 }
 
 // CreateNullLogger creates a logger for testing that wraps the null logger provided by logrus
-func CreateNullLogger() (*customLogger, *test.Hook) {
+func CreateNullLogger() (*logger, *test.Hook) {
 	nullLogger, logHook := test.NewNullLogger()
-	newLogger := newCustomLogger(nullLogger.WithField("", ""))
+	newLogger := newLogger(nullLogger.WithField("", ""))
 	globalLogger = &newLogger
 	return globalLogger, logHook
 }
@@ -75,7 +75,7 @@ func GinMiddleware(quietRoutes []string) gin.HandlerFunc {
 		// Measure request duration
 		start := time.Now()
 		ctx.Next()
-		duration := time.Now().Sub(start)
+		duration := time.Since(start)
 		logger := globalLogger.WithHTTPContext(ctx).WithFields(Fields{
 			"status_code":    ctx.Writer.Status(),
 			"duration":       duration,
