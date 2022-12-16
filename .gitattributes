@@ -1,2 +1,3 @@
 api/gen/** linguist-generated
 docs/** linguist-generated
+deployments/**.yaml linguist-language=yaml
