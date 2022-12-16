@@ -1,3 +1,4 @@
+# ignore generated protbuf files
 api/gen/** linguist-generated
-docs/** linguist-generated
-deployments/**.yaml linguist-language=yaml
+# ignore documentation
+docs/** linguist-documentation
