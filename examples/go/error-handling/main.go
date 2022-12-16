@@ -3,20 +3,21 @@ package main
 import (
 	"fmt"
 
-	"examples/test"
+	"error-handling/test"
 
 	l "github.com/jgkawell/galactus/pkg/logging/v2"
 )
 
 /*
-Example output:
+Example output (formatted for readability):
 {
   "call_stack": [
-    "/home/jgkawell/repos/Commercial/galactus/examples/error-test/main.go:60",
-    "/home/jgkawell/repos/Commercial/galactus/examples/error-test/main.go:72",
-    "/home/jgkawell/repos/Commercial/galactus/examples/error-test/test/test.go:16"
+    "SOME_PATH/galactus/examples/go/error-handling/main.go:46",
+    "SOME_PATH/galactus/examples/go/error-handling/main.go:60",
+    "SOME_PATH/galactus/examples/go/error-handling/main.go:72",
+    "SOME_PATH/galactus/examples/go/error-handling/test/test.go:16"
   ],
-  "error": "[main.Function1]->[main.Function2]->[examples/test.Function3]->[my custom error message: third party library error message]",
+  "error": "[main.main]->[main.Function1]->[main.Function2]->[error-handling/test.Function3]->[my custom error message: third party library error message]",
   "function": "main",
   "key0": "blah0",
   "key1": "blah1",
@@ -25,9 +26,9 @@ Example output:
   "level": "error",
   "msg": "failed to process request",
   "service": "main",
-  "time": "2022-07-08T19:31:29Z"
+  "time": "2022-12-16T11:56:11-06:00"
 }
-Error as returned to client: [main.Function2]->[examples/test.Function3]->[my custom error message: third party library error message]
+Error as returned to client: [main.Function1]->[main.Function2]->[error-handling/test.Function3]->[my custom error message: third party library error message]
 */
 
 func main() {
@@ -43,10 +44,10 @@ func main() {
 	if err != nil {
 		// log error at top of call stack ONLY
 		// NOTE: fields here match the logger fields at the lowest point in the call stack (Function3)
-		logger.WithFields(err.Fields()).WithError(err).Error("failed to process request")
+		logger.WrappedError(err, "failed to process request")
 
 		// Error as returned to calling client
-		fmt.Printf("Error as returned to client: %v\n", err.Unwrap())
+		fmt.Printf("Error as returned to client: %v\n", err)
 	}
 }
 
