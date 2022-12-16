@@ -9,7 +9,7 @@ import (
 func Function3(logger l.Logger) l.Error {
 	// add another field to logger
 	logger = logger.WithField("key3", "blah3")
-	// call next function and pass logger with added fields
+	// call third party function (we don't control anything in this function)
 	err := thirdPartyFunction("b")
 	if err != nil {
 		// wrap error on return to caller so that all fields, files, and line numbers are preserved

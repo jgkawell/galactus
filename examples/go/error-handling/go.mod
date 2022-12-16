@@ -1,8 +1,8 @@
-module examples
+module error-handling
 
 go 1.19
 
-replace github.com/jgkawell/galactus/pkg/logging/v2 v2.0.0 => ../../pkg/logging
+replace github.com/jgkawell/galactus/pkg/logging/v2 v2.0.0 => ../../../pkg/logging
 
 require github.com/jgkawell/galactus/pkg/logging/v2 v2.0.0
 

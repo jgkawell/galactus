@@ -13,14 +13,14 @@ tools/
 # top level repo files
 .dockerignore
 .git
+.gitattributes
 .gitignore
 .gitmodules
-LICENSE.txt
+LICENSE
 Makefile
 README.md
 
 # ignore these config files
-**/azure-pipelines.yml
 **/Dockerfile
 **/local.yaml
 **/README.md
