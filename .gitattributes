@@ -1,0 +1,4 @@
+# ignore generated protbuf files
+api/gen/** linguist-generated
+# ignore documentation
+docs/** linguist-documentation
