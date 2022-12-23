@@ -31,12 +31,26 @@ type ClientFactory interface {
 	// CreateRegistryClient creates a client connection to the Registry RPC interface.
 	// `defer CloseConnection(logger, conn)` will need to be called by the caller of this method.
 	CreateRegistryClient(logger l.Logger, url string) (rgpb.RegistryClient, *grpc.ClientConn, error)
+	// TODO
+	Create(logger l.Logger, desc grpc.ServiceDesc) (*grpc.ClientConn)
 }
 
 type clientFactory struct{}
 
 func NewClientFactory(logger l.Logger) ClientFactory {
 	return &clientFactory{}
+}
+
+func (f *clientFactory) Create(logger l.Logger, desc grpc.ServiceDesc) *grpc.ClientConn {
+	// TODO: look up connection in registry
+	target := "todo"
+
+	conn, err := f.createRpcConnection(logger, target)
+	if err != nil {
+		logger.WithField("service_name", desc.ServiceName).WithError(err).Fatal("failed to create rpc connection")
+	}
+
+	return conn
 }
 
 // CloseConnection will close the specified gRPC connection
