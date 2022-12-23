@@ -44,8 +44,13 @@ func main() {
 			},
 		},
 		HandlerLayerConfig: &chassis.HandlerLayerConfig{
-			CreateRpcHandlers: func(b chassis.MainBuilder) {
-				pb.RegisterEventStoreServer(b.GetRpcServer(), h.NewEventStoreHandler(b.GetLogger(), svc))
+			CreateRpcHandlers: func(b chassis.MainBuilder) []chassis.GrpcHandlers {
+				return []chassis.GrpcHandlers{
+					{
+						Desc:    pb.EventStore_ServiceDesc,
+						Handler: h.NewEventStoreHandler(b.GetLogger(), svc),
+					},
+				}
 			},
 		},
 	})

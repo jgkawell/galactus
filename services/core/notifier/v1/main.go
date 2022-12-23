@@ -15,7 +15,7 @@ func main() {
 	var svc s.Service
 
 	b := chassis.NewMainBuilder(&chassis.MainBuilderConfig{
-		ApplicationName: "notifier",
+		ApplicationName:        "notifier",
 		CreateEventStoreClient: true,
 		KeyVaultConfig: &chassis.KeyVaultConfig{
 			RequireKeyVault:               func(b chassis.MainBuilder) bool { return !b.GetConfig().GetBool("isDevMode") },
@@ -30,8 +30,13 @@ func main() {
 			},
 		},
 		HandlerLayerConfig: &chassis.HandlerLayerConfig{
-			CreateRpcHandlers: func(b chassis.MainBuilder) {
-				pb.RegisterNotifierServer(b.GetRpcServer(), h.NewNotifierHandler(b.GetLogger(), svc))
+			CreateRpcHandlers: func(b chassis.MainBuilder) []chassis.GrpcHandlers {
+				return []chassis.GrpcHandlers{
+					{
+						Desc:    pb.Notifier_ServiceDesc,
+						Handler: h.NewNotifierHandler(b.GetLogger(), svc),
+					},
+				}
 			},
 			CreateBrokerConfig: func(b chassis.MainBuilder) chassis.ConsumerConfig {
 				return chassis.ConsumerConfig{

@@ -2,7 +2,7 @@
 configMap:
   isDevMode: true
   disableTracer: true
-  version: v0.0.0
+  version: v1
   env: local
   # sql database connection values
   sqlDbUser: admin
@@ -11,7 +11,7 @@ configMap:
   sqlDbPort: 5434
   sqlDbHost: localhost
   sqlDbSchema: local
-  dbAddress: localhost
+  dbAddress: localhost:27017
   # registry is the only service which defines ports in local.yaml
   # all other services request ports from the registry service itself
   httpPort: 35000

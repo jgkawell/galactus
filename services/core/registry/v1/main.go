@@ -49,8 +49,13 @@ func main() {
 		HandlerLayerConfig: &chassis.HandlerLayerConfig{
 			HttpPortVariable: "httpPort",
 			RpcPortVariable:  "grpcPort",
-			CreateRpcHandlers: func(b chassis.MainBuilder) {
-				pb.RegisterRegistryServer(b.GetRpcServer(), h.NewRegistryHandler(b.GetLogger(), svc))
+			CreateRpcHandlers: func(b chassis.MainBuilder) []chassis.GrpcHandlers {
+				return []chassis.GrpcHandlers{
+					{
+						Desc:    pb.Registry_ServiceDesc,
+						Handler: h.NewRegistryHandler(b.GetLogger(), svc),
+					},
+				}
 			},
 		},
 	})

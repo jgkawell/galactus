@@ -69,8 +69,13 @@ func main() {
 			},
 		},
 		HandlerLayerConfig: &chassis.HandlerLayerConfig{
-			CreateRpcHandlers: func(b chassis.MainBuilder) {
-				pb.RegisterCommandHandlerServer(b.GetRpcServer(), h.NewHandler(b.GetLogger(), svc))
+			CreateRpcHandlers: func(b chassis.MainBuilder) []chassis.GrpcHandlers {
+				return []chassis.GrpcHandlers{
+					{
+						Desc:    pb.CommandHandler_ServiceDesc,
+						Handler: h.NewHandler(b.GetLogger(), svc),
+					},
+				}
 			},
 		},
 	})
