@@ -2,7 +2,6 @@ package db
 
 import (
 	"context"
-	"encoding/base64"
 	"errors"
 	"fmt"
 	"time"
@@ -10,13 +9,15 @@ import (
 	l "github.com/jgkawell/galactus/pkg/logging/v2"
 
 	"github.com/google/uuid"
-	"github.com/lucsky/cuid"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type CrudDaoConfig struct {
+	DatabaseName         string
+	Namespace            string
+	CollectionName       string
 	SoftDelete           bool
 	Timeout              time.Duration
 	AllowUpsert          bool
@@ -25,7 +26,7 @@ type CrudDaoConfig struct {
 
 type CrudDao interface {
 	// InitializeCompositeUniqueIndex will set a unique key tupling constraint to the collection.
-	InitializeCompositeUniqueIndex(logger l.Logger, keys bson.D) l.Error
+	InitializeCompositeUniqueIndex(ctx context.Context, logger l.Logger, keys bson.D) l.Error
 
 	// Create inserts the specified record into the database.
 	Create(ctx context.Context, logger l.Logger, model interface{}) (modelId string, err l.Error)
@@ -51,9 +52,6 @@ type CrudDao interface {
 	// Useful for database transactions not covered in the other actions of this struct.
 	GetCollection() *mongo.Collection
 
-	// GenerateBase64URLEncodedId returns a base64url encoded random identifier or an error if it cannot generate one.
-	GenerateBase64URLEncodedId(logger l.Logger) (string, l.Error)
-
 	// GetConfiguration returns the configuration used by the dao.
 	GetConfiguration() *CrudDaoConfig
 
@@ -62,10 +60,8 @@ type CrudDao interface {
 }
 
 type crudDao struct {
-	client         *mongo.Client
-	dbName         string
-	collectionName string
-	config         *CrudDaoConfig
+	client *mongo.Client
+	config *CrudDaoConfig
 }
 
 type CrudDaoModel interface {
@@ -74,16 +70,15 @@ type CrudDaoModel interface {
 }
 
 type crudDaoModel struct {
-	Id         string        `bson:"_id"`
-	Model      interface{}   `bson:"model"`
-	History    *ModelHistory `bson:"history"`
-	CustomerId string        `bson:"customer_id,omitempty"` // deprecated
+	Id      string        `bson:"_id"`
+	Model   interface{}   `bson:"model"`
+	History *ModelHistory `bson:"history"`
 }
 
 func (m *crudDaoModel) GetModel() interface{}     { return m.Model }
 func (m *crudDaoModel) GetHistory() *ModelHistory { return m.History }
 
-func NewCrudDao(logger l.Logger, client *mongo.Client, namespace string, dbName string, collectionName string, config *CrudDaoConfig) (CrudDao, l.Error) {
+func NewCrudDao(logger l.Logger, client *mongo.Client, config *CrudDaoConfig) (CrudDao, l.Error) {
 	if config == nil {
 		return nil, logger.WrapError(errors.New("CrudDaoConfig must be set"))
 	}
@@ -92,18 +87,16 @@ func NewCrudDao(logger l.Logger, client *mongo.Client, namespace string, dbName 
 		config.Timeout = 10 * time.Second
 	}
 
-	if namespace != "" {
-		collectionName = fmt.Sprintf("%s-%s", namespace, collectionName)
+	if config.Namespace != "" {
+		config.CollectionName = fmt.Sprintf("%s-%s", config.Namespace, config.CollectionName)
 	}
 
 	d := &crudDao{
-		client:         client,
-		dbName:         dbName,
-		collectionName: collectionName,
-		config:         config,
+		client: client,
+		config: config,
 	}
 	if len(config.UniqueKeyColumnNames) > 0 {
-		if err := initializeNoSqlUniqueIndexes(logger, d.GetCollection(), d.dbName, d.collectionName, config.UniqueKeyColumnNames...); err != nil {
+		if err := initializeNoSqlUniqueIndexes(logger, d.GetCollection(), d.config.DatabaseName, d.config.CollectionName, config.UniqueKeyColumnNames...); err != nil {
 			return nil, logger.WrapError(l.NewError(err, "failed to apply unique key constraint to specified columns"))
 		}
 	}
@@ -111,13 +104,13 @@ func NewCrudDao(logger l.Logger, client *mongo.Client, namespace string, dbName 
 }
 
 // NewCrudDaoAndClient creates a new NoSQL client and CRUD DAO
-func NewCrudDaoAndClient(logger l.Logger, dbAddress string, namespace string, dbName string, collectionName string, config *CrudDaoConfig) (CrudDao, *mongo.Client, l.Error) {
+func NewCrudDaoAndClient(logger l.Logger, dbAddress string, config *CrudDaoConfig) (CrudDao, *mongo.Client, l.Error) {
 	mongoClient, err := CreateNoSqlClient(logger, dbAddress)
 	if err != nil {
 		return nil, nil, logger.WrapError(l.NewError(err, "failed to create database client"))
 	}
 	logger.Info("Connected to " + dbAddress)
-	dao, err := NewCrudDao(logger, mongoClient, namespace, dbName, collectionName, config)
+	dao, err := NewCrudDao(logger, mongoClient, config)
 	if err != nil {
 		return nil, nil, logger.WrapError(l.NewError(err, "failed to create crud dao"))
 	}
@@ -125,8 +118,8 @@ func NewCrudDaoAndClient(logger l.Logger, dbAddress string, namespace string, db
 }
 
 // InitializeCompositeUniqueIndex will set a unique key constraint to the collection
-func (d *crudDao) InitializeCompositeUniqueIndex(logger l.Logger, keys bson.D) l.Error {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+func (d *crudDao) InitializeCompositeUniqueIndex(ctx context.Context, logger l.Logger, keys bson.D) l.Error {
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 
 	if _, err := d.GetCollection().Indexes().CreateOne(ctx,
@@ -140,7 +133,7 @@ func (d *crudDao) InitializeCompositeUniqueIndex(logger l.Logger, keys bson.D) l
 }
 
 func (d *crudDao) Create(ctx context.Context, logger l.Logger, model interface{}) (string, l.Error) {
-	return d.CreateWithId(ctx, logger, cuid.New(), model)
+	return d.CreateWithId(ctx, logger, uuid.NewString(), model)
 }
 
 func (d *crudDao) CreateWithId(ctx context.Context, logger l.Logger, id string, model interface{}) (string, l.Error) {
@@ -236,7 +229,7 @@ func (d *crudDao) Update(ctx context.Context, logger l.Logger, params bson.M, mo
 	}
 	d.SetRequiredParams(params)
 
-	ctx, cancel := context.WithTimeout(context.Background(), d.config.Timeout)
+	ctx, cancel := context.WithTimeout(ctx, d.config.Timeout)
 	defer cancel()
 
 	var result *mongo.UpdateResult
@@ -276,7 +269,7 @@ func (d *crudDao) Delete(ctx context.Context, logger l.Logger, params bson.M) l.
 	}
 	d.SetRequiredParams(params)
 
-	ctx, cancel := context.WithTimeout(context.Background(), d.config.Timeout)
+	ctx, cancel := context.WithTimeout(ctx, d.config.Timeout)
 	defer cancel()
 	var err error
 	if d.config.SoftDelete {
@@ -299,7 +292,7 @@ func (d *crudDao) DeleteById(ctx context.Context, logger l.Logger, id string) l.
 }
 
 func (d *crudDao) GetCollection() *mongo.Collection {
-	return d.client.Database(d.dbName).Collection(d.collectionName)
+	return d.client.Database(d.config.DatabaseName).Collection(d.config.CollectionName)
 }
 
 func (d *crudDao) SetRequiredParams(params bson.M) {
@@ -308,18 +301,6 @@ func (d *crudDao) SetRequiredParams(params bson.M) {
 	params["model"] = bson.M{"$ne": nil}
 	// Can add role checks here (currently not applicable)
 	// Probably should check roles through a policy engine instead (OPA?)
-}
-
-func (d *crudDao) GenerateBase64URLEncodedId(logger l.Logger) (string, l.Error) {
-	u, err := uuid.NewRandom()
-	if err != nil {
-		return "", logger.WrapError(l.NewError(err, "failed to generate random uuid"))
-	}
-	b, err := u.MarshalBinary()
-	if err != nil {
-		return "", logger.WrapError(l.NewError(err, "failed to marshal uuid to bytes"))
-	}
-	return base64.RawURLEncoding.EncodeToString(b), nil
 }
 
 func (d *crudDao) GetConfiguration() *CrudDaoConfig {

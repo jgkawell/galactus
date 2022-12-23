@@ -48,8 +48,8 @@ func DisconnectNoSqlClient(logger l.Logger, client *mongo.Client) {
 }
 
 // PingNoSqlClient is called in a separate thread that is responding to health checks
-func PingNoSqlClient(client *mongo.Client) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+func PingNoSqlClient(ctx context.Context, client *mongo.Client) error {
+	ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
 	defer cancel()
 	if err := client.Ping(ctx, readpref.Primary()); err != nil {
 		return err
