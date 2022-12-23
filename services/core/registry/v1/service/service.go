@@ -3,15 +3,18 @@ package service
 import (
 	"context"
 	"errors"
+	"strings"
 
 	agpb "github.com/jgkawell/galactus/api/gen/go/core/aggregates/v1"
 	pb "github.com/jgkawell/galactus/api/gen/go/core/registry/v1"
+
 	ct "github.com/jgkawell/galactus/pkg/chassis/context"
 	"github.com/jgkawell/galactus/pkg/chassis/messagebus"
 	l "github.com/jgkawell/galactus/pkg/logging/v2"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 const (
@@ -47,26 +50,38 @@ func NewService(logger l.Logger, env string, db *gorm.DB, mb messagebus.MessageB
 }
 
 func (s *service) Register(ctx ct.ExecutionContext, req *pb.RegisterRequest) (*pb.RegisterResponse, l.Error) {
+
+	// get the version (e.g. if requested version is "v2.3.5", then queried version is "v2")
+	version := strings.Split(req.Version, ".")[0]
+	if version == "" {
+		return nil, ctx.Logger.WithField("requested_version", req.Version).WrapError(errors.New("invalid requested service version. must have the form vX.Y.Z"))
+	}
+
 	// check for existing registration before creating new one
 	registrationORM := &agpb.RegistrationORM{}
-	r := s.db.Where("name = ? AND version = ?", req.GetName(), req.GetVersion()).
+	r := s.db.Where("domain = ? AND name = ? AND version = ?", req.Domain, req.Name, req.Version).
 		Preload("Protocols").
 		Preload("Consumers").
-		First(registrationORM)
+		Find(registrationORM)
+
 	// failed to check for existing registration
 	if r.Error != nil && r.Error != gorm.ErrRecordNotFound {
 		return nil, ctx.Logger.WrapError(l.NewError(r.Error, "failed to check for existing registration"))
 	}
-	// no previous registration found, create new one
-	if r.Error == gorm.ErrRecordNotFound {
-		ctx.Logger.Info("no previous registration found, creating new one")
-		var err l.Error
-		registrationORM, err = s.createDatabaseEntry(ctx, req)
-		if err != nil {
-			return nil, ctx.Logger.WrapError(err)
-		}
+
+	// merge requested registration with existing data
+	registrationORM, err := s.mergeRegistrations(ctx, req, registrationORM)
+	if err != nil {
+		return nil, ctx.Logger.WrapError(err)
 	}
 
+	// upsert into database
+	stdErr := s.db.Clauses(clause.OnConflict{UpdateAll: true}).Create(registrationORM).Error
+	if stdErr != nil {
+		return nil, ctx.Logger.WrapError(l.NewError(stdErr, "failed to create registration in db"))
+	}
+
+	// initialize response
 	response := &pb.RegisterResponse{
 		Protocols: make([]*pb.ProtocolResponse, len(req.GetProtocols())),
 		Consumers: make([]*pb.ConsumerResponse, len(req.GetConsumers())),
@@ -120,58 +135,6 @@ func (s *service) Register(ctx ct.ExecutionContext, req *pb.RegisterRequest) (*p
 	ctx.Logger.Info("registered service")
 
 	return response, nil
-}
-
-func (s *service) createDatabaseEntry(ctx ct.ExecutionContext, req *pb.RegisterRequest) (*agpb.RegistrationORM, l.Error) {
-
-	registrationId := uuid.NewString()
-
-	// if remote: address is service name (proxied through Istio)
-	// if local (devMode): address is localhost
-	serviceAddress := req.GetName()
-	if s.isDevMode {
-		serviceAddress = "localhost"
-	}
-
-	// generate ORM protocols from PB protocols
-	protocolsORM := make([]*agpb.ProtocolORM, len(req.GetProtocols()))
-	for i, protocolPB := range req.GetProtocols() {
-		protocolORM, err := s.convertProtocolRequestToORM(ctx.Logger, protocolPB, req.GetVersion())
-		if err != nil {
-			return nil, ctx.Logger.WrapError(err)
-		}
-		protocolsORM[i] = protocolORM
-	}
-
-	// generate ORM consumers from PB consumers
-	consumersORM := make([]*agpb.ConsumerORM, len(req.GetConsumers()))
-	for i, consumerPB := range req.GetConsumers() {
-		consumerORM := agpb.ConsumerORM{
-			Id:             uuid.NewString(),
-			Kind:           int32(consumerPB.GetKind()),
-			RegistrationId: &registrationId,
-			RoutingKey:     generateRoutingKey(consumerPB.GetAggregateType(), consumerPB.GetEventType(), consumerPB.GetEventCode()),
-		}
-		consumersORM[i] = &consumerORM
-	}
-
-	// create new entry
-	registrationORM := &agpb.RegistrationORM{
-		Id:          registrationId,
-		Name:        req.GetName(),
-		Version:     req.GetVersion(),
-		Description: req.GetDescription(),
-		Address:     serviceAddress,
-		Status:      int32(agpb.ServiceStatus_SERVICE_STATUS_REGISTERED),
-		Protocols:   protocolsORM,
-		Consumers:   consumersORM,
-	}
-	err := s.db.Create(&registrationORM).Error
-	if err != nil {
-		return nil, ctx.Logger.WrapError(l.NewError(err, "failed to create registration in db"))
-	}
-
-	return registrationORM, nil
 }
 
 func (s *service) Connection(ctx ct.ExecutionContext, req *pb.ConnectionRequest) (*pb.ConnectionResponse, l.Error) {

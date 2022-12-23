@@ -561,7 +561,7 @@ func NewMainBuilder(mbc *MainBuilderConfig) MainBuilder {
 		}
 		registerResponse, err := b.registryClient.Register(ctx.GetContext(), &rgpb.RegisterRequest{
 			Name:        mbc.ApplicationName,
-			Domain:      "", // TODO: how do we manage this?
+			Domain:      b.viper.GetString("domain"),
 			Version:     b.viper.GetString("version"),
 			Description: b.viper.GetString("description"),
 			Protocols:   protocols,

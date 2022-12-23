@@ -6,12 +6,12 @@ import (
 	"math/rand"
 	"strings"
 
+	"github.com/google/uuid"
 	agpb "github.com/jgkawell/galactus/api/gen/go/core/aggregates/v1"
 	pb "github.com/jgkawell/galactus/api/gen/go/core/registry/v1"
 
+	ct "github.com/jgkawell/galactus/pkg/chassis/context"
 	l "github.com/jgkawell/galactus/pkg/logging/v2"
-
-	"github.com/google/uuid"
 )
 
 const localPortConflictRetryLimit = 1000
@@ -20,39 +20,94 @@ const localPortConflictRetryLimit = 1000
 const localMinPort = 3502
 const localMaxPort = 4500
 
-func (s *service) convertProtocolRequestToORM(logger l.Logger, protocolPB *pb.ProtocolRequest, serviceVersion string) (*agpb.ProtocolORM, l.Error) {
-	// check the protocol kind is valid
-	if protocolPB.GetKind() == agpb.ProtocolKind_PROTOCOL_KIND_INVALID {
-		return nil, logger.WithField("protocol_kind", protocolPB.GetKind()).WrapError(errors.New("invalid protocol kind"))
+func (s *service) mergeRegistrations(ctx ct.ExecutionContext, request *pb.RegisterRequest, existing *agpb.RegistrationORM) (*agpb.RegistrationORM, l.Error) {
+
+	// generate new id if empty
+	if existing.Id == "" {
+		existing.Id = uuid.NewString()
+	}
+	// generate address if empty
+	if existing.Address == "" {
+		existing.Address = request.Name
+		if s.isDevMode {
+			existing.Address = "localhost"
+		}
+	}
+	// copy over requested metadata
+	existing.Name = request.Name
+	existing.Domain = request.Domain
+	existing.Version = request.Version
+	existing.Description = request.Description
+
+	// add any new protocols
+	for _, newP := range request.Protocols {
+		// if already exists, break
+		found := false
+		for _, existingP := range existing.Protocols {
+			if newP.Route == existingP.Route {
+				found = true
+				break
+			}
+		}
+		// create new protocol and add to existing
+		if !found {
+			port, err := s.generatePort(ctx, agpb.ProtocolKind(newP.Kind))
+			if err != nil {
+				return nil, ctx.Logger.WrapError(err)
+			}
+			new := &agpb.ProtocolORM{
+				Id:             uuid.NewString(),
+				Kind:           int32(newP.Kind),
+				Port:           port,
+				RegistrationId: &existing.Id,
+				Route:          newP.Route,
+				Version:        existing.Version,
+			}
+			existing.Protocols = append(existing.Protocols, new)
+		}
 	}
 
-	// generate the protocol port
+	// add any new consumers
+	for _, newC := range request.Consumers {
+		routingKey := generateRoutingKey(newC.AggregateType, newC.EventType, newC.EventCode)
+		// if already exists, break
+		found := false
+		for _, existingC := range existing.Consumers {
+			if routingKey == existingC.RoutingKey {
+				found = true
+				break
+			}
+		}
+		// create new consumer and add to existing
+		if !found {
+			new := &agpb.ConsumerORM{
+				Id:             uuid.NewString(),
+				Kind:           int32(newC.Kind),
+				RegistrationId: &existing.Id,
+				RoutingKey:     routingKey,
+			}
+			existing.Consumers = append(existing.Consumers, new)
+		}
+	}
+
+	return existing, nil
+}
+
+func (s *service) generatePort(ctx ct.ExecutionContext, kind agpb.ProtocolKind) (int32, l.Error) {
 	var port int32
 	var err l.Error
 	if s.isDevMode {
-		port, err = s.generateLocalPort(logger)
+		port, err = s.generateLocalPort(ctx.Logger)
 		if err != nil {
-			return nil, err
+			return 0, ctx.Logger.WrapError(err)
 		}
 	} else {
-		port, err = s.generateRemotePort(logger, protocolPB.GetKind())
+		port, err = s.generateRemotePort(ctx.Logger, kind)
 		if err != nil {
-			return nil, err
+			return 0, ctx.Logger.WrapError(err)
 		}
 	}
-
-	// get the protocol version (ex. if serviceVersion is "v2.3.5", then protocolVersion is "v2")
-	version := strings.Split(serviceVersion, ".")[0]
-	if version == "" {
-		return nil, logger.WithField("service_version", serviceVersion).WrapError(errors.New("invalid service version"))
-	}
-
-	return &agpb.ProtocolORM{
-		Id:      uuid.NewString(),
-		Kind:    int32(protocolPB.GetKind()),
-		Port:    port,
-		Version: version,
-	}, nil
+	return port, nil
 }
 
 /*
@@ -77,8 +132,10 @@ func (s *service) generateLocalPort(logger l.Logger) (int32, l.Error) {
 
 /*
 generateRemotePort will generate the remote port based on the protocol kind:
+
 	http = 8080
 	grpc = 8090
+
 If an invalid protocol kind is given, an error is returned.
 */
 func (s *service) generateRemotePort(logger l.Logger, kind agpb.ProtocolKind) (int32, l.Error) {
@@ -96,6 +153,7 @@ func (s *service) generateRemotePort(logger l.Logger, kind agpb.ProtocolKind) (i
 generateExchangeName will generate an exchange name based on the given base name and the service environment (k8s namespace or local)
 
 The result will have the following form:
+
 	exchangeName = "ENV.EXCHANGE_NAME"
 */
 func generateExchangeName(env, exchangeName string) string {
@@ -110,11 +168,12 @@ func generateRoutingKey(aggregateType, eventType, eventCode string) string {
 generateQueueName will generate queue name based on the given exchange, routingKey, service and identifier.
 
 The result will have the following form:
-    exchangeName = "EXCHANGE_NAME"
-    // if identifier is not empty
-    queueName = "EXCHANGE_NAME.ROUTING_KEY.SERVICE_NAME.IDENTIFIER"
-	// if identifier is empty
-	queueName = "EXCHANGE_NAME.ROUTING_KEY.SERVICE_NAME"
+
+	    exchangeName = "EXCHANGE_NAME"
+	    // if identifier is not empty
+	    queueName = "EXCHANGE_NAME.ROUTING_KEY.SERVICE_NAME.IDENTIFIER"
+		// if identifier is empty
+		queueName = "EXCHANGE_NAME.ROUTING_KEY.SERVICE_NAME"
 */
 func (s *service) generateQueueName(exchangeName, routingKey, serviceName, identifier string) (queueName string) {
 	queueName = fmt.Sprintf("%s.%s.%s.%s", exchangeName, routingKey, serviceName, identifier)
