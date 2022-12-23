@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"errors"
-	"strings"
 
 	agpb "github.com/jgkawell/galactus/api/gen/go/core/aggregates/v1"
 	pb "github.com/jgkawell/galactus/api/gen/go/core/registry/v1"
@@ -51,10 +50,9 @@ func NewService(logger l.Logger, env string, db *gorm.DB, mb messagebus.MessageB
 
 func (s *service) Register(ctx ct.ExecutionContext, req *pb.RegisterRequest) (*pb.RegisterResponse, l.Error) {
 
-	// get the version (e.g. if requested version is "v2.3.5", then queried version is "v2")
-	version := strings.Split(req.Version, ".")[0]
-	if version == "" {
-		return nil, ctx.Logger.WithField("requested_version", req.Version).WrapError(errors.New("invalid requested service version. must have the form vX.Y.Z"))
+	req.Version = reduceVersion(req.Version)
+	if req.Version == "" {
+		return nil, ctx.Logger.WrapError(errors.New("invalid requested version"))
 	}
 
 	// check for existing registration before creating new one
@@ -119,6 +117,7 @@ func (s *service) Register(ctx ct.ExecutionContext, req *pb.RegisterRequest) (*p
 		// save values for return to caller
 		response.Consumers[i] = &pb.ConsumerResponse{
 			Kind:       agpb.ConsumerKind(c.Kind),
+			Order:      int32(i), // TODO: this won't always work if the db orders things differently
 			RoutingKey: c.RoutingKey,
 			Exchange:   s.defaultExchange,
 			QueueName:  queueName,
@@ -143,6 +142,11 @@ func (s *service) Connection(ctx ct.ExecutionContext, req *pb.ConnectionRequest)
 		"service_version": req.GetVersion(),
 		"protocol_kind":   req.GetType(),
 	})
+
+	req.Version = reduceVersion(req.Version)
+	if req.Version == "" {
+		return nil, ctx.Logger.WrapError(errors.New("invalid requested version"))
+	}
 
 	result := &agpb.RegistrationORM{}
 	err := s.db.Model(&agpb.RegistrationORM{}).Where("name = ? AND version = ?", req.GetName(), req.GetVersion()).Preload("Protocols").Find(result).Error

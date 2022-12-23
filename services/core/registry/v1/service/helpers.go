@@ -71,6 +71,7 @@ func (s *service) mergeRegistrations(ctx ct.ExecutionContext, request *pb.Regist
 	for _, newC := range request.Consumers {
 		routingKey := generateRoutingKey(newC.AggregateType, newC.EventType, newC.EventCode)
 		// if already exists, break
+		// TODO: what do we do if there are existing consumers that are no longer being used?
 		found := false
 		for _, existingC := range existing.Consumers {
 			if routingKey == existingC.RoutingKey {
@@ -182,4 +183,13 @@ func (s *service) generateQueueName(exchangeName, routingKey, serviceName, ident
 		queueName = strings.TrimSuffix(queueName, ".")
 	}
 	return queueName
+}
+
+// reduceVersion simplifies the semver to just the major version (e.g. if requested version is "v2.3.5", then queried version is "v2")
+func reduceVersion(version string) string {
+	version = strings.Split(version, ".")[0]
+	if !strings.HasPrefix(version, "v") {
+		return ""
+	}
+	return version
 }
