@@ -241,6 +241,8 @@ func (m *ProtocolRequest) validate(all bool) error {
 
 	// no validation rules for Kind
 
+	// no validation rules for Route
+
 	if len(errors) > 0 {
 		return ProtocolRequestMultiError(errors)
 	}

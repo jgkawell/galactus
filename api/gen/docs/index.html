@@ -2022,6 +2022,13 @@ this data MUST be able to be unmarshalled into a Proto message type </p></td>
                   <td><p>the api port (e.g. 8080 or 8090) </p></td>
                 </tr>
               
+                <tr>
+                  <td>route</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>the base route </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -2086,6 +2093,19 @@ this data MUST be able to be unmarshalled into a Proto message type </p></td>
                   </td>
                 </tr>
               
+                <tr>
+                  <td>route</td>
+                  <td>
+                    <ul>
+                    
+                      <li>string.min_len: 1</li>
+                    
+                      <li>string.max_len: 255</li>
+                    
+                    </ul>
+                  </td>
+                </tr>
+              
               </tbody>
             </table>
             
@@ -2123,6 +2143,13 @@ the service name </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>the service version </p></td>
+                </tr>
+              
+                <tr>
+                  <td>domain</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>the service domain </p></td>
                 </tr>
               
                 <tr>
@@ -2202,6 +2229,19 @@ the service name </p></td>
               
                 <tr>
                   <td>version</td>
+                  <td>
+                    <ul>
+                    
+                      <li>string.min_len: 1</li>
+                    
+                      <li>string.max_len: 255</li>
+                    
+                    </ul>
+                  </td>
+                </tr>
+              
+                <tr>
+                  <td>domain</td>
                   <td>
                     <ul>
                     
@@ -3027,6 +3067,13 @@ in javascript is an object </p></td>
                 <tr>
                   <td>kind</td>
                   <td><a href="#core.aggregates.v1.ProtocolKind">core.aggregates.v1.ProtocolKind</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>route</td>
+                  <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>

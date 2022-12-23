@@ -15,6 +15,9 @@ export class Registration extends jspb.Message {
   getVersion(): string;
   setVersion(value: string): Registration;
 
+  getDomain(): string;
+  setDomain(value: string): Registration;
+
   getDescription(): string;
   setDescription(value: string): Registration;
 
@@ -47,6 +50,7 @@ export namespace Registration {
     id: string,
     name: string,
     version: string,
+    domain: string,
     description: string,
     address: string,
     status: ServiceStatus,
@@ -68,6 +72,9 @@ export class Protocol extends jspb.Message {
   getPort(): number;
   setPort(value: number): Protocol;
 
+  getRoute(): string;
+  setRoute(value: string): Protocol;
+
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): Protocol.AsObject;
   static toObject(includeInstance: boolean, msg: Protocol): Protocol.AsObject;
@@ -82,6 +89,7 @@ export namespace Protocol {
     kind: ProtocolKind,
     version: string,
     port: number,
+    route: string,
   }
 }
 

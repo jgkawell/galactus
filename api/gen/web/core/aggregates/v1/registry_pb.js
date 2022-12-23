@@ -94,7 +94,7 @@ if (goog.DEBUG && !COMPILED) {
  * @private {!Array<number>}
  * @const
  */
-proto.core.aggregates.v1.Registration.repeatedFields_ = [7,8];
+proto.core.aggregates.v1.Registration.repeatedFields_ = [8,9];
 
 
 
@@ -130,9 +130,10 @@ proto.core.aggregates.v1.Registration.toObject = function(includeInstance, msg) 
     id: jspb.Message.getFieldWithDefault(msg, 1, ""),
     name: jspb.Message.getFieldWithDefault(msg, 2, ""),
     version: jspb.Message.getFieldWithDefault(msg, 3, ""),
-    description: jspb.Message.getFieldWithDefault(msg, 4, ""),
-    address: jspb.Message.getFieldWithDefault(msg, 5, ""),
-    status: jspb.Message.getFieldWithDefault(msg, 6, 0),
+    domain: jspb.Message.getFieldWithDefault(msg, 4, ""),
+    description: jspb.Message.getFieldWithDefault(msg, 5, ""),
+    address: jspb.Message.getFieldWithDefault(msg, 6, ""),
+    status: jspb.Message.getFieldWithDefault(msg, 7, 0),
     protocolsList: jspb.Message.toObjectList(msg.getProtocolsList(),
     proto.core.aggregates.v1.Protocol.toObject, includeInstance),
     consumersList: jspb.Message.toObjectList(msg.getConsumersList(),
@@ -187,22 +188,26 @@ proto.core.aggregates.v1.Registration.deserializeBinaryFromReader = function(msg
       break;
     case 4:
       var value = /** @type {string} */ (reader.readString());
-      msg.setDescription(value);
+      msg.setDomain(value);
       break;
     case 5:
       var value = /** @type {string} */ (reader.readString());
-      msg.setAddress(value);
+      msg.setDescription(value);
       break;
     case 6:
+      var value = /** @type {string} */ (reader.readString());
+      msg.setAddress(value);
+      break;
+    case 7:
       var value = /** @type {!proto.core.aggregates.v1.ServiceStatus} */ (reader.readEnum());
       msg.setStatus(value);
       break;
-    case 7:
+    case 8:
       var value = new proto.core.aggregates.v1.Protocol;
       reader.readMessage(value,proto.core.aggregates.v1.Protocol.deserializeBinaryFromReader);
       msg.addProtocols(value);
       break;
-    case 8:
+    case 9:
       var value = new proto.core.aggregates.v1.Consumer;
       reader.readMessage(value,proto.core.aggregates.v1.Consumer.deserializeBinaryFromReader);
       msg.addConsumers(value);
@@ -257,31 +262,38 @@ proto.core.aggregates.v1.Registration.serializeBinaryToWriter = function(message
       f
     );
   }
-  f = message.getDescription();
+  f = message.getDomain();
   if (f.length > 0) {
     writer.writeString(
       4,
       f
     );
   }
-  f = message.getAddress();
+  f = message.getDescription();
   if (f.length > 0) {
     writer.writeString(
       5,
       f
     );
   }
+  f = message.getAddress();
+  if (f.length > 0) {
+    writer.writeString(
+      6,
+      f
+    );
+  }
   f = message.getStatus();
   if (f !== 0.0) {
     writer.writeEnum(
-      6,
+      7,
       f
     );
   }
   f = message.getProtocolsList();
   if (f.length > 0) {
     writer.writeRepeatedMessage(
-      7,
+      8,
       f,
       proto.core.aggregates.v1.Protocol.serializeBinaryToWriter
     );
@@ -289,7 +301,7 @@ proto.core.aggregates.v1.Registration.serializeBinaryToWriter = function(message
   f = message.getConsumersList();
   if (f.length > 0) {
     writer.writeRepeatedMessage(
-      8,
+      9,
       f,
       proto.core.aggregates.v1.Consumer.serializeBinaryToWriter
     );
@@ -352,10 +364,10 @@ proto.core.aggregates.v1.Registration.prototype.setVersion = function(value) {
 
 
 /**
- * optional string description = 4;
+ * optional string domain = 4;
  * @return {string}
  */
-proto.core.aggregates.v1.Registration.prototype.getDescription = function() {
+proto.core.aggregates.v1.Registration.prototype.getDomain = function() {
   return /** @type {string} */ (jspb.Message.getFieldWithDefault(this, 4, ""));
 };
 
@@ -364,16 +376,16 @@ proto.core.aggregates.v1.Registration.prototype.getDescription = function() {
  * @param {string} value
  * @return {!proto.core.aggregates.v1.Registration} returns this
  */
-proto.core.aggregates.v1.Registration.prototype.setDescription = function(value) {
+proto.core.aggregates.v1.Registration.prototype.setDomain = function(value) {
   return jspb.Message.setProto3StringField(this, 4, value);
 };
 
 
 /**
- * optional string address = 5;
+ * optional string description = 5;
  * @return {string}
  */
-proto.core.aggregates.v1.Registration.prototype.getAddress = function() {
+proto.core.aggregates.v1.Registration.prototype.getDescription = function() {
   return /** @type {string} */ (jspb.Message.getFieldWithDefault(this, 5, ""));
 };
 
@@ -382,17 +394,35 @@ proto.core.aggregates.v1.Registration.prototype.getAddress = function() {
  * @param {string} value
  * @return {!proto.core.aggregates.v1.Registration} returns this
  */
-proto.core.aggregates.v1.Registration.prototype.setAddress = function(value) {
+proto.core.aggregates.v1.Registration.prototype.setDescription = function(value) {
   return jspb.Message.setProto3StringField(this, 5, value);
 };
 
 
 /**
- * optional ServiceStatus status = 6;
+ * optional string address = 6;
+ * @return {string}
+ */
+proto.core.aggregates.v1.Registration.prototype.getAddress = function() {
+  return /** @type {string} */ (jspb.Message.getFieldWithDefault(this, 6, ""));
+};
+
+
+/**
+ * @param {string} value
+ * @return {!proto.core.aggregates.v1.Registration} returns this
+ */
+proto.core.aggregates.v1.Registration.prototype.setAddress = function(value) {
+  return jspb.Message.setProto3StringField(this, 6, value);
+};
+
+
+/**
+ * optional ServiceStatus status = 7;
  * @return {!proto.core.aggregates.v1.ServiceStatus}
  */
 proto.core.aggregates.v1.Registration.prototype.getStatus = function() {
-  return /** @type {!proto.core.aggregates.v1.ServiceStatus} */ (jspb.Message.getFieldWithDefault(this, 6, 0));
+  return /** @type {!proto.core.aggregates.v1.ServiceStatus} */ (jspb.Message.getFieldWithDefault(this, 7, 0));
 };
 
 
@@ -401,17 +431,17 @@ proto.core.aggregates.v1.Registration.prototype.getStatus = function() {
  * @return {!proto.core.aggregates.v1.Registration} returns this
  */
 proto.core.aggregates.v1.Registration.prototype.setStatus = function(value) {
-  return jspb.Message.setProto3EnumField(this, 6, value);
+  return jspb.Message.setProto3EnumField(this, 7, value);
 };
 
 
 /**
- * repeated Protocol protocols = 7;
+ * repeated Protocol protocols = 8;
  * @return {!Array<!proto.core.aggregates.v1.Protocol>}
  */
 proto.core.aggregates.v1.Registration.prototype.getProtocolsList = function() {
   return /** @type{!Array<!proto.core.aggregates.v1.Protocol>} */ (
-    jspb.Message.getRepeatedWrapperField(this, proto.core.aggregates.v1.Protocol, 7));
+    jspb.Message.getRepeatedWrapperField(this, proto.core.aggregates.v1.Protocol, 8));
 };
 
 
@@ -420,7 +450,7 @@ proto.core.aggregates.v1.Registration.prototype.getProtocolsList = function() {
  * @return {!proto.core.aggregates.v1.Registration} returns this
 */
 proto.core.aggregates.v1.Registration.prototype.setProtocolsList = function(value) {
-  return jspb.Message.setRepeatedWrapperField(this, 7, value);
+  return jspb.Message.setRepeatedWrapperField(this, 8, value);
 };
 
 
@@ -430,7 +460,7 @@ proto.core.aggregates.v1.Registration.prototype.setProtocolsList = function(valu
  * @return {!proto.core.aggregates.v1.Protocol}
  */
 proto.core.aggregates.v1.Registration.prototype.addProtocols = function(opt_value, opt_index) {
-  return jspb.Message.addToRepeatedWrapperField(this, 7, opt_value, proto.core.aggregates.v1.Protocol, opt_index);
+  return jspb.Message.addToRepeatedWrapperField(this, 8, opt_value, proto.core.aggregates.v1.Protocol, opt_index);
 };
 
 
@@ -444,12 +474,12 @@ proto.core.aggregates.v1.Registration.prototype.clearProtocolsList = function() 
 
 
 /**
- * repeated Consumer consumers = 8;
+ * repeated Consumer consumers = 9;
  * @return {!Array<!proto.core.aggregates.v1.Consumer>}
  */
 proto.core.aggregates.v1.Registration.prototype.getConsumersList = function() {
   return /** @type{!Array<!proto.core.aggregates.v1.Consumer>} */ (
-    jspb.Message.getRepeatedWrapperField(this, proto.core.aggregates.v1.Consumer, 8));
+    jspb.Message.getRepeatedWrapperField(this, proto.core.aggregates.v1.Consumer, 9));
 };
 
 
@@ -458,7 +488,7 @@ proto.core.aggregates.v1.Registration.prototype.getConsumersList = function() {
  * @return {!proto.core.aggregates.v1.Registration} returns this
 */
 proto.core.aggregates.v1.Registration.prototype.setConsumersList = function(value) {
-  return jspb.Message.setRepeatedWrapperField(this, 8, value);
+  return jspb.Message.setRepeatedWrapperField(this, 9, value);
 };
 
 
@@ -468,7 +498,7 @@ proto.core.aggregates.v1.Registration.prototype.setConsumersList = function(valu
  * @return {!proto.core.aggregates.v1.Consumer}
  */
 proto.core.aggregates.v1.Registration.prototype.addConsumers = function(opt_value, opt_index) {
-  return jspb.Message.addToRepeatedWrapperField(this, 8, opt_value, proto.core.aggregates.v1.Consumer, opt_index);
+  return jspb.Message.addToRepeatedWrapperField(this, 9, opt_value, proto.core.aggregates.v1.Consumer, opt_index);
 };
 
 
@@ -516,7 +546,8 @@ proto.core.aggregates.v1.Protocol.toObject = function(includeInstance, msg) {
     id: jspb.Message.getFieldWithDefault(msg, 1, ""),
     kind: jspb.Message.getFieldWithDefault(msg, 2, 0),
     version: jspb.Message.getFieldWithDefault(msg, 3, ""),
-    port: jspb.Message.getFieldWithDefault(msg, 4, 0)
+    port: jspb.Message.getFieldWithDefault(msg, 4, 0),
+    route: jspb.Message.getFieldWithDefault(msg, 5, "")
   };
 
   if (includeInstance) {
@@ -568,6 +599,10 @@ proto.core.aggregates.v1.Protocol.deserializeBinaryFromReader = function(msg, re
     case 4:
       var value = /** @type {number} */ (reader.readInt32());
       msg.setPort(value);
+      break;
+    case 5:
+      var value = /** @type {string} */ (reader.readString());
+      msg.setRoute(value);
       break;
     default:
       reader.skipField();
@@ -623,6 +658,13 @@ proto.core.aggregates.v1.Protocol.serializeBinaryToWriter = function(message, wr
   if (f !== 0) {
     writer.writeInt32(
       4,
+      f
+    );
+  }
+  f = message.getRoute();
+  if (f.length > 0) {
+    writer.writeString(
+      5,
       f
     );
   }
@@ -698,6 +740,24 @@ proto.core.aggregates.v1.Protocol.prototype.getPort = function() {
  */
 proto.core.aggregates.v1.Protocol.prototype.setPort = function(value) {
   return jspb.Message.setProto3IntField(this, 4, value);
+};
+
+
+/**
+ * optional string route = 5;
+ * @return {string}
+ */
+proto.core.aggregates.v1.Protocol.prototype.getRoute = function() {
+  return /** @type {string} */ (jspb.Message.getFieldWithDefault(this, 5, ""));
+};
+
+
+/**
+ * @param {string} value
+ * @return {!proto.core.aggregates.v1.Protocol} returns this
+ */
+proto.core.aggregates.v1.Protocol.prototype.setRoute = function(value) {
+  return jspb.Message.setProto3StringField(this, 5, value);
 };
 
 

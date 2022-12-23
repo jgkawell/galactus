@@ -529,6 +529,7 @@
 | kind | [ProtocolKind](#core-aggregates-v1-ProtocolKind) |  | the api kind |
 | version | [string](#string) |  | the api version (e.g. &#34;v1&#34; or &#34;v2&#34;) |
 | port | [int32](#int32) |  | the api port (e.g. 8080 or 8090) |
+| route | [string](#string) |  | the base route |
 
 
 
@@ -546,6 +547,7 @@
 | id | [string](#string) |  | the table primary key |
 | name | [string](#string) |  | NOTE: name &#43; version must be unique the service name |
 | version | [string](#string) |  | the service version |
+| domain | [string](#string) |  | the service domain |
 | description | [string](#string) |  | plain text description of the service |
 | address | [string](#string) |  | the service address in the environment. e.g. &#34;http://localhost:8080&#34; when local or &#34;eventstore:8090&#34; when remote |
 | status | [ServiceStatus](#core-aggregates-v1-ServiceStatus) |  | the service current status |
@@ -917,6 +919,7 @@ users. This will allow the service to push messages to the correct clients.
 | ----- | ---- | ----- | ----------- |
 | order | [int32](#int32) |  |  |
 | kind | [core.aggregates.v1.ProtocolKind](#core-aggregates-v1-ProtocolKind) |  |  |
+| route | [string](#string) |  |  |
 
 
 

@@ -8,6 +8,7 @@ type RegistrationORM struct {
 	Address     string
 	Consumers   []*ConsumerORM `gorm:"foreignkey:RegistrationId;association_foreignkey:Id"`
 	Description string
+	Domain      string
 	Id          string `gorm:"type:uuid;primary_key"`
 	Name        string
 	Protocols   []*ProtocolORM `gorm:"foreignkey:RegistrationId;association_foreignkey:Id"`
@@ -33,6 +34,7 @@ func (m *Registration) ToORM(ctx context.Context) (RegistrationORM, error) {
 	to.Id = m.Id
 	to.Name = m.Name
 	to.Version = m.Version
+	to.Domain = m.Domain
 	to.Description = m.Description
 	to.Address = m.Address
 	to.Status = int32(m.Status)
@@ -77,6 +79,7 @@ func (m *RegistrationORM) ToPB(ctx context.Context) (Registration, error) {
 	to.Id = m.Id
 	to.Name = m.Name
 	to.Version = m.Version
+	to.Domain = m.Domain
 	to.Description = m.Description
 	to.Address = m.Address
 	to.Status = ServiceStatus(m.Status)
@@ -136,6 +139,7 @@ type ProtocolORM struct {
 	Kind           int32
 	Port           int32
 	RegistrationId *string
+	Route          string
 	Version        string
 }
 
@@ -158,6 +162,7 @@ func (m *Protocol) ToORM(ctx context.Context) (ProtocolORM, error) {
 	to.Kind = int32(m.Kind)
 	to.Version = m.Version
 	to.Port = m.Port
+	to.Route = m.Route
 	if posthook, ok := interface{}(m).(ProtocolWithAfterToORM); ok {
 		err = posthook.AfterToORM(ctx, &to)
 	}
@@ -178,6 +183,7 @@ func (m *ProtocolORM) ToPB(ctx context.Context) (Protocol, error) {
 	to.Kind = ProtocolKind(m.Kind)
 	to.Version = m.Version
 	to.Port = m.Port
+	to.Route = m.Route
 	if posthook, ok := interface{}(m).(ProtocolWithAfterToPB); ok {
 		err = posthook.AfterToPB(ctx, &to)
 	}

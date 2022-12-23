@@ -560,7 +560,8 @@ proto.core.registry.v1.ProtocolRequest.prototype.toObject = function(opt_include
 proto.core.registry.v1.ProtocolRequest.toObject = function(includeInstance, msg) {
   var f, obj = {
     order: jspb.Message.getFieldWithDefault(msg, 1, 0),
-    kind: jspb.Message.getFieldWithDefault(msg, 2, 0)
+    kind: jspb.Message.getFieldWithDefault(msg, 2, 0),
+    route: jspb.Message.getFieldWithDefault(msg, 3, "")
   };
 
   if (includeInstance) {
@@ -605,6 +606,10 @@ proto.core.registry.v1.ProtocolRequest.deserializeBinaryFromReader = function(ms
       var value = /** @type {!proto.core.aggregates.v1.ProtocolKind} */ (reader.readEnum());
       msg.setKind(value);
       break;
+    case 3:
+      var value = /** @type {string} */ (reader.readString());
+      msg.setRoute(value);
+      break;
     default:
       reader.skipField();
       break;
@@ -648,6 +653,13 @@ proto.core.registry.v1.ProtocolRequest.serializeBinaryToWriter = function(messag
       f
     );
   }
+  f = message.getRoute();
+  if (f.length > 0) {
+    writer.writeString(
+      3,
+      f
+    );
+  }
 };
 
 
@@ -684,6 +696,24 @@ proto.core.registry.v1.ProtocolRequest.prototype.getKind = function() {
  */
 proto.core.registry.v1.ProtocolRequest.prototype.setKind = function(value) {
   return jspb.Message.setProto3EnumField(this, 2, value);
+};
+
+
+/**
+ * optional string route = 3;
+ * @return {string}
+ */
+proto.core.registry.v1.ProtocolRequest.prototype.getRoute = function() {
+  return /** @type {string} */ (jspb.Message.getFieldWithDefault(this, 3, ""));
+};
+
+
+/**
+ * @param {string} value
+ * @return {!proto.core.registry.v1.ProtocolRequest} returns this
+ */
+proto.core.registry.v1.ProtocolRequest.prototype.setRoute = function(value) {
+  return jspb.Message.setProto3StringField(this, 3, value);
 };
 
 

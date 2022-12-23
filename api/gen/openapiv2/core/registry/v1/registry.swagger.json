@@ -137,6 +137,9 @@
         },
         "kind": {
           "$ref": "#/definitions/v1ProtocolKind"
+        },
+        "route": {
+          "type": "string"
         }
       }
     },

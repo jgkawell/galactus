@@ -18,16 +18,18 @@ message Registration {
     string name = 2 [(validate.rules).string = {min_len: 1, max_len: 255}];
     // the service version
     string version = 3 [(validate.rules).string = {min_len: 1, max_len: 255}];
+    // the service domain
+    string domain = 4 [(validate.rules).string = {min_len: 1, max_len: 255}];
     // plain text description of the service
-    string description = 4 [(validate.rules).string = {min_len: 1, max_len: 255}];
+    string description = 5 [(validate.rules).string = {min_len: 1, max_len: 255}];
     // the service address in the environment. e.g. "http://localhost:8080" when local or "eventstore:8090" when remote
-    string address = 5 [(validate.rules).string = {min_len: 1, max_len: 255}];
+    string address = 6 [(validate.rules).string = {min_len: 1, max_len: 255}];
     // the service current status
-    ServiceStatus status = 6 [(validate.rules).enum.defined_only = true];
+    ServiceStatus status = 7 [(validate.rules).enum.defined_only = true];
     // the protocols this service exposes
-    repeated Protocol protocols = 7;
+    repeated Protocol protocols = 8;
     // the consumer configuration of the service
-    repeated Consumer consumers = 8;
+    repeated Consumer consumers = 9;
 }
 
 // deregister vs unregister reference: https://grammarhow.com/unregister-vs-deregister/
@@ -50,6 +52,8 @@ message Protocol {
     string version = 3 [(validate.rules).string = {min_len: 1, max_len: 255}];
     // the api port (e.g. 8080 or 8090)
     int32 port = 4 [(validate.rules).int32 = {gt: 1, lt: 65535}];
+    // the base route
+    string route = 5 [(validate.rules).string = {min_len: 1, max_len: 255}];
 }
 
 enum ProtocolKind {

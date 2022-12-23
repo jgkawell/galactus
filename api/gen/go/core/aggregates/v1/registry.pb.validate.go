@@ -94,6 +94,17 @@ func (m *Registration) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
+	if l := utf8.RuneCountInString(m.GetDomain()); l < 1 || l > 255 {
+		err := RegistrationValidationError{
+			field:  "Domain",
+			reason: "value length must be between 1 and 255 runes, inclusive",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
 	if l := utf8.RuneCountInString(m.GetDescription()); l < 1 || l > 255 {
 		err := RegistrationValidationError{
 			field:  "Description",
@@ -340,6 +351,17 @@ func (m *Protocol) validate(all bool) error {
 		err := ProtocolValidationError{
 			field:  "Port",
 			reason: "value must be inside range (1, 65535)",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if l := utf8.RuneCountInString(m.GetRoute()); l < 1 || l > 255 {
+		err := ProtocolValidationError{
+			field:  "Route",
+			reason: "value length must be between 1 and 255 runes, inclusive",
 		}
 		if !all {
 			return err

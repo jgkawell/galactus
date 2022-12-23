@@ -52,6 +52,9 @@ export class ProtocolRequest extends jspb.Message {
   getKind(): core_aggregates_v1_registry_pb.ProtocolKind;
   setKind(value: core_aggregates_v1_registry_pb.ProtocolKind): ProtocolRequest;
 
+  getRoute(): string;
+  setRoute(value: string): ProtocolRequest;
+
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): ProtocolRequest.AsObject;
   static toObject(includeInstance: boolean, msg: ProtocolRequest): ProtocolRequest.AsObject;
@@ -64,6 +67,7 @@ export namespace ProtocolRequest {
   export type AsObject = {
     order: number,
     kind: core_aggregates_v1_registry_pb.ProtocolKind,
+    route: string,
   }
 }
 
