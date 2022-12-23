@@ -18,6 +18,9 @@ service Registry {
   //          which returns the connection info for B. If B is not available or
   //          not registered, an error will be returned.
   rpc Connection(ConnectionRequest) returns (ConnectionResponse) {}
+  // TODO: this will be ingested by the local proxy at bootup
+  // Connections returns the connection info for all microservices.
+  // rpc Connections(ConnectionsRequest) returns (ConnectionsResponse) {}
 }
 
 // REGISTER
@@ -36,6 +39,7 @@ message RegisterRequest {
 message ProtocolRequest {
   int32 order = 1;
   core.aggregates.v1.ProtocolKind kind = 2;
+  string route = 3;
 }
 
 message ConsumerRequest {
