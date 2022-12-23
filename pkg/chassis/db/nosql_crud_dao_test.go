@@ -61,10 +61,10 @@ func TestNewCrudDao(t *testing.T) {
 
 		// Patch initializeUniqueIndexes
 		spy.Patch(initializeNoSqlUniqueIndexes,
-			func(logger l.Logger, collection *mongo.Collection, dbName string, collectionName string, uniqueKeys ...string) error {
+			func(logger l.Logger, collection *mongo.Collection, dbName string, collectionName string, uniqueKeys ...string) l.Error {
 				switch tc.testCase {
 				case failInitializeUniqueIndexes:
-					return errors.New(tc.testName)
+					return logger.WrapError(errors.New(tc.testName))
 				case hasUniqueKeys:
 					assert.Equal(t, expectedUniqueKeys, uniqueKeys, tc.testName)
 				default:
@@ -82,7 +82,7 @@ func TestNewCrudDao(t *testing.T) {
 		mockMongoClient := createMockMongoClient(&mongo.Collection{})
 
 		// Test
-		result, err := NewCrudDao(logger, mockMongoClient, "", "", "", config)
+		result, err := NewCrudDao(logger, mockMongoClient, config)
 
 		// Verify
 		if tc.testCase < noCrudDaoConfigTimeoutSpecified {
