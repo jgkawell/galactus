@@ -85,18 +85,18 @@ func (b *mainBuilder) StopHttpServer() {
 	}
 }
 
-func (b *mainBuilder) healthHandler(ctx *gin.Context) {
-	logger := b.logger.WithHTTPContext(ctx)
+func (b *mainBuilder) healthHandler(c *gin.Context) {
+	logger := b.logger.WithHTTPContext(c)
 	logger.Trace("liveness handler called")
 	if b.noSqlClient != nil {
-		if err := db.PingNoSqlClient(b.noSqlClient); err != nil {
+		if err := db.PingNoSqlClient(c.Request.Context(), b.noSqlClient); err != nil {
 			msg := "failed to ping mongo client"
 			logger.WithError(err).Error(msg)
-			ctx.JSON(http.StatusFailedDependency, gin.H{"message": msg})
+			c.JSON(http.StatusFailedDependency, gin.H{"message": msg})
 		} else {
 			msg := "Health check: succeeded in pinging mongo client"
 			logger.Trace(msg)
-			ctx.JSON(http.StatusOK, gin.H{})
+			c.JSON(http.StatusOK, gin.H{})
 		}
 	}
 
@@ -104,31 +104,31 @@ func (b *mainBuilder) healthHandler(ctx *gin.Context) {
 		if err := db.PingSqlClient(logger, b.sqlClient); err != nil {
 			msg := "failed to ping sql client"
 			logger.WithError(err).Error(msg)
-			ctx.JSON(http.StatusFailedDependency, gin.H{"message": msg})
+			c.JSON(http.StatusFailedDependency, gin.H{"message": msg})
 		} else {
 			msg := "Health check: succeeded in pinging sql client"
 			logger.Trace(msg)
-			ctx.JSON(http.StatusOK, gin.H{})
+			c.JSON(http.StatusOK, gin.H{})
 		}
 	}
 
 	if b.wellnessCheckConfig != nil {
-		b.wellnessCheckConfig.Check(ctx)
+		b.wellnessCheckConfig.Check(c)
 	}
 }
 
-func (b *mainBuilder) readinessHandler(ctx *gin.Context) {
-	logger := b.logger.WithHTTPContext(ctx)
+func (b *mainBuilder) readinessHandler(c *gin.Context) {
+	logger := b.logger.WithHTTPContext(c)
 	logger.Trace("readiness handler called")
 	if b.noSqlClient != nil {
-		if err := db.PingNoSqlClient(b.noSqlClient); err != nil {
+		if err := db.PingNoSqlClient(c.Request.Context(), b.noSqlClient); err != nil {
 			msg := "failed to ping mongo client"
 			logger.WithError(err).Error(msg)
-			ctx.JSON(http.StatusFailedDependency, gin.H{"message": msg})
+			c.JSON(http.StatusFailedDependency, gin.H{"message": msg})
 		} else {
 			msg := "Readiness check: succeeded in pinging mongo client"
 			logger.Trace(msg)
-			ctx.JSON(http.StatusOK, gin.H{})
+			c.JSON(http.StatusOK, gin.H{})
 		}
 	}
 
@@ -136,16 +136,16 @@ func (b *mainBuilder) readinessHandler(ctx *gin.Context) {
 		if err := db.PingSqlClient(logger, b.sqlClient); err != nil {
 			msg := "failed to ping sql client"
 			logger.WithError(err).Error(msg)
-			ctx.JSON(http.StatusFailedDependency, gin.H{"message": msg})
+			c.JSON(http.StatusFailedDependency, gin.H{"message": msg})
 		} else {
 			msg := "Health check: succeeded in pinging sql client"
 			logger.Trace(msg)
-			ctx.JSON(http.StatusOK, gin.H{})
+			c.JSON(http.StatusOK, gin.H{})
 		}
 	}
 
 	if b.readinessCheckConfig != nil {
-		b.readinessCheckConfig.Check(ctx)
+		b.readinessCheckConfig.Check(c)
 	}
 }
 

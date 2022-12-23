@@ -140,6 +140,11 @@ type ServiceLayerConfig struct {
 	CreateServiceLayer func(b MainBuilder)
 }
 
+type GrpcHandlers struct {
+	Desc    grpc.ServiceDesc
+	Handler interface{}
+}
+
 // HandlerLayerConfig specifies how the handler layer will be configured.
 type HandlerLayerConfig struct {
 	// HttpPortVariable will only be used if DoNotRegisterService is true. It specifies the config key to read the port from.
@@ -151,7 +156,7 @@ type HandlerLayerConfig struct {
 	// ONLY USE THIS FOR THE REGISTRY SERVICE ITSELF OR IF YOU REALLY KNOW WHAT YOU'RE DOING.
 	RpcPortVariable string
 	// CreateRpcHandlers creates the rpc interface using the grpc-server.
-	CreateRpcHandlers func(b MainBuilder)
+	CreateRpcHandlers func(b MainBuilder) []GrpcHandlers
 	// RpcOptions is a slice of optional grpc.ServerOption structs to set on the gRPC server.
 	RpcOptions []grpc.ServerOption
 	// CreateBrokerConfig defines a function that creates the broker configuration. This needs to
@@ -510,12 +515,17 @@ func NewMainBuilder(mbc *MainBuilderConfig) MainBuilder {
 		protocols = append(protocols, &rgpb.ProtocolRequest{
 			Order: 0,
 			Kind:  agpb.ProtocolKind_PROTOCOL_KIND_HTTP,
+			Route: mbc.ApplicationName,
 		})
 		// add rpc handlers only if requested
 		if mbc.HandlerLayerConfig.CreateRpcHandlers != nil {
+			for _, s := range mbc.HandlerLayerConfig.CreateRpcHandlers(b) {
+				b.logger.Warn(s.Desc.ServiceName)
+			}
 			protocols = append(protocols, &rgpb.ProtocolRequest{
 				Order: 1,
 				Kind:  agpb.ProtocolKind_PROTOCOL_KIND_GRPC,
+				Route: mbc.HandlerLayerConfig.CreateRpcHandlers(b)[0].Desc.ServiceName,
 			})
 		}
 
@@ -594,15 +604,18 @@ func NewMainBuilder(mbc *MainBuilderConfig) MainBuilder {
 		// ALWAYS create the http server since it hosts healthchecks, logging endpoints, etc.
 		b.createHttpServer()
 
-		// Setup the HTTP/Restful handler only if it's configured
+		// Setup the HTTP/Restful handlers only if configured
 		if mbc.HandlerLayerConfig.CreateRestHandlers != nil {
 			mbc.HandlerLayerConfig.CreateRestHandlers(b)
 		}
 
-		// Setup the RPC server and handler only if it's configured
+		// Setup the RPC server and handlers only if configured
 		if mbc.HandlerLayerConfig.CreateRpcHandlers != nil {
 			b.createRpcServer(mbc.HandlerLayerConfig.RpcOptions...)
-			mbc.HandlerLayerConfig.CreateRpcHandlers(b)
+			services := mbc.HandlerLayerConfig.CreateRpcHandlers(b)
+			for _, s := range services {
+				b.GetRpcServer().RegisterService(&s.Desc, s.Handler)
+			}
 		}
 	}
 
