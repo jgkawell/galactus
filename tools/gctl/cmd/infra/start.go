@@ -17,7 +17,7 @@ var (
 )
 
 const (
-	mongoImage        = "mongo:4.2.21"
+	mongoImage        = "mongo:6.0.3"
 	mongoContainer    = "galactus-mongo"
 	postgresImage     = "postgres:14.4"
 	postgresContainer = "galactus-postgres"
