@@ -98,7 +98,7 @@ type MainBuilder interface {
 
 // DaoLayerConfig defines the function for initializing the DAO layer if any custom setup is required
 type DaoLayerConfig struct {
-	// CreateDaoLayer creates the dao layer using the mongo client.
+	// CreateDaoLayer creates the dao layer
 	CreateDaoLayer func(b MainBuilder)
 }
 
@@ -344,45 +344,19 @@ func NewMainBuilder(mbc *MainBuilderConfig) MainBuilder {
 		}
 	}
 
-	// Setup viper
-	err := ec.ReadEnvironmentConfigurations(logger, baseDir)
-	if err != nil {
-		logger.WithError(err).Fatal("failed to read environment configurations")
-	}
-
-	v := viper.GetViper()
-	if v.IsSet("configMap") {
-		v = v.Sub("configMap")
-		v.AutomaticEnv()
-	}
-	b.viper = v
-	b.viper.SetDefault("namespace", "local")
-	b.viper.SetDefault("version", "0.0.0")
+	// Setup application configuration
+	b.setupConfig(mbc.InitializeConfig)
 
 	// Add env and versions to logs
 	logger.AddGlobalField("env", b.viper.GetString("namespace"))
 	logger.AddGlobalField("version", b.viper.GetString("version"))
 
 	// Determine what mode the application is running in
-	devModeKey := mbc.IsDevModeVariable
-	if devModeKey == "" {
-		devModeKey = "isDevMode"
-	}
-	b.isDevMode = b.viper.GetBool(devModeKey)
-	if b.isDevMode {
-		b.logger.Info("Currently running in dev mode")
-		logrus.SetFormatter(&runtime.Formatter{
-			ChildFormatter: &logrus.TextFormatter{
-				ForceColors: true,
-			},
-		})
-	} else {
-		b.logger.Info("Currently running in prod mode")
-	}
+	b.setupMode(mbc.IsDevModeVariable)
 
 	// Connect to key vault (only when remote/not dev mode)
 	if mbc.KeyVaultConfig != nil && !b.isDevMode {
-		b.loadKeyVault(mbc.KeyVaultConfig, baseDir)
+		b.setupKeyVault(mbc.KeyVaultConfig, baseDir)
 	}
 
 	// Call initialize if needed
@@ -390,94 +364,26 @@ func NewMainBuilder(mbc *MainBuilderConfig) MainBuilder {
 		mbc.InitializeConfig.OnInitialize(b)
 	}
 
-	// If the service needs to be registered, register the service
-	if !mbc.DoNotRegisterService {
-		clientFactory := cf.NewClientFactory(b.logger)
-		registryClient, registryConnection, err := clientFactory.CreateRegistryClient(b.GetLogger(), b.viper.GetString("registryServiceAddress"))
-		b.registryClient = registryClient
-		if err != nil {
-			b.logger.WithError(err).Fatal("failed to create registry client")
-		}
-		defer clientFactory.CloseConnection(b.GetLogger(), registryConnection)
-	}
-
 	// Setup the message bus
 	if mbc.MessageBusConfig != nil {
-		var (
-			user     = b.viper.GetString("MessageBusUser")
-			password = b.viper.GetString("MessageBusPassword")
-			ips      = b.viper.GetString("MessageBusIPs")
-		)
-		b.bus = messagebus.NewMessageBus(
-			b.GetLogger(),
-			user,
-			password,
-			ips,
-		)
-
-		if err = b.bus.Connect(context.Background(), b.GetLogger()); err != nil {
-			logger.WithError(err).Fatal("failed to connect to message bus")
-		}
+		b.setupMessageBus()
 	}
 
 	// Setup the DAO layer
 	if mbc.DaoLayerConfig != nil {
 		// establish a connection to the NoSQL database if configured
 		if mbc.NoSqlConfig != nil {
-			dbAddress := b.viper.GetString(mbc.NoSqlConfig.DbAddressVariable)
-			b.noSqlClient, err = db.CreateNoSqlClient(logger, dbAddress)
-			if err != nil {
-				logger.WithField("db_address", dbAddress).WithError(err).Fatal("failed to create database client")
-			}
-			u, err := url.Parse(dbAddress)
-			if err != nil {
-				logger.WithField("db_address", dbAddress).WithError(err).Fatal("failed to parse database address")
-			}
-			if u.User != nil {
-				// remove the password so it doesn't get logged
-				u.User = url.User(u.User.Username())
-			}
-
-			logger.Info("Connected to " + u.String())
+			b.setupNoSqlDatabase(mbc.NoSqlConfig.DbAddressVariable)
 		}
 
 		// establish a connection to the SQL database if configured
 		if mbc.SqlConfig != nil {
-			b.sqlClient, err = db.CreateSqlClient(
-				logger,
-				b.viper.GetString(mbc.SqlConfig.SqlDbUser),
-				b.viper.GetString(mbc.SqlConfig.SqlDbSecret),
-				b.viper.GetString(mbc.SqlConfig.SqlDbHost),
-				b.viper.GetString(mbc.SqlConfig.SqlDbPort),
-				b.viper.GetString(mbc.SqlConfig.SqlDbName),
-				b.viper.GetString(mbc.SqlConfig.SqlDbSchema),
-				b.isDevMode,
-			)
-			if err != nil {
-				logger.WithError(err).Fatal("failed to create sql database client")
-			}
-
-			logger.Info("connected to sql db successfully")
+			b.setupSqlDatabase(mbc.SqlConfig)
 		}
 
 		// establish a connection to the Redis cache if configured
 		if mbc.CacheConfig != nil {
-			options := &redis.Options{
-				Addr:      b.GetConfig().GetString(mbc.CacheConfig.CacheAddress),
-				Password:  b.GetConfig().GetString(mbc.CacheConfig.CacheSecret),
-				TLSConfig: &tls.Config{MinVersion: tls.VersionTLS12},
-			}
-			b.cacheClient = redis.NewClient(options)
-			go func() {
-				ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-				defer cancel()
-				err := b.cacheClient.Ping(ctx).Err()
-				if err != nil {
-					logger.WithField("redis_address", options.Addr).
-						WithError(err).
-						Panic("could not reach the cache")
-				}
-			}()
+			b.setupCache(mbc.CacheConfig)
 		}
 
 		mbc.DaoLayerConfig.CreateDaoLayer(b)
@@ -498,102 +404,15 @@ func NewMainBuilder(mbc *MainBuilderConfig) MainBuilder {
 
 	// Setup the broker configuration
 	if mbc.HandlerLayerConfig.CreateBrokerConfig != nil {
-		b.consumerConfig = mbc.HandlerLayerConfig.CreateBrokerConfig(b)
-		for _, c := range b.consumerConfig.Configs {
-			err := events.ValidateEventCode(c.EventCode)
-			if err != nil {
-				b.logger.WithField("event_code", c.EventCode).WithError(err).Fatal("invalid event code in consumer config")
-			}
-		}
+		b.setupBrokerConfig(mbc.HandlerLayerConfig)
 	}
 
-	// register the service with the service registry
+	// Register the service with the service registry
 	if !mbc.DoNotRegisterService {
-		// set protocols based on the chassis configuration
-		protocols := []*rgpb.ProtocolRequest{}
-		// NOTE: all services have an http handler that handles health checks. this handler can optionally be extended for other uses.
-		protocols = append(protocols, &rgpb.ProtocolRequest{
-			Order: 0,
-			Kind:  agpb.ProtocolKind_PROTOCOL_KIND_HTTP,
-			Route: mbc.ApplicationName,
-		})
-		// add rpc handlers only if requested
-		if mbc.HandlerLayerConfig.CreateRpcHandlers != nil {
-			for _, s := range mbc.HandlerLayerConfig.CreateRpcHandlers(b) {
-				b.logger.Warn(s.Desc.ServiceName)
-			}
-			protocols = append(protocols, &rgpb.ProtocolRequest{
-				Order: 1,
-				Kind:  agpb.ProtocolKind_PROTOCOL_KIND_GRPC,
-				Route: mbc.HandlerLayerConfig.CreateRpcHandlers(b)[0].Desc.ServiceName,
-			})
-		}
-
-		// pull together producers, and consumers from chassis config
-		consumers := []*rgpb.ConsumerRequest{}
-		for i, c := range b.consumerConfig.Configs {
-
-			// map the messagebus kind to the consumer kind
-			var protoKind agpb.ConsumerKind
-			switch c.ConsumerKind {
-			case messagebus.ExchangeKindTopic:
-				protoKind = agpb.ConsumerKind_CONSUMER_KIND_TOPIC
-			case messagebus.ExchangeKindDirect:
-				protoKind = agpb.ConsumerKind_CONSUMER_KIND_QUEUE
-			default:
-				b.logger.WithField("kind", c.ConsumerKind).Fatal("unsupported messagebus kind")
-			}
-
-			consumers = append(consumers, &rgpb.ConsumerRequest{
-				Order:         int32(i),
-				Kind:          protoKind,
-				AggregateType: events.AggregateTypeAsString(c.AggregateType),
-				EventType:     events.EventTypeAsString(c.EventType),
-				EventCode:     events.EventCodeAsString(c.EventCode),
-			})
-		}
-
-		var err error
-		ctx, err := ct.NewExecutionContext(context.Background(), b.logger, uuid.NewString())
-		if err != nil {
-			b.logger.WithError(err).Fatal("failed to create execution context for call to registry")
-			return nil
-		}
-		registerResponse, err := b.registryClient.Register(ctx.GetContext(), &rgpb.RegisterRequest{
-			Name:        mbc.ApplicationName,
-			Domain:      b.viper.GetString("domain"),
-			Version:     b.viper.GetString("version"),
-			Description: b.viper.GetString("description"),
-			Protocols:   protocols,
-			Consumers:   consumers,
-		})
-		if err != nil {
-			b.logger.WithError(err).Fatal("failed to register the service")
-		}
-
-		// set server ports based on registration values
-		for _, p := range registerResponse.GetProtocols() {
-			if p.GetKind() == agpb.ProtocolKind_PROTOCOL_KIND_GRPC {
-				b.rpcPort = fmt.Sprint(p.GetPort())
-			}
-			if p.GetKind() == agpb.ProtocolKind_PROTOCOL_KIND_HTTP {
-				b.httpPort = fmt.Sprint(p.GetPort())
-			}
-		}
-
-		// set consumer configs based on registration values
-		b.brokerConfigs = make([]broker.BrokerDefinition, len(registerResponse.GetConsumers()))
-		for _, c := range registerResponse.GetConsumers() {
-			b.brokerConfigs[c.GetOrder()] = broker.BrokerDefinition{
-				RoutingKey: c.GetRoutingKey(),
-				Exchange:   c.GetExchange(),
-				QueueName:  c.GetQueueName(),
-				Handler:    b.consumerConfig.Configs[c.GetOrder()].Handler,
-			}
-		}
+		b.setupRegistration(mbc.HandlerLayerConfig, mbc.ApplicationName)
 	}
 
-	// if the service is not supposed to be registered, set ports from config
+	// If the service is not supposed to be registered, set ports from config
 	if mbc.DoNotRegisterService {
 		b.rpcPort = b.viper.GetString(mbc.HandlerLayerConfig.RpcPortVariable)
 		b.httpPort = b.viper.GetString(mbc.HandlerLayerConfig.HttpPortVariable)
@@ -601,22 +420,7 @@ func NewMainBuilder(mbc *MainBuilderConfig) MainBuilder {
 
 	// Setup the Handler layer
 	if mbc.HandlerLayerConfig != nil {
-		// ALWAYS create the http server since it hosts healthchecks, logging endpoints, etc.
-		b.createHttpServer()
-
-		// Setup the HTTP/Restful handlers only if configured
-		if mbc.HandlerLayerConfig.CreateRestHandlers != nil {
-			mbc.HandlerLayerConfig.CreateRestHandlers(b)
-		}
-
-		// Setup the RPC server and handlers only if configured
-		if mbc.HandlerLayerConfig.CreateRpcHandlers != nil {
-			b.createRpcServer(mbc.HandlerLayerConfig.RpcOptions...)
-			services := mbc.HandlerLayerConfig.CreateRpcHandlers(b)
-			for _, s := range services {
-				b.GetRpcServer().RegisterService(&s.Desc, s.Handler)
-			}
-		}
+		b.setupHandlers(mbc.HandlerLayerConfig)
 	}
 
 	return b
@@ -663,7 +467,7 @@ func (b *mainBuilder) Run() {
 
 		resp, stdErr := b.registryClient.Connection(ctx.GetContext(), &rgpb.ConnectionRequest{
 			Name:    "eventstore",
-			Version: "0.0.0",
+			Version: "v1",
 			Type:    agpb.ProtocolKind_PROTOCOL_KIND_GRPC,
 		})
 		if stdErr != nil {
@@ -713,47 +517,56 @@ func (b *mainBuilder) InitializeGORM(dbAddress string) (*gorm.DB, error) {
 	return gorm.Open(postgres.Open(dbAddress), &gorm.Config{FullSaveAssociations: true})
 }
 
-// PRIVATE METHODS
+// SETUP FUNCTIONS
 
-// initializeBrokerListeners registers the topic and queue listeners with the messagebus according to the service configuration and preview/no preview status.
-// This function should only be called when the shawarma sidecar makes a request to the HTTP handler saying that one of the service endpoints has been ASSIGNED to this pod.
-// This way we guarantee that the service will only read messages that it is supposed to based off of it's Argo rollout status.
-func (b *mainBuilder) initializeBrokerListeners(serviceName string) {
-	// setup queues
-	if len(b.brokerConfigs) > 0 {
-		for _, bd := range b.brokerConfigs {
-			bd.RoutingKey = modifyRoutingKey(bd.RoutingKey, serviceName)
-			broker.RegisterConsumer(b.logger, b.bus, bd)
+func (b *mainBuilder) setupConfig(config *InitializeConfig) {
+
+	// Get variables from local.yaml/values.yaml and environment variables for use by viper
+	baseDir := "."
+	if config != nil {
+		if config.BaseDirectory != "" {
+			baseDir = config.BaseDirectory
 		}
 	}
+
+	// Setup viper
+	err := ec.ReadEnvironmentConfigurations(b.logger, baseDir)
+	if err != nil {
+		b.logger.WithError(err).Fatal("failed to read environment configurations")
+	}
+
+	v := viper.GetViper()
+	if v.IsSet("configMap") {
+		v = v.Sub("configMap")
+		v.AutomaticEnv()
+	}
+	b.viper = v
+	// TODO: how does this map to domains?
+	b.viper.SetDefault("namespace", "local")
+	// TODO: rethink this version management
+	b.viper.SetDefault("version", "0.0.0")
 }
 
-// cancelBrokerListeners cancels (disconnects) the topic and queue listeners with the messagebus according to the service configuration and preview/no preview status.
-// This function should only be called when the shawarma sidecar makes a request to the HTTP handler saying that one of the service endpoints has been UNASSIGNED from this pod.
-// This way we guarantee that the service will only read messages that it is supposed to based off of it's Argo rollout status.
-func (b *mainBuilder) cancelBrokerListeners(serviceName string) {
-	// cancel queues
-	if len(b.brokerConfigs) > 0 {
-		for _, bd := range b.brokerConfigs {
-			bd.RoutingKey = modifyRoutingKey(bd.RoutingKey, serviceName)
-			b.bus.CancelConsumerChannelsBySuffix(bd.RoutingKey, false)
-		}
+func (b *mainBuilder) setupMode(isDevModeVariable string) {
+	if isDevModeVariable == "" {
+		isDevModeVariable = "isDevMode"
+	}
+	b.isDevMode = b.viper.GetBool(isDevModeVariable)
+	if b.isDevMode {
+		b.logger.Info("Currently running in dev mode")
+		logrus.SetFormatter(&runtime.Formatter{
+			ChildFormatter: &logrus.TextFormatter{
+				ForceColors: true,
+			},
+		})
+	} else {
+		b.logger.Info("Currently running in prod mode")
 	}
 }
 
-// modifyRoutingKey takes in a routing key and the service name (shape: SERVICE or SERVICE-preview)
-// and appends the `-preview` suffix if the service is in preview mode. This controls argo blue/green
-// routing for messagebus traffic in the same way as Istio for network traffic.
-func modifyRoutingKey(routingKey, serviceName string) string {
-	if strings.Contains(serviceName, "preview") {
-		routingKey = fmt.Sprintf("%s-%s", routingKey, "preview")
-	}
-	return routingKey
-}
-
-// loadKeyVault loads the keyvault configuration and overrides any defined values
+// setupKeyVault loads the keyvault configuration and overrides any defined values
 // in the values configuration file with their keyvault values.
-func (b *mainBuilder) loadKeyVault(config *KeyVaultConfig, baseDir string) {
+func (b *mainBuilder) setupKeyVault(config *KeyVaultConfig, baseDir string) {
 	var (
 		err           error
 		resourceGroup string
@@ -819,6 +632,234 @@ func (b *mainBuilder) loadKeyVault(config *KeyVaultConfig, baseDir string) {
 			b.viper.Set(configKey, keyVaultValue)
 		}
 	}
+}
+
+func (b *mainBuilder) setupMessageBus() {
+	var (
+		user     = b.viper.GetString("MessageBusUser")
+		password = b.viper.GetString("MessageBusPassword")
+		ips      = b.viper.GetString("MessageBusIPs")
+	)
+	b.bus = messagebus.NewMessageBus(
+		b.GetLogger(),
+		user,
+		password,
+		ips,
+	)
+
+	if err := b.bus.Connect(context.Background(), b.GetLogger()); err != nil {
+		b.logger.WithError(err).Fatal("failed to connect to message bus")
+	}
+}
+
+func (b *mainBuilder) setupNoSqlDatabase(dbAddressVariable string) {
+	dbAddress := b.viper.GetString(dbAddressVariable)
+	var err error
+	b.noSqlClient, err = db.CreateNoSqlClient(b.logger, dbAddress)
+	if err != nil {
+		b.logger.WithField("db_address", dbAddress).WithError(err).Fatal("failed to create database client")
+	}
+	u, err := url.Parse(dbAddress)
+	if err != nil {
+		b.logger.WithField("db_address", dbAddress).WithError(err).Fatal("failed to parse database address")
+	}
+	if u.User != nil {
+		// remove the password so it doesn't get logged
+		u.User = url.User(u.User.Username())
+	}
+
+	b.logger.Info("Connected to " + u.String())
+}
+
+func (b *mainBuilder) setupSqlDatabase(config *SqlConfig) {
+	var err error
+	b.sqlClient, err = db.CreateSqlClient(
+		b.logger,
+		b.viper.GetString(config.SqlDbUser),
+		b.viper.GetString(config.SqlDbSecret),
+		b.viper.GetString(config.SqlDbHost),
+		b.viper.GetString(config.SqlDbPort),
+		b.viper.GetString(config.SqlDbName),
+		b.viper.GetString(config.SqlDbSchema),
+		b.isDevMode,
+	)
+	if err != nil {
+		b.logger.WithError(err).Fatal("failed to create sql database client")
+	}
+
+	b.logger.Info("connected to sql db successfully")
+}
+
+func (b *mainBuilder) setupCache(config *CacheConfig) {
+	options := &redis.Options{
+		Addr:      b.GetConfig().GetString(config.CacheAddress),
+		Password:  b.GetConfig().GetString(config.CacheSecret),
+		TLSConfig: &tls.Config{MinVersion: tls.VersionTLS12},
+	}
+	b.cacheClient = redis.NewClient(options)
+	go func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		err := b.cacheClient.Ping(ctx).Err()
+		if err != nil {
+			b.logger.WithField("redis_address", options.Addr).WithError(err).Fatal("failed to connect to the cache")
+		}
+	}()
+}
+
+func (b *mainBuilder) setupBrokerConfig(config *HandlerLayerConfig) {
+	b.consumerConfig = config.CreateBrokerConfig(b)
+	for _, c := range b.consumerConfig.Configs {
+		err := events.ValidateEventCode(c.EventCode)
+		if err != nil {
+			b.logger.WithField("event_code", c.EventCode).WithError(err).Fatal("invalid event code in consumer config")
+		}
+	}
+}
+
+func (b *mainBuilder) setupRegistration(config *HandlerLayerConfig, serviceName string) {
+	// set protocols based on the chassis configuration
+	protocols := []*rgpb.ProtocolRequest{}
+	// NOTE: all services have an http handler that handles health checks. this handler can optionally be extended for other uses.
+	protocols = append(protocols, &rgpb.ProtocolRequest{
+		Kind:  agpb.ProtocolKind_PROTOCOL_KIND_HTTP,
+		Route: fmt.Sprintf("%s/%s/%s", b.viper.GetString("domain"), serviceName, b.viper.GetString("version")),
+	})
+	// add rpc handlers only if requested
+	if config.CreateRpcHandlers != nil {
+		for _, s := range config.CreateRpcHandlers(b) {
+			protocols = append(protocols, &rgpb.ProtocolRequest{
+				Kind:  agpb.ProtocolKind_PROTOCOL_KIND_GRPC,
+				Route: s.Desc.ServiceName,
+			})
+		}
+	}
+
+	// pull together producers, and consumers from chassis config
+	consumers := []*rgpb.ConsumerRequest{}
+	for i, c := range b.consumerConfig.Configs {
+
+		// map the messagebus kind to the consumer kind
+		var protoKind agpb.ConsumerKind
+		switch c.ConsumerKind {
+		case messagebus.ExchangeKindTopic:
+			protoKind = agpb.ConsumerKind_CONSUMER_KIND_TOPIC
+		case messagebus.ExchangeKindDirect:
+			protoKind = agpb.ConsumerKind_CONSUMER_KIND_QUEUE
+		default:
+			b.logger.WithField("kind", c.ConsumerKind).Fatal("unsupported messagebus kind")
+		}
+
+		consumers = append(consumers, &rgpb.ConsumerRequest{
+			Kind:          protoKind,
+			Order:         int32(i),
+			AggregateType: events.AggregateTypeAsString(c.AggregateType),
+			EventType:     events.EventTypeAsString(c.EventType),
+			EventCode:     events.EventCodeAsString(c.EventCode),
+		})
+	}
+
+	clientFactory := cf.NewClientFactory(b.logger)
+	registryClient, registryConnection, err := clientFactory.CreateRegistryClient(b.GetLogger(), b.viper.GetString("registryServiceAddress"))
+	b.registryClient = registryClient
+	if err != nil {
+		b.logger.WithError(err).Fatal("failed to create registry client")
+	}
+	defer clientFactory.CloseConnection(b.GetLogger(), registryConnection)
+
+	ctx, err := ct.NewExecutionContext(context.Background(), b.logger, uuid.NewString())
+	if err != nil {
+		b.logger.WithError(err).Fatal("failed to create execution context for call to registry")
+	}
+	registerResponse, err := b.registryClient.Register(ctx.GetContext(), &rgpb.RegisterRequest{
+		Name:        serviceName,
+		Domain:      b.viper.GetString("domain"),
+		Version:     b.viper.GetString("version"),
+		Description: b.viper.GetString("description"),
+		Protocols:   protocols,
+		Consumers:   consumers,
+	})
+	if err != nil {
+		b.logger.WithError(err).Fatal("failed to register the service")
+	}
+
+	// set server ports based on registration values
+	for _, p := range registerResponse.GetProtocols() {
+		if p.GetKind() == agpb.ProtocolKind_PROTOCOL_KIND_GRPC {
+			b.rpcPort = fmt.Sprint(p.GetPort())
+		}
+		if p.GetKind() == agpb.ProtocolKind_PROTOCOL_KIND_HTTP {
+			b.httpPort = fmt.Sprint(p.GetPort())
+		}
+	}
+
+	// set consumer configs based on registration values
+	b.brokerConfigs = make([]broker.BrokerDefinition, len(registerResponse.GetConsumers()))
+	for _, c := range registerResponse.GetConsumers() {
+		b.brokerConfigs[c.Order] = broker.BrokerDefinition{
+			RoutingKey: c.GetRoutingKey(),
+			Exchange:   c.GetExchange(),
+			QueueName:  c.GetQueueName(),
+			Handler:    b.consumerConfig.Configs[c.Order].Handler,
+		}
+		break
+	}
+}
+
+func (b *mainBuilder) setupHandlers(config *HandlerLayerConfig) {
+	// ALWAYS create the http server since it hosts healthchecks, logging endpoints, etc.
+	b.createHttpServer()
+
+	// Setup the HTTP/Restful handlers only if configured
+	if config.CreateRestHandlers != nil {
+		config.CreateRestHandlers(b)
+	}
+
+	// Setup the RPC server and handlers only if configured
+	if config.CreateRpcHandlers != nil {
+		b.createRpcServer(config.RpcOptions...)
+		for _, s := range config.CreateRpcHandlers(b) {
+			b.GetRpcServer().RegisterService(&s.Desc, s.Handler)
+		}
+	}
+}
+
+// PRIVATE METHODS
+
+// initializeBrokerListeners registers the topic and queue listeners with the messagebus according to the service configuration and preview/no preview status.
+// This function should only be called when the shawarma sidecar makes a request to the HTTP handler saying that one of the service endpoints has been ASSIGNED to this pod.
+// This way we guarantee that the service will only read messages that it is supposed to based off of it's Argo rollout status.
+func (b *mainBuilder) initializeBrokerListeners(serviceName string) {
+	// setup queues
+	if len(b.brokerConfigs) > 0 {
+		for _, bd := range b.brokerConfigs {
+			bd.RoutingKey = modifyRoutingKey(bd.RoutingKey, serviceName)
+			broker.RegisterConsumer(b.logger, b.bus, bd)
+		}
+	}
+}
+
+// cancelBrokerListeners cancels (disconnects) the topic and queue listeners with the messagebus according to the service configuration and preview/no preview status.
+// This function should only be called when the shawarma sidecar makes a request to the HTTP handler saying that one of the service endpoints has been UNASSIGNED from this pod.
+// This way we guarantee that the service will only read messages that it is supposed to based off of it's Argo rollout status.
+func (b *mainBuilder) cancelBrokerListeners(serviceName string) {
+	// cancel queues
+	if len(b.brokerConfigs) > 0 {
+		for _, bd := range b.brokerConfigs {
+			bd.RoutingKey = modifyRoutingKey(bd.RoutingKey, serviceName)
+			b.bus.CancelConsumerChannelsBySuffix(bd.RoutingKey, false)
+		}
+	}
+}
+
+// modifyRoutingKey takes in a routing key and the service name (shape: SERVICE or SERVICE-preview)
+// and appends the `-preview` suffix if the service is in preview mode. This controls argo blue/green
+// routing for messagebus traffic in the same way as Istio for network traffic.
+func modifyRoutingKey(routingKey, serviceName string) string {
+	if strings.Contains(serviceName, "preview") {
+		routingKey = fmt.Sprintf("%s-%s", routingKey, "preview")
+	}
+	return routingKey
 }
 
 // GETTER FUNCTIONS
