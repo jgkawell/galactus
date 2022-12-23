@@ -80,12 +80,12 @@
     "v1ConsumerRequest": {
       "type": "object",
       "properties": {
+        "kind": {
+          "$ref": "#/definitions/v1ConsumerKind"
+        },
         "order": {
           "type": "integer",
           "format": "int32"
-        },
-        "kind": {
-          "$ref": "#/definitions/v1ConsumerKind"
         },
         "aggregateType": {
           "type": "string"
@@ -101,15 +101,17 @@
     "v1ConsumerResponse": {
       "type": "object",
       "properties": {
-        "order": {
-          "type": "integer",
-          "format": "int32"
-        },
         "kind": {
           "$ref": "#/definitions/v1ConsumerKind"
         },
+        "order": {
+          "type": "integer",
+          "format": "int32",
+          "title": "lookup information for the caller"
+        },
         "routingKey": {
-          "type": "string"
+          "type": "string",
+          "title": "new connection info for the caller"
         },
         "exchange": {
           "type": "string"
@@ -131,10 +133,6 @@
     "v1ProtocolRequest": {
       "type": "object",
       "properties": {
-        "order": {
-          "type": "integer",
-          "format": "int32"
-        },
         "kind": {
           "$ref": "#/definitions/v1ProtocolKind"
         },
@@ -146,10 +144,6 @@
     "v1ProtocolResponse": {
       "type": "object",
       "properties": {
-        "order": {
-          "type": "integer",
-          "format": "int32"
-        },
         "kind": {
           "$ref": "#/definitions/v1ProtocolKind"
         },

@@ -237,8 +237,6 @@ func (m *ProtocolRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for Order
-
 	// no validation rules for Kind
 
 	// no validation rules for Route
@@ -343,9 +341,9 @@ func (m *ConsumerRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for Order
-
 	// no validation rules for Kind
+
+	// no validation rules for Order
 
 	// no validation rules for AggregateType
 
@@ -621,8 +619,6 @@ func (m *ProtocolResponse) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for Order
-
 	// no validation rules for Kind
 
 	// no validation rules for Port
@@ -727,9 +723,9 @@ func (m *ConsumerResponse) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for Order
-
 	// no validation rules for Kind
+
+	// no validation rules for Order
 
 	// no validation rules for RoutingKey
 

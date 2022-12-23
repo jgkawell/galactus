@@ -559,9 +559,8 @@ proto.core.registry.v1.ProtocolRequest.prototype.toObject = function(opt_include
  */
 proto.core.registry.v1.ProtocolRequest.toObject = function(includeInstance, msg) {
   var f, obj = {
-    order: jspb.Message.getFieldWithDefault(msg, 1, 0),
-    kind: jspb.Message.getFieldWithDefault(msg, 2, 0),
-    route: jspb.Message.getFieldWithDefault(msg, 3, "")
+    kind: jspb.Message.getFieldWithDefault(msg, 1, 0),
+    route: jspb.Message.getFieldWithDefault(msg, 2, "")
   };
 
   if (includeInstance) {
@@ -599,14 +598,10 @@ proto.core.registry.v1.ProtocolRequest.deserializeBinaryFromReader = function(ms
     var field = reader.getFieldNumber();
     switch (field) {
     case 1:
-      var value = /** @type {number} */ (reader.readInt32());
-      msg.setOrder(value);
-      break;
-    case 2:
       var value = /** @type {!proto.core.aggregates.v1.ProtocolKind} */ (reader.readEnum());
       msg.setKind(value);
       break;
-    case 3:
+    case 2:
       var value = /** @type {string} */ (reader.readString());
       msg.setRoute(value);
       break;
@@ -639,24 +634,17 @@ proto.core.registry.v1.ProtocolRequest.prototype.serializeBinary = function() {
  */
 proto.core.registry.v1.ProtocolRequest.serializeBinaryToWriter = function(message, writer) {
   var f = undefined;
-  f = message.getOrder();
-  if (f !== 0) {
-    writer.writeInt32(
-      1,
-      f
-    );
-  }
   f = message.getKind();
   if (f !== 0.0) {
     writer.writeEnum(
-      2,
+      1,
       f
     );
   }
   f = message.getRoute();
   if (f.length > 0) {
     writer.writeString(
-      3,
+      2,
       f
     );
   }
@@ -664,29 +652,11 @@ proto.core.registry.v1.ProtocolRequest.serializeBinaryToWriter = function(messag
 
 
 /**
- * optional int32 order = 1;
- * @return {number}
- */
-proto.core.registry.v1.ProtocolRequest.prototype.getOrder = function() {
-  return /** @type {number} */ (jspb.Message.getFieldWithDefault(this, 1, 0));
-};
-
-
-/**
- * @param {number} value
- * @return {!proto.core.registry.v1.ProtocolRequest} returns this
- */
-proto.core.registry.v1.ProtocolRequest.prototype.setOrder = function(value) {
-  return jspb.Message.setProto3IntField(this, 1, value);
-};
-
-
-/**
- * optional core.aggregates.v1.ProtocolKind kind = 2;
+ * optional core.aggregates.v1.ProtocolKind kind = 1;
  * @return {!proto.core.aggregates.v1.ProtocolKind}
  */
 proto.core.registry.v1.ProtocolRequest.prototype.getKind = function() {
-  return /** @type {!proto.core.aggregates.v1.ProtocolKind} */ (jspb.Message.getFieldWithDefault(this, 2, 0));
+  return /** @type {!proto.core.aggregates.v1.ProtocolKind} */ (jspb.Message.getFieldWithDefault(this, 1, 0));
 };
 
 
@@ -695,16 +665,16 @@ proto.core.registry.v1.ProtocolRequest.prototype.getKind = function() {
  * @return {!proto.core.registry.v1.ProtocolRequest} returns this
  */
 proto.core.registry.v1.ProtocolRequest.prototype.setKind = function(value) {
-  return jspb.Message.setProto3EnumField(this, 2, value);
+  return jspb.Message.setProto3EnumField(this, 1, value);
 };
 
 
 /**
- * optional string route = 3;
+ * optional string route = 2;
  * @return {string}
  */
 proto.core.registry.v1.ProtocolRequest.prototype.getRoute = function() {
-  return /** @type {string} */ (jspb.Message.getFieldWithDefault(this, 3, ""));
+  return /** @type {string} */ (jspb.Message.getFieldWithDefault(this, 2, ""));
 };
 
 
@@ -713,7 +683,7 @@ proto.core.registry.v1.ProtocolRequest.prototype.getRoute = function() {
  * @return {!proto.core.registry.v1.ProtocolRequest} returns this
  */
 proto.core.registry.v1.ProtocolRequest.prototype.setRoute = function(value) {
-  return jspb.Message.setProto3StringField(this, 3, value);
+  return jspb.Message.setProto3StringField(this, 2, value);
 };
 
 
@@ -749,8 +719,8 @@ proto.core.registry.v1.ConsumerRequest.prototype.toObject = function(opt_include
  */
 proto.core.registry.v1.ConsumerRequest.toObject = function(includeInstance, msg) {
   var f, obj = {
-    order: jspb.Message.getFieldWithDefault(msg, 1, 0),
-    kind: jspb.Message.getFieldWithDefault(msg, 2, 0),
+    kind: jspb.Message.getFieldWithDefault(msg, 1, 0),
+    order: jspb.Message.getFieldWithDefault(msg, 2, 0),
     aggregateType: jspb.Message.getFieldWithDefault(msg, 3, ""),
     eventType: jspb.Message.getFieldWithDefault(msg, 4, ""),
     eventCode: jspb.Message.getFieldWithDefault(msg, 5, "")
@@ -791,12 +761,12 @@ proto.core.registry.v1.ConsumerRequest.deserializeBinaryFromReader = function(ms
     var field = reader.getFieldNumber();
     switch (field) {
     case 1:
-      var value = /** @type {number} */ (reader.readInt32());
-      msg.setOrder(value);
-      break;
-    case 2:
       var value = /** @type {!proto.core.aggregates.v1.ConsumerKind} */ (reader.readEnum());
       msg.setKind(value);
+      break;
+    case 2:
+      var value = /** @type {number} */ (reader.readInt32());
+      msg.setOrder(value);
       break;
     case 3:
       var value = /** @type {string} */ (reader.readString());
@@ -839,16 +809,16 @@ proto.core.registry.v1.ConsumerRequest.prototype.serializeBinary = function() {
  */
 proto.core.registry.v1.ConsumerRequest.serializeBinaryToWriter = function(message, writer) {
   var f = undefined;
-  f = message.getOrder();
-  if (f !== 0) {
-    writer.writeInt32(
+  f = message.getKind();
+  if (f !== 0.0) {
+    writer.writeEnum(
       1,
       f
     );
   }
-  f = message.getKind();
-  if (f !== 0.0) {
-    writer.writeEnum(
+  f = message.getOrder();
+  if (f !== 0) {
+    writer.writeInt32(
       2,
       f
     );
@@ -878,29 +848,11 @@ proto.core.registry.v1.ConsumerRequest.serializeBinaryToWriter = function(messag
 
 
 /**
- * optional int32 order = 1;
- * @return {number}
- */
-proto.core.registry.v1.ConsumerRequest.prototype.getOrder = function() {
-  return /** @type {number} */ (jspb.Message.getFieldWithDefault(this, 1, 0));
-};
-
-
-/**
- * @param {number} value
- * @return {!proto.core.registry.v1.ConsumerRequest} returns this
- */
-proto.core.registry.v1.ConsumerRequest.prototype.setOrder = function(value) {
-  return jspb.Message.setProto3IntField(this, 1, value);
-};
-
-
-/**
- * optional core.aggregates.v1.ConsumerKind kind = 2;
+ * optional core.aggregates.v1.ConsumerKind kind = 1;
  * @return {!proto.core.aggregates.v1.ConsumerKind}
  */
 proto.core.registry.v1.ConsumerRequest.prototype.getKind = function() {
-  return /** @type {!proto.core.aggregates.v1.ConsumerKind} */ (jspb.Message.getFieldWithDefault(this, 2, 0));
+  return /** @type {!proto.core.aggregates.v1.ConsumerKind} */ (jspb.Message.getFieldWithDefault(this, 1, 0));
 };
 
 
@@ -909,7 +861,25 @@ proto.core.registry.v1.ConsumerRequest.prototype.getKind = function() {
  * @return {!proto.core.registry.v1.ConsumerRequest} returns this
  */
 proto.core.registry.v1.ConsumerRequest.prototype.setKind = function(value) {
-  return jspb.Message.setProto3EnumField(this, 2, value);
+  return jspb.Message.setProto3EnumField(this, 1, value);
+};
+
+
+/**
+ * optional int32 order = 2;
+ * @return {number}
+ */
+proto.core.registry.v1.ConsumerRequest.prototype.getOrder = function() {
+  return /** @type {number} */ (jspb.Message.getFieldWithDefault(this, 2, 0));
+};
+
+
+/**
+ * @param {number} value
+ * @return {!proto.core.registry.v1.ConsumerRequest} returns this
+ */
+proto.core.registry.v1.ConsumerRequest.prototype.setOrder = function(value) {
+  return jspb.Message.setProto3IntField(this, 2, value);
 };
 
 
@@ -1212,9 +1182,8 @@ proto.core.registry.v1.ProtocolResponse.prototype.toObject = function(opt_includ
  */
 proto.core.registry.v1.ProtocolResponse.toObject = function(includeInstance, msg) {
   var f, obj = {
-    order: jspb.Message.getFieldWithDefault(msg, 1, 0),
-    kind: jspb.Message.getFieldWithDefault(msg, 2, 0),
-    port: jspb.Message.getFieldWithDefault(msg, 3, 0)
+    kind: jspb.Message.getFieldWithDefault(msg, 1, 0),
+    port: jspb.Message.getFieldWithDefault(msg, 2, 0)
   };
 
   if (includeInstance) {
@@ -1252,14 +1221,10 @@ proto.core.registry.v1.ProtocolResponse.deserializeBinaryFromReader = function(m
     var field = reader.getFieldNumber();
     switch (field) {
     case 1:
-      var value = /** @type {number} */ (reader.readInt32());
-      msg.setOrder(value);
-      break;
-    case 2:
       var value = /** @type {!proto.core.aggregates.v1.ProtocolKind} */ (reader.readEnum());
       msg.setKind(value);
       break;
-    case 3:
+    case 2:
       var value = /** @type {number} */ (reader.readInt32());
       msg.setPort(value);
       break;
@@ -1292,24 +1257,17 @@ proto.core.registry.v1.ProtocolResponse.prototype.serializeBinary = function() {
  */
 proto.core.registry.v1.ProtocolResponse.serializeBinaryToWriter = function(message, writer) {
   var f = undefined;
-  f = message.getOrder();
-  if (f !== 0) {
-    writer.writeInt32(
-      1,
-      f
-    );
-  }
   f = message.getKind();
   if (f !== 0.0) {
     writer.writeEnum(
-      2,
+      1,
       f
     );
   }
   f = message.getPort();
   if (f !== 0) {
     writer.writeInt32(
-      3,
+      2,
       f
     );
   }
@@ -1317,29 +1275,11 @@ proto.core.registry.v1.ProtocolResponse.serializeBinaryToWriter = function(messa
 
 
 /**
- * optional int32 order = 1;
- * @return {number}
- */
-proto.core.registry.v1.ProtocolResponse.prototype.getOrder = function() {
-  return /** @type {number} */ (jspb.Message.getFieldWithDefault(this, 1, 0));
-};
-
-
-/**
- * @param {number} value
- * @return {!proto.core.registry.v1.ProtocolResponse} returns this
- */
-proto.core.registry.v1.ProtocolResponse.prototype.setOrder = function(value) {
-  return jspb.Message.setProto3IntField(this, 1, value);
-};
-
-
-/**
- * optional core.aggregates.v1.ProtocolKind kind = 2;
+ * optional core.aggregates.v1.ProtocolKind kind = 1;
  * @return {!proto.core.aggregates.v1.ProtocolKind}
  */
 proto.core.registry.v1.ProtocolResponse.prototype.getKind = function() {
-  return /** @type {!proto.core.aggregates.v1.ProtocolKind} */ (jspb.Message.getFieldWithDefault(this, 2, 0));
+  return /** @type {!proto.core.aggregates.v1.ProtocolKind} */ (jspb.Message.getFieldWithDefault(this, 1, 0));
 };
 
 
@@ -1348,16 +1288,16 @@ proto.core.registry.v1.ProtocolResponse.prototype.getKind = function() {
  * @return {!proto.core.registry.v1.ProtocolResponse} returns this
  */
 proto.core.registry.v1.ProtocolResponse.prototype.setKind = function(value) {
-  return jspb.Message.setProto3EnumField(this, 2, value);
+  return jspb.Message.setProto3EnumField(this, 1, value);
 };
 
 
 /**
- * optional int32 port = 3;
+ * optional int32 port = 2;
  * @return {number}
  */
 proto.core.registry.v1.ProtocolResponse.prototype.getPort = function() {
-  return /** @type {number} */ (jspb.Message.getFieldWithDefault(this, 3, 0));
+  return /** @type {number} */ (jspb.Message.getFieldWithDefault(this, 2, 0));
 };
 
 
@@ -1366,7 +1306,7 @@ proto.core.registry.v1.ProtocolResponse.prototype.getPort = function() {
  * @return {!proto.core.registry.v1.ProtocolResponse} returns this
  */
 proto.core.registry.v1.ProtocolResponse.prototype.setPort = function(value) {
-  return jspb.Message.setProto3IntField(this, 3, value);
+  return jspb.Message.setProto3IntField(this, 2, value);
 };
 
 
@@ -1402,8 +1342,8 @@ proto.core.registry.v1.ConsumerResponse.prototype.toObject = function(opt_includ
  */
 proto.core.registry.v1.ConsumerResponse.toObject = function(includeInstance, msg) {
   var f, obj = {
-    order: jspb.Message.getFieldWithDefault(msg, 1, 0),
-    kind: jspb.Message.getFieldWithDefault(msg, 2, 0),
+    kind: jspb.Message.getFieldWithDefault(msg, 1, 0),
+    order: jspb.Message.getFieldWithDefault(msg, 2, 0),
     routingKey: jspb.Message.getFieldWithDefault(msg, 3, ""),
     exchange: jspb.Message.getFieldWithDefault(msg, 4, ""),
     queueName: jspb.Message.getFieldWithDefault(msg, 5, "")
@@ -1444,12 +1384,12 @@ proto.core.registry.v1.ConsumerResponse.deserializeBinaryFromReader = function(m
     var field = reader.getFieldNumber();
     switch (field) {
     case 1:
-      var value = /** @type {number} */ (reader.readInt32());
-      msg.setOrder(value);
-      break;
-    case 2:
       var value = /** @type {!proto.core.aggregates.v1.ConsumerKind} */ (reader.readEnum());
       msg.setKind(value);
+      break;
+    case 2:
+      var value = /** @type {number} */ (reader.readInt32());
+      msg.setOrder(value);
       break;
     case 3:
       var value = /** @type {string} */ (reader.readString());
@@ -1492,16 +1432,16 @@ proto.core.registry.v1.ConsumerResponse.prototype.serializeBinary = function() {
  */
 proto.core.registry.v1.ConsumerResponse.serializeBinaryToWriter = function(message, writer) {
   var f = undefined;
-  f = message.getOrder();
-  if (f !== 0) {
-    writer.writeInt32(
+  f = message.getKind();
+  if (f !== 0.0) {
+    writer.writeEnum(
       1,
       f
     );
   }
-  f = message.getKind();
-  if (f !== 0.0) {
-    writer.writeEnum(
+  f = message.getOrder();
+  if (f !== 0) {
+    writer.writeInt32(
       2,
       f
     );
@@ -1531,29 +1471,11 @@ proto.core.registry.v1.ConsumerResponse.serializeBinaryToWriter = function(messa
 
 
 /**
- * optional int32 order = 1;
- * @return {number}
- */
-proto.core.registry.v1.ConsumerResponse.prototype.getOrder = function() {
-  return /** @type {number} */ (jspb.Message.getFieldWithDefault(this, 1, 0));
-};
-
-
-/**
- * @param {number} value
- * @return {!proto.core.registry.v1.ConsumerResponse} returns this
- */
-proto.core.registry.v1.ConsumerResponse.prototype.setOrder = function(value) {
-  return jspb.Message.setProto3IntField(this, 1, value);
-};
-
-
-/**
- * optional core.aggregates.v1.ConsumerKind kind = 2;
+ * optional core.aggregates.v1.ConsumerKind kind = 1;
  * @return {!proto.core.aggregates.v1.ConsumerKind}
  */
 proto.core.registry.v1.ConsumerResponse.prototype.getKind = function() {
-  return /** @type {!proto.core.aggregates.v1.ConsumerKind} */ (jspb.Message.getFieldWithDefault(this, 2, 0));
+  return /** @type {!proto.core.aggregates.v1.ConsumerKind} */ (jspb.Message.getFieldWithDefault(this, 1, 0));
 };
 
 
@@ -1562,7 +1484,25 @@ proto.core.registry.v1.ConsumerResponse.prototype.getKind = function() {
  * @return {!proto.core.registry.v1.ConsumerResponse} returns this
  */
 proto.core.registry.v1.ConsumerResponse.prototype.setKind = function(value) {
-  return jspb.Message.setProto3EnumField(this, 2, value);
+  return jspb.Message.setProto3EnumField(this, 1, value);
+};
+
+
+/**
+ * optional int32 order = 2;
+ * @return {number}
+ */
+proto.core.registry.v1.ConsumerResponse.prototype.getOrder = function() {
+  return /** @type {number} */ (jspb.Message.getFieldWithDefault(this, 2, 0));
+};
+
+
+/**
+ * @param {number} value
+ * @return {!proto.core.registry.v1.ConsumerResponse} returns this
+ */
+proto.core.registry.v1.ConsumerResponse.prototype.setOrder = function(value) {
+  return jspb.Message.setProto3IntField(this, 2, value);
 };
 
 

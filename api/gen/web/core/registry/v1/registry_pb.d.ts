@@ -46,9 +46,6 @@ export namespace RegisterRequest {
 }
 
 export class ProtocolRequest extends jspb.Message {
-  getOrder(): number;
-  setOrder(value: number): ProtocolRequest;
-
   getKind(): core_aggregates_v1_registry_pb.ProtocolKind;
   setKind(value: core_aggregates_v1_registry_pb.ProtocolKind): ProtocolRequest;
 
@@ -65,18 +62,17 @@ export class ProtocolRequest extends jspb.Message {
 
 export namespace ProtocolRequest {
   export type AsObject = {
-    order: number,
     kind: core_aggregates_v1_registry_pb.ProtocolKind,
     route: string,
   }
 }
 
 export class ConsumerRequest extends jspb.Message {
-  getOrder(): number;
-  setOrder(value: number): ConsumerRequest;
-
   getKind(): core_aggregates_v1_registry_pb.ConsumerKind;
   setKind(value: core_aggregates_v1_registry_pb.ConsumerKind): ConsumerRequest;
+
+  getOrder(): number;
+  setOrder(value: number): ConsumerRequest;
 
   getAggregateType(): string;
   setAggregateType(value: string): ConsumerRequest;
@@ -97,8 +93,8 @@ export class ConsumerRequest extends jspb.Message {
 
 export namespace ConsumerRequest {
   export type AsObject = {
-    order: number,
     kind: core_aggregates_v1_registry_pb.ConsumerKind,
+    order: number,
     aggregateType: string,
     eventType: string,
     eventCode: string,
@@ -132,9 +128,6 @@ export namespace RegisterResponse {
 }
 
 export class ProtocolResponse extends jspb.Message {
-  getOrder(): number;
-  setOrder(value: number): ProtocolResponse;
-
   getKind(): core_aggregates_v1_registry_pb.ProtocolKind;
   setKind(value: core_aggregates_v1_registry_pb.ProtocolKind): ProtocolResponse;
 
@@ -151,18 +144,17 @@ export class ProtocolResponse extends jspb.Message {
 
 export namespace ProtocolResponse {
   export type AsObject = {
-    order: number,
     kind: core_aggregates_v1_registry_pb.ProtocolKind,
     port: number,
   }
 }
 
 export class ConsumerResponse extends jspb.Message {
-  getOrder(): number;
-  setOrder(value: number): ConsumerResponse;
-
   getKind(): core_aggregates_v1_registry_pb.ConsumerKind;
   setKind(value: core_aggregates_v1_registry_pb.ConsumerKind): ConsumerResponse;
+
+  getOrder(): number;
+  setOrder(value: number): ConsumerResponse;
 
   getRoutingKey(): string;
   setRoutingKey(value: string): ConsumerResponse;
@@ -183,8 +175,8 @@ export class ConsumerResponse extends jspb.Message {
 
 export namespace ConsumerResponse {
   export type AsObject = {
-    order: number,
     kind: core_aggregates_v1_registry_pb.ConsumerKind,
+    order: number,
     routingKey: string,
     exchange: string,
     queueName: string,

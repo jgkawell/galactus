@@ -879,8 +879,8 @@ users. This will allow the service to push messages to the correct clients.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| order | [int32](#int32) |  |  |
 | kind | [core.aggregates.v1.ConsumerKind](#core-aggregates-v1-ConsumerKind) |  |  |
+| order | [int32](#int32) |  |  |
 | aggregate_type | [string](#string) |  |  |
 | event_type | [string](#string) |  |  |
 | event_code | [string](#string) |  |  |
@@ -898,9 +898,9 @@ users. This will allow the service to push messages to the correct clients.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| order | [int32](#int32) |  |  |
 | kind | [core.aggregates.v1.ConsumerKind](#core-aggregates-v1-ConsumerKind) |  |  |
-| routing_key | [string](#string) |  |  |
+| order | [int32](#int32) |  | lookup information for the caller |
+| routing_key | [string](#string) |  | new connection info for the caller |
 | exchange | [string](#string) |  |  |
 | queue_name | [string](#string) |  |  |
 
@@ -917,7 +917,6 @@ users. This will allow the service to push messages to the correct clients.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| order | [int32](#int32) |  |  |
 | kind | [core.aggregates.v1.ProtocolKind](#core-aggregates-v1-ProtocolKind) |  |  |
 | route | [string](#string) |  |  |
 
@@ -934,7 +933,6 @@ users. This will allow the service to push messages to the correct clients.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| order | [int32](#int32) |  |  |
 | kind | [core.aggregates.v1.ProtocolKind](#core-aggregates-v1-ProtocolKind) |  |  |
 | port | [int32](#int32) |  |  |
 
@@ -953,9 +951,7 @@ users. This will allow the service to push messages to the correct clients.
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  |  |
 | domain | [string](#string) |  | this needs to match the k8s namespace for remote deployments |
-| version | [string](#string) |  | address = domain.name:port
-
-should be semver |
+| version | [string](#string) |  | should be semver (vX.Y.Z) |
 | description | [string](#string) |  |  |
 | protocols | [ProtocolRequest](#core-registry-v1-ProtocolRequest) | repeated |  |
 | consumers | [ConsumerRequest](#core-registry-v1-ConsumerRequest) | repeated |  |

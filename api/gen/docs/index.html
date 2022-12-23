@@ -2954,15 +2954,15 @@ in javascript is an object </p></td>
             <tbody>
               
                 <tr>
-                  <td>order</td>
-                  <td><a href="#int32">int32</a></td>
+                  <td>kind</td>
+                  <td><a href="#core.aggregates.v1.ConsumerKind">core.aggregates.v1.ConsumerKind</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>
               
                 <tr>
-                  <td>kind</td>
-                  <td><a href="#core.aggregates.v1.ConsumerKind">core.aggregates.v1.ConsumerKind</a></td>
+                  <td>order</td>
+                  <td><a href="#int32">int32</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>
@@ -3006,13 +3006,6 @@ in javascript is an object </p></td>
             <tbody>
               
                 <tr>
-                  <td>order</td>
-                  <td><a href="#int32">int32</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
                   <td>kind</td>
                   <td><a href="#core.aggregates.v1.ConsumerKind">core.aggregates.v1.ConsumerKind</a></td>
                   <td></td>
@@ -3020,10 +3013,17 @@ in javascript is an object </p></td>
                 </tr>
               
                 <tr>
+                  <td>order</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p>lookup information for the caller </p></td>
+                </tr>
+              
+                <tr>
                   <td>routing_key</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>new connection info for the caller </p></td>
                 </tr>
               
                 <tr>
@@ -3058,13 +3058,6 @@ in javascript is an object </p></td>
             <tbody>
               
                 <tr>
-                  <td>order</td>
-                  <td><a href="#int32">int32</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
                   <td>kind</td>
                   <td><a href="#core.aggregates.v1.ProtocolKind">core.aggregates.v1.ProtocolKind</a></td>
                   <td></td>
@@ -3094,13 +3087,6 @@ in javascript is an object </p></td>
               <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
             </thead>
             <tbody>
-              
-                <tr>
-                  <td>order</td>
-                  <td><a href="#int32">int32</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
               
                 <tr>
                   <td>kind</td>
@@ -3151,9 +3137,7 @@ in javascript is an object </p></td>
                   <td>version</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>address = domain.name:port
-
-should be semver </p></td>
+                  <td><p>should be semver (vX.Y.Z) </p></td>
                 </tr>
               
                 <tr>
