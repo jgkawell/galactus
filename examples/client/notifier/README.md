@@ -15,5 +15,5 @@ npm install
 # run the local dev server
 npm start
 
-# navigate to http://localhost:3000 in your browser
+# navigate to http://localhost:3000?id=user1 in your browser
 ```

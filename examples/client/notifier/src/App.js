@@ -13,6 +13,7 @@ const url_string = window.location.href;
 const url = new URL(url_string);
 const actor_id = url.searchParams.get('id');
 const client_id = uuidv4();
+const transaction_id = uuidv4();
 
 function App() {
   const [notifications, setNotification] = useState([]);
@@ -20,12 +21,14 @@ function App() {
   const getNotifications = () => {
     console.log('actor_id: ', actor_id);
     console.log('client_id: ', client_id);
+    console.log('transaction_id: ', transaction_id)
 
     const req = new ConnectionRequest()
       .setClientId(client_id)
       .setActorId(actor_id);
 
-    const stream = client.connect(req);
+    var meta = {'transaction_id': transaction_id};
+    const stream = client.connect(req, meta);
 
     stream.on('data', function (res) {
       let data = res.getData();
