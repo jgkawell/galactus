@@ -5,6 +5,8 @@ configMap:
   disableTracer: true
   isDevMode: true
   version: v1
+  domain: core
+  description: 'this is a new description'
   # sql database connection values
   sqlDbUser: admin
   sqlDbSecret: admin

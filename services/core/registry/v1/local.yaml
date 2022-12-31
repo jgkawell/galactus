@@ -3,6 +3,7 @@ configMap:
   isDevMode: true
   disableTracer: true
   version: v1
+  domain: core
   env: local
   # sql database connection values
   sqlDbUser: admin
