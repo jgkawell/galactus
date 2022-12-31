@@ -2,7 +2,7 @@ FROM --platform=linux/amd64 bufbuild/buf:1.4.0 AS buffer
 
 # Install dependencies
 RUN apk add --update --no-cache ca-certificates curl npm protoc
-RUN apk add --update --no-cache go=1.19.3-r0 --repository=http://dl-cdn.alpinelinux.org/alpine/edge/community
+RUN apk add --update --no-cache go=1.19.4-r0 --repository=http://dl-cdn.alpinelinux.org/alpine/edge/community
 
 # Set go env
 ENV GOPATH=$HOME/go
