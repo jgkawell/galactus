@@ -847,7 +847,7 @@ users. This will allow the service to push messages to the correct clients.
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  |  |
 | version | [string](#string) |  | this is the major version of the service to connect to (v1, v2, etc.) |
-| type | [core.aggregates.v1.ProtocolKind](#core-aggregates-v1-ProtocolKind) |  |  |
+| type | [core.aggregates.v1.ProtocolKind](#core-aggregates-v1-ProtocolKind) |  | TODO: add domain |
 
 
 

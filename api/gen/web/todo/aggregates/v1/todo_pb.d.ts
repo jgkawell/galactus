@@ -1,6 +1,6 @@
 import * as jspb from 'google-protobuf'
 
-
+import * as validate_validate_pb from '../../../validate/validate_pb';
 import * as options_gorm_pb from '../../../options/gorm_pb';
 import * as google_protobuf_timestamp_pb from 'google-protobuf/google/protobuf/timestamp_pb';
 

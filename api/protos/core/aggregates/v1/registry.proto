@@ -15,11 +15,11 @@ message Registration {
     string id = 1 [(validate.rules).string.uuid = true, (gorm.field).tag = {type: "uuid" primary_key: true}];
     // NOTE: name + version must be unique
     // the service name
-    string name = 2 [(validate.rules).string = {min_len: 1, max_len: 255}];
+    string name = 2 [(validate.rules).string = {min_len: 1, max_len: 255}, (gorm.field).tag = {unique_index: "idx"}];
     // the service version
-    string version = 3 [(validate.rules).string = {min_len: 1, max_len: 255}];
+    string version = 3 [(validate.rules).string = {min_len: 1, max_len: 255}, (gorm.field).tag = {unique_index: "idx"}];
     // the service domain
-    string domain = 4 [(validate.rules).string = {min_len: 1, max_len: 255}];
+    string domain = 4 [(validate.rules).string = {min_len: 1, max_len: 255}, (gorm.field).tag = {unique_index: "idx"}];
     // plain text description of the service
     string description = 5 [(validate.rules).string = {min_len: 1, max_len: 255}];
     // the service address in the environment. e.g. "http://localhost:8080" when local or "eventstore:8090" when remote
