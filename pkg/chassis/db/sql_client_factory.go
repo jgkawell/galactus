@@ -3,7 +3,7 @@ package db
 import (
 	"fmt"
 
-	l "github.com/jgkawell/galactus/pkg/logging/v2"
+	l "github.com/jgkawell/galactus/pkg/logging"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"

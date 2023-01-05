@@ -9,7 +9,7 @@ import (
 
 	pb "github.com/jgkawell/galactus/api/gen/go/core/eventstore/v1"
 	ct "github.com/jgkawell/galactus/pkg/chassis/context"
-	l "github.com/jgkawell/galactus/pkg/logging/v2"
+	l "github.com/jgkawell/galactus/pkg/logging"
 
 	"github.com/google/uuid"
 	"google.golang.org/grpc/codes"

@@ -10,7 +10,7 @@ import (
 	m "github.com/jgkawell/galactus/pkg/azkeyvault/model"
 	s "github.com/jgkawell/galactus/pkg/azkeyvault/service"
 	t "github.com/jgkawell/galactus/pkg/azkeyvault/token"
-	l "github.com/jgkawell/galactus/pkg/logging/v2"
+	l "github.com/jgkawell/galactus/pkg/logging"
 )
 
 // KeyVaultClient key vault client interface

@@ -6,7 +6,7 @@ import (
 	aggregatesv1 "github.com/jgkawell/galactus/api/gen/go/core/aggregates/v1"
 	context "github.com/jgkawell/galactus/pkg/chassis/context"
 
-	logging "github.com/jgkawell/galactus/pkg/logging/v2"
+	logging "github.com/jgkawell/galactus/pkg/logging"
 
 	messagebus "github.com/jgkawell/galactus/pkg/chassis/messagebus"
 

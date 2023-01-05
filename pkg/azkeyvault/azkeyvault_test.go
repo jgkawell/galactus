@@ -6,7 +6,7 @@ import (
 
 	m "github.com/jgkawell/galactus/pkg/azkeyvault/model"
 	ts "github.com/jgkawell/galactus/pkg/azkeyvault/token"
-	l "github.com/jgkawell/galactus/pkg/logging/v2"
+	l "github.com/jgkawell/galactus/pkg/logging"
 
 	"github.com/stretchr/testify/assert"
 )

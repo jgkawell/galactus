@@ -9,7 +9,7 @@ import (
 	espb "github.com/jgkawell/galactus/api/gen/go/core/eventstore/v1"
 	rgpb "github.com/jgkawell/galactus/api/gen/go/core/registry/v1"
 
-	l "github.com/jgkawell/galactus/pkg/logging/v2"
+	l "github.com/jgkawell/galactus/pkg/logging"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"

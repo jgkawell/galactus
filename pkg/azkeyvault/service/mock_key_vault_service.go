@@ -5,7 +5,7 @@ package service
 import (
 	context "context"
 
-	logging "github.com/jgkawell/galactus/pkg/logging/v2"
+	logging "github.com/jgkawell/galactus/pkg/logging"
 	mock "github.com/stretchr/testify/mock"
 
 	model "github.com/jgkawell/galactus/pkg/azkeyvault/model"

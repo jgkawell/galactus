@@ -1,7 +1,7 @@
 package env
 
 import (
-	l "github.com/jgkawell/galactus/pkg/logging/v2"
+	l "github.com/jgkawell/galactus/pkg/logging"
 
 	"github.com/spf13/viper"
 )

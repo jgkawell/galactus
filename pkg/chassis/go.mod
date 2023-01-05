@@ -2,11 +2,11 @@ module github.com/jgkawell/galactus/pkg/chassis
 
 go 1.19
 
-replace github.com/jgkawell/galactus/api/gen/go v0.0.0 => ../../api/gen/go
+replace github.com/jgkawell/galactus/api/gen/go v1.0.0 => ../../api/gen/go
 
-replace github.com/jgkawell/galactus/pkg/azkeyvault v0.0.0 => ../azkeyvault
+replace github.com/jgkawell/galactus/pkg/azkeyvault v1.0.0 => ../azkeyvault
 
-replace github.com/jgkawell/galactus/pkg/logging/v2 v2.0.0 => ../logging
+replace github.com/jgkawell/galactus/pkg/logging v1.0.0 => ../logging
 
 require (
 	bou.ke/monkey v1.0.2
@@ -16,10 +16,9 @@ require (
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/google/uuid v1.3.0
 	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0
-	github.com/jgkawell/galactus/api/gen/go v0.0.0
-	github.com/jgkawell/galactus/pkg/azkeyvault v0.0.0
-	github.com/jgkawell/galactus/pkg/logging/v2 v2.0.0
-	github.com/lucsky/cuid v1.2.1
+	github.com/jgkawell/galactus/api/gen/go v1.0.0
+	github.com/jgkawell/galactus/pkg/azkeyvault v1.0.0
+	github.com/jgkawell/galactus/pkg/logging v1.0.0
 	github.com/prometheus/client_golang v1.14.0
 	github.com/rabbitmq/amqp091-go v1.5.0
 	github.com/sirupsen/logrus v1.9.0
@@ -69,7 +68,6 @@ require (
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/hashicorp/golang-lru v0.5.4 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
-	github.com/infobloxopen/protoc-gen-gorm v1.1.2 // indirect
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
 	github.com/jackc/pgconn v1.13.0 // indirect
 	github.com/jackc/pgio v1.0.0 // indirect
@@ -78,6 +76,7 @@ require (
 	github.com/jackc/pgservicefile v0.0.0-20221227161230-091c0ba34f0a // indirect
 	github.com/jackc/pgtype v1.13.0 // indirect
 	github.com/jackc/pgx/v4 v4.17.2 // indirect
+	github.com/jgkawell/protoc-gen-gorm v1.1.3 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect

@@ -5,7 +5,7 @@ import (
 
 	"error-handling/test"
 
-	l "github.com/jgkawell/galactus/pkg/logging/v2"
+	l "github.com/jgkawell/galactus/pkg/logging"
 )
 
 /*

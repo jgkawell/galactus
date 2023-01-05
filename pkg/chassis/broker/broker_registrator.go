@@ -5,7 +5,7 @@ import (
 
 	"github.com/jgkawell/galactus/pkg/chassis/messagebus"
 
-	l "github.com/jgkawell/galactus/pkg/logging/v2"
+	l "github.com/jgkawell/galactus/pkg/logging"
 )
 
 type BrokerDefinition struct {

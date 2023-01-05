@@ -158,25 +158,25 @@ func (l *logger) WrapError(err error) Error {
 
 // With methods
 
-// WithError - Add an error as single field (using the key defined in ErrorKey) to the Entry.
+// WithError adds an error as single field (using the key defined in ErrorKey) to the Entry.
 func (l *logger) WithError(err error) *logger {
 	newLogger := newLogger(l.entry.WithError(err))
 	return &newLogger
 }
 
-// WithContext - Add a context to the Entry.
+// WithContext adds a context to the Entry.
 func (l *logger) WithContext(ctx context.Context) *logger {
 	newLogger := newLogger(l.entry.WithContext(ctx))
 	return &newLogger
 }
 
-// WithField - Add a single field to the Entry.
+// WithField adds a single field to the Entry.
 func (l *logger) WithField(key string, value interface{}) *logger {
 	newLogger := newLogger(l.entry.WithField(key, value))
 	return &newLogger
 }
 
-// WithFields - Add a map of fields to the Entry.
+// WithFields adds a map of fields to the Entry.
 func (l *logger) WithFields(fields Fields) *logger {
 	// Copy custom fields into logrus fields
 	logrusFields := logrus.Fields{}
@@ -188,7 +188,7 @@ func (l *logger) WithFields(fields Fields) *logger {
 	return &newLogger
 }
 
-// WithTime - Overrides the time of the Entry.
+// WithTime overrides the time of the Entry.
 func (l *logger) WithTime(t time.Time) *logger {
 	newLogger := newLogger(l.entry.WithTime(t))
 	return &newLogger

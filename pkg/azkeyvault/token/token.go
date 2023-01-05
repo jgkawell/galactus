@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	m "github.com/jgkawell/galactus/pkg/azkeyvault/model"
-	l "github.com/jgkawell/galactus/pkg/logging/v2"
+	l "github.com/jgkawell/galactus/pkg/logging"
 
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/adal"

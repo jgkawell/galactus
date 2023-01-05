@@ -12,7 +12,7 @@ import (
 
 	ct "github.com/jgkawell/galactus/pkg/chassis/context"
 	ev "github.com/jgkawell/galactus/pkg/chassis/events"
-	l "github.com/jgkawell/galactus/pkg/logging/v2"
+	l "github.com/jgkawell/galactus/pkg/logging"
 )
 
 type service struct {

@@ -28,7 +28,7 @@ import (
 
 	// other galactus modules
 	azkeyvault "github.com/jgkawell/galactus/pkg/azkeyvault"
-	l "github.com/jgkawell/galactus/pkg/logging/v2"
+	l "github.com/jgkawell/galactus/pkg/logging"
 
 	// galactus api packages
 	agpb "github.com/jgkawell/galactus/api/gen/go/core/aggregates/v1"

@@ -7,7 +7,7 @@ import (
 
 	"github.com/jgkawell/galactus/pkg/chassis/db"
 	"github.com/jgkawell/galactus/pkg/chassis/terminator"
-	l "github.com/jgkawell/galactus/pkg/logging/v2"
+	l "github.com/jgkawell/galactus/pkg/logging"
 
 	"github.com/DeanThompson/ginpprof"
 	"github.com/gin-gonic/gin"

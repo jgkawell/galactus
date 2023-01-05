@@ -2,19 +2,19 @@ module notifier
 
 go 1.19
 
-replace github.com/jgkawell/galactus/api/gen/go v0.0.0 => ../../../../api/gen/go
+replace github.com/jgkawell/galactus/api/gen/go v1.0.0 => ../../../../api/gen/go
 
-replace github.com/jgkawell/galactus/pkg/azkeyvault v0.0.0 => ../../../../pkg/azkeyvault
+replace github.com/jgkawell/galactus/pkg/azkeyvault v1.0.0 => ../../../../pkg/azkeyvault
 
-replace github.com/jgkawell/galactus/pkg/chassis v0.0.0 => ../../../../pkg/chassis
+replace github.com/jgkawell/galactus/pkg/chassis v1.0.0 => ../../../../pkg/chassis
 
-replace github.com/jgkawell/galactus/pkg/logging/v2 v2.0.0 => ../../../../pkg/logging
+replace github.com/jgkawell/galactus/pkg/logging v1.0.0 => ../../../../pkg/logging
 
 require (
 	github.com/google/uuid v1.3.0
-	github.com/jgkawell/galactus/api/gen/go v0.0.0
-	github.com/jgkawell/galactus/pkg/chassis v0.0.0
-	github.com/jgkawell/galactus/pkg/logging/v2 v2.0.0
+	github.com/jgkawell/galactus/api/gen/go v1.0.0
+	github.com/jgkawell/galactus/pkg/chassis v1.0.0
+	github.com/jgkawell/galactus/pkg/logging v1.0.0
 )
 
 require (
@@ -68,7 +68,7 @@ require (
 	github.com/jackc/pgservicefile v0.0.0-20221227161230-091c0ba34f0a // indirect
 	github.com/jackc/pgtype v1.13.0 // indirect
 	github.com/jackc/pgx/v4 v4.17.2 // indirect
-	github.com/jgkawell/galactus/pkg/azkeyvault v0.0.0 // indirect
+	github.com/jgkawell/galactus/pkg/azkeyvault v1.0.0 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect

@@ -2,14 +2,14 @@ module github.com/jgkawell/galactus/pkg/azkeyvault
 
 go 1.19
 
-replace github.com/jgkawell/galactus/pkg/logging/v2 v2.0.0 => ../logging
+replace github.com/jgkawell/galactus/pkg/logging v1.0.0 => ../logging
 
 require (
 	github.com/Azure/azure-sdk-for-go v67.2.0+incompatible
 	github.com/Azure/go-autorest/autorest v0.11.28
 	github.com/Azure/go-autorest/autorest/adal v0.9.21
 	github.com/hashicorp/golang-lru v0.5.4
-	github.com/jgkawell/galactus/pkg/logging/v2 v2.0.0
+	github.com/jgkawell/galactus/pkg/logging v1.0.0
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.8.1
 )
@@ -41,6 +41,7 @@ require (
 	github.com/gofrs/uuid v4.3.1+incompatible // indirect
 	github.com/golang-jwt/jwt/v4 v4.4.3 // indirect
 	github.com/golang/glog v1.0.0 // indirect
+	github.com/google/go-cmp v0.5.9 // indirect
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/leodido/go-urn v1.2.1 // indirect
@@ -66,6 +67,7 @@ require (
 	golang.org/x/time v0.3.0 // indirect
 	golang.org/x/tools v0.4.0 // indirect
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
+	google.golang.org/genproto v0.0.0-20221227171554-f9683d7f8bef // indirect
 	google.golang.org/grpc v1.51.0 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/DataDog/dd-trace-go.v1 v1.45.1 // indirect

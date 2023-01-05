@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	l "github.com/jgkawell/galactus/pkg/logging/v2"
+	l "github.com/jgkawell/galactus/pkg/logging"
 
 	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson"

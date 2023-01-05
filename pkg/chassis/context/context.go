@@ -6,7 +6,7 @@ import (
 
 	agpb "github.com/jgkawell/galactus/api/gen/go/core/aggregates/v1"
 
-	l "github.com/jgkawell/galactus/pkg/logging/v2"
+	l "github.com/jgkawell/galactus/pkg/logging"
 
 	"google.golang.org/grpc/metadata"
 )

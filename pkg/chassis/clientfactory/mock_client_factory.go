@@ -6,7 +6,7 @@ import (
 	eventstorev1 "github.com/jgkawell/galactus/api/gen/go/core/eventstore/v1"
 	grpc "google.golang.org/grpc"
 
-	logging "github.com/jgkawell/galactus/pkg/logging/v2"
+	logging "github.com/jgkawell/galactus/pkg/logging"
 
 	mock "github.com/stretchr/testify/mock"
 
