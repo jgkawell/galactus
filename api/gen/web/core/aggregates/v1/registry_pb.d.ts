@@ -1,8 +1,8 @@
 import * as jspb from 'google-protobuf'
 
-import * as validate_validate_pb from '../../../validate/validate_pb';
-import * as options_gorm_pb from '../../../options/gorm_pb';
 import * as google_protobuf_timestamp_pb from 'google-protobuf/google/protobuf/timestamp_pb';
+import * as options_gorm_pb from '../../../options/gorm_pb';
+import * as validate_validate_pb from '../../../validate/validate_pb';
 
 
 export class Registration extends jspb.Message {
@@ -120,19 +120,19 @@ export namespace Consumer {
 }
 
 export enum ServiceStatus { 
-  SERVICE_STATUS_INVALID = 0,
+  SERVICE_STATUS_UNSPECIFIED = 0,
   SERVICE_STATUS_REGISTERED = 1,
   SERVICE_STATUS_DEREGISTERED = 2,
   SERVICE_STATUS_HEALTHY = 3,
   SERVICE_STATUS_UNHEALTHY = 4,
 }
 export enum ProtocolKind { 
-  PROTOCOL_KIND_INVALID = 0,
+  PROTOCOL_KIND_UNSPECIFIED = 0,
   PROTOCOL_KIND_GRPC = 1,
   PROTOCOL_KIND_HTTP = 2,
 }
 export enum ConsumerKind { 
-  CONSUMER_KIND_INVALID = 0,
+  CONSUMER_KIND_UNSPECIFIED = 0,
   CONSUMER_KIND_QUEUE = 1,
   CONSUMER_KIND_TOPIC = 2,
 }

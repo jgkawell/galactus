@@ -65,10 +65,10 @@
     "v1NotificationType": {
       "type": "string",
       "enum": [
-        "INVALID",
-        "HEARTBEAT"
+        "NOTIFICATION_TYPE_INVALID_UNSPECIFIED",
+        "NOTIFICATION_TYPE_HEARTBEAT"
       ],
-      "default": "INVALID",
+      "default": "NOTIFICATION_TYPE_INVALID_UNSPECIFIED",
       "title": "NotificationType - A code that communicates to a integrated client the message type that is being sent.\nTODO: check to see if you can add to this enum without having to redeploy the notifier service"
     }
   }

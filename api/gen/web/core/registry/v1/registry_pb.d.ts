@@ -236,7 +236,7 @@ export namespace ConnectionResponse {
 }
 
 export enum ServiceStatus { 
-  SERVICE_STATUS_INVALID = 0,
+  SERVICE_STATUS_INVALID_UNSPECIFIED = 0,
   SERVICE_STATUS_HEALTHY = 1,
   SERVICE_STATUS_UNHEALTHY = 2,
 }

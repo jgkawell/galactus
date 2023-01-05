@@ -1944,7 +1944,7 @@ proto.core.registry.v1.ConnectionResponse.prototype.setStatus = function(value) 
  * @enum {number}
  */
 proto.core.registry.v1.ServiceStatus = {
-  SERVICE_STATUS_INVALID: 0,
+  SERVICE_STATUS_INVALID_UNSPECIFIED: 0,
   SERVICE_STATUS_HEALTHY: 1,
   SERVICE_STATUS_UNHEALTHY: 2
 };

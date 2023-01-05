@@ -16,9 +16,9 @@ const grpc = {};
 grpc.web = require('grpc-web');
 
 
-var validate_validate_pb = require('../../../validate/validate_pb.js')
-
 var google_protobuf_timestamp_pb = require('google-protobuf/google/protobuf/timestamp_pb.js')
+
+var validate_validate_pb = require('../../../validate/validate_pb.js')
 const proto = {};
 proto.core = {};
 proto.core.commandhandler = {};

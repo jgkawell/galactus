@@ -626,8 +626,8 @@ proto.core.notifier.v1.Heartbeat.prototype.setClientId = function(value) {
  * @enum {number}
  */
 proto.core.notifier.v1.NotificationType = {
-  INVALID: 0,
-  HEARTBEAT: 1
+  NOTIFICATION_TYPE_INVALID_UNSPECIFIED: 0,
+  NOTIFICATION_TYPE_HEARTBEAT: 1
 };
 
 goog.object.extend(exports, proto.core.notifier.v1);

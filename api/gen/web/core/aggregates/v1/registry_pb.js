@@ -15,12 +15,12 @@ var jspb = require('google-protobuf');
 var goog = jspb;
 var global = Function('return this')();
 
-var validate_validate_pb = require('../../../validate/validate_pb.js');
-goog.object.extend(proto, validate_validate_pb);
-var options_gorm_pb = require('../../../options/gorm_pb.js');
-goog.object.extend(proto, options_gorm_pb);
 var google_protobuf_timestamp_pb = require('google-protobuf/google/protobuf/timestamp_pb.js');
 goog.object.extend(proto, google_protobuf_timestamp_pb);
+var options_gorm_pb = require('../../../options/gorm_pb.js');
+goog.object.extend(proto, options_gorm_pb);
+var validate_validate_pb = require('../../../validate/validate_pb.js');
+goog.object.extend(proto, validate_validate_pb);
 goog.exportSymbol('proto.core.aggregates.v1.Consumer', null, global);
 goog.exportSymbol('proto.core.aggregates.v1.ConsumerKind', null, global);
 goog.exportSymbol('proto.core.aggregates.v1.Protocol', null, global);
@@ -957,7 +957,7 @@ proto.core.aggregates.v1.Consumer.prototype.setKind = function(value) {
  * @enum {number}
  */
 proto.core.aggregates.v1.ServiceStatus = {
-  SERVICE_STATUS_INVALID: 0,
+  SERVICE_STATUS_UNSPECIFIED: 0,
   SERVICE_STATUS_REGISTERED: 1,
   SERVICE_STATUS_DEREGISTERED: 2,
   SERVICE_STATUS_HEALTHY: 3,
@@ -968,7 +968,7 @@ proto.core.aggregates.v1.ServiceStatus = {
  * @enum {number}
  */
 proto.core.aggregates.v1.ProtocolKind = {
-  PROTOCOL_KIND_INVALID: 0,
+  PROTOCOL_KIND_UNSPECIFIED: 0,
   PROTOCOL_KIND_GRPC: 1,
   PROTOCOL_KIND_HTTP: 2
 };
@@ -977,7 +977,7 @@ proto.core.aggregates.v1.ProtocolKind = {
  * @enum {number}
  */
 proto.core.aggregates.v1.ConsumerKind = {
-  CONSUMER_KIND_INVALID: 0,
+  CONSUMER_KIND_UNSPECIFIED: 0,
   CONSUMER_KIND_QUEUE: 1,
   CONSUMER_KIND_TOPIC: 2
 };

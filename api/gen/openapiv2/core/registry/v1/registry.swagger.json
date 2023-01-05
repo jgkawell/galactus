@@ -20,11 +20,11 @@
     "coreregistryv1ServiceStatus": {
       "type": "string",
       "enum": [
-        "SERVICE_STATUS_INVALID",
+        "SERVICE_STATUS_INVALID_UNSPECIFIED",
         "SERVICE_STATUS_HEALTHY",
         "SERVICE_STATUS_UNHEALTHY"
       ],
-      "default": "SERVICE_STATUS_INVALID"
+      "default": "SERVICE_STATUS_INVALID_UNSPECIFIED"
     },
     "protobufAny": {
       "type": "object",
@@ -71,11 +71,11 @@
     "v1ConsumerKind": {
       "type": "string",
       "enum": [
-        "CONSUMER_KIND_INVALID",
+        "CONSUMER_KIND_UNSPECIFIED",
         "CONSUMER_KIND_QUEUE",
         "CONSUMER_KIND_TOPIC"
       ],
-      "default": "CONSUMER_KIND_INVALID"
+      "default": "CONSUMER_KIND_UNSPECIFIED"
     },
     "v1ConsumerRequest": {
       "type": "object",
@@ -124,11 +124,11 @@
     "v1ProtocolKind": {
       "type": "string",
       "enum": [
-        "PROTOCOL_KIND_INVALID",
+        "PROTOCOL_KIND_UNSPECIFIED",
         "PROTOCOL_KIND_GRPC",
         "PROTOCOL_KIND_HTTP"
       ],
-      "default": "PROTOCOL_KIND_INVALID"
+      "default": "PROTOCOL_KIND_UNSPECIFIED"
     },
     "v1ProtocolRequest": {
       "type": "object",

@@ -77,6 +77,6 @@ export namespace Heartbeat {
 }
 
 export enum NotificationType { 
-  INVALID = 0,
-  HEARTBEAT = 1,
+  NOTIFICATION_TYPE_INVALID_UNSPECIFIED = 0,
+  NOTIFICATION_TYPE_HEARTBEAT = 1,
 }

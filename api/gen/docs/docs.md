@@ -545,7 +545,7 @@
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | id | [string](#string) |  | the table primary key |
-| name | [string](#string) |  | NOTE: name &#43; version must be unique the service name |
+| name | [string](#string) |  | NOTE: name &#43; version &#43; domain must be unique the service name |
 | version | [string](#string) |  | the service version |
 | domain | [string](#string) |  | the service domain |
 | description | [string](#string) |  | plain text description of the service |
@@ -568,7 +568,7 @@
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
-| CONSUMER_KIND_INVALID | 0 |  |
+| CONSUMER_KIND_UNSPECIFIED | 0 |  |
 | CONSUMER_KIND_QUEUE | 1 |  |
 | CONSUMER_KIND_TOPIC | 2 |  |
 
@@ -581,7 +581,7 @@
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
-| PROTOCOL_KIND_INVALID | 0 |  |
+| PROTOCOL_KIND_UNSPECIFIED | 0 |  |
 | PROTOCOL_KIND_GRPC | 1 |  |
 | PROTOCOL_KIND_HTTP | 2 |  |
 
@@ -594,7 +594,7 @@ deregister vs unregister reference: https://grammarhow.com/unregister-vs-deregis
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
-| SERVICE_STATUS_INVALID | 0 |  |
+| SERVICE_STATUS_UNSPECIFIED | 0 |  |
 | SERVICE_STATUS_REGISTERED | 1 |  |
 | SERVICE_STATUS_DEREGISTERED | 2 |  |
 | SERVICE_STATUS_HEALTHY | 3 |  |
@@ -797,8 +797,8 @@ TODO: check to see if you can add to this enum without having to redeploy the no
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
-| INVALID | 0 |  |
-| HEARTBEAT | 1 | NOTE: add enum values here as needed |
+| NOTIFICATION_TYPE_INVALID_UNSPECIFIED | 0 |  |
+| NOTIFICATION_TYPE_HEARTBEAT | 1 | NOTE: add enum values here as needed |
 
 
  
@@ -986,7 +986,7 @@ users. This will allow the service to push messages to the correct clients.
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
-| SERVICE_STATUS_INVALID | 0 |  |
+| SERVICE_STATUS_INVALID_UNSPECIFIED | 0 |  |
 | SERVICE_STATUS_HEALTHY | 1 |  |
 | SERVICE_STATUS_UNHEALTHY | 2 |  |
 

@@ -15,10 +15,10 @@ var jspb = require('google-protobuf');
 var goog = jspb;
 var global = Function('return this')();
 
-var validate_validate_pb = require('../../../validate/validate_pb.js');
-goog.object.extend(proto, validate_validate_pb);
 var google_protobuf_timestamp_pb = require('google-protobuf/google/protobuf/timestamp_pb.js');
 goog.object.extend(proto, google_protobuf_timestamp_pb);
+var validate_validate_pb = require('../../../validate/validate_pb.js');
+goog.object.extend(proto, validate_validate_pb);
 goog.exportSymbol('proto.core.commandhandler.v1.ApplyCommandRequest', null, global);
 goog.exportSymbol('proto.core.commandhandler.v1.ApplyCommandResponse', null, global);
 /**
