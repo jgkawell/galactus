@@ -48,8 +48,8 @@ message Notification {
 // NotificationType - A code that communicates to a integrated client the message type that is being sent.
 // TODO: check to see if you can add to this enum without having to redeploy the notifier service
 enum NotificationType {
-  INVALID = 0;
-  HEARTBEAT = 1;
+  NOTIFICATION_TYPE_INVALID_UNSPECIFIED = 0;
+  NOTIFICATION_TYPE_HEARTBEAT = 1;
   // NOTE: add enum values here as needed
 }
 

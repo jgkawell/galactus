@@ -1,11 +1,10 @@
-
 syntax = "proto3";
 
 package core.registry.v1;
 
-option go_package = "github.com/jgkawell/galactus/api/gen/go/core/registry/v1";
-
 import "core/aggregates/v1/registry.proto";
+
+option go_package = "github.com/jgkawell/galactus/api/gen/go/core/registry/v1";
 
 service Registry {
   // Register registers a new microservice with the registry.
@@ -85,7 +84,7 @@ message ConnectionResponse {
 }
 
 enum ServiceStatus {
-  SERVICE_STATUS_INVALID = 0;
+  SERVICE_STATUS_INVALID_UNSPECIFIED = 0;
   SERVICE_STATUS_HEALTHY = 1;
   SERVICE_STATUS_UNHEALTHY = 2;
 }
