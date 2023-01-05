@@ -466,9 +466,18 @@ func (m *GormFieldOptions) validate(all bool) error {
 
 	// no validation rules for ReferenceOf
 
-	switch m.Association.(type) {
-
+	switch v := m.Association.(type) {
 	case *GormFieldOptions_HasOne:
+		if v == nil {
+			err := GormFieldOptionsValidationError{
+				field:  "Association",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
 
 		if all {
 			switch v := interface{}(m.GetHasOne()).(type) {
@@ -500,6 +509,16 @@ func (m *GormFieldOptions) validate(all bool) error {
 		}
 
 	case *GormFieldOptions_BelongsTo:
+		if v == nil {
+			err := GormFieldOptionsValidationError{
+				field:  "Association",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
 
 		if all {
 			switch v := interface{}(m.GetBelongsTo()).(type) {
@@ -531,6 +550,16 @@ func (m *GormFieldOptions) validate(all bool) error {
 		}
 
 	case *GormFieldOptions_HasMany:
+		if v == nil {
+			err := GormFieldOptionsValidationError{
+				field:  "Association",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
 
 		if all {
 			switch v := interface{}(m.GetHasMany()).(type) {
@@ -562,6 +591,16 @@ func (m *GormFieldOptions) validate(all bool) error {
 		}
 
 	case *GormFieldOptions_ManyToMany:
+		if v == nil {
+			err := GormFieldOptionsValidationError{
+				field:  "Association",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
 
 		if all {
 			switch v := interface{}(m.GetManyToMany()).(type) {
@@ -592,6 +631,8 @@ func (m *GormFieldOptions) validate(all bool) error {
 			}
 		}
 
+	default:
+		_ = v // ensures v is used
 	}
 
 	if len(errors) > 0 {

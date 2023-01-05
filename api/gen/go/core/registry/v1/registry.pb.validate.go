@@ -17,8 +17,6 @@ import (
 	"unicode/utf8"
 
 	"google.golang.org/protobuf/types/known/anypb"
-
-	v1 "github.com/jgkawell/galactus/api/gen/go/core/aggregates/v1"
 )
 
 // ensure the imports are used
@@ -35,8 +33,6 @@ var (
 	_ = (*mail.Address)(nil)
 	_ = anypb.Any{}
 	_ = sort.Sort
-
-	_ = v1.ProtocolKind(0)
 )
 
 // Validate checks the field values on RegisterRequest with the rules defined

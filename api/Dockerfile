@@ -28,5 +28,5 @@ RUN go install -mod=readonly github.com/grpc-ecosystem/grpc-gateway/v2/protoc-ge
 RUN go install -mod=readonly google.golang.org/protobuf/cmd/protoc-gen-go@v1.28.0
 RUN go install -mod=readonly google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.2.0
 RUN go install -mod=readonly github.com/pseudomuto/protoc-gen-doc/cmd/protoc-gen-doc@v1.5.1
-RUN go install -mod=readonly github.com/circadence-official/protoc-gen-validate@v0.6.8
-RUN go install -mod=readonly github.com/jgkawell/protoc-gen-gorm@v1.1.4
+RUN go install -mod=readonly github.com/envoyproxy/protoc-gen-validate@v0.9.1
+RUN go install -mod=readonly github.com/jgkawell/protoc-gen-gorm@v1.1.5

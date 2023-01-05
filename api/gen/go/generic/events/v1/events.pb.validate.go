@@ -57,17 +57,45 @@ func (m *EventType) validate(all bool) error {
 
 	var errors []error
 
-	switch m.Code.(type) {
-
+	switch v := m.Code.(type) {
 	case *EventType_SystemCode:
+		if v == nil {
+			err := EventTypeValidationError{
+				field:  "Code",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
 		// no validation rules for SystemCode
-
 	case *EventType_NotificationCode:
+		if v == nil {
+			err := EventTypeValidationError{
+				field:  "Code",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
 		// no validation rules for NotificationCode
-
 	case *EventType_TodoEventCode:
+		if v == nil {
+			err := EventTypeValidationError{
+				field:  "Code",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
 		// no validation rules for TodoEventCode
-
+	default:
+		_ = v // ensures v is used
 	}
 
 	if len(errors) > 0 {
