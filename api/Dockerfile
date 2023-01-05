@@ -29,4 +29,4 @@ RUN go install -mod=readonly google.golang.org/protobuf/cmd/protoc-gen-go@v1.28.
 RUN go install -mod=readonly google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.2.0
 RUN go install -mod=readonly github.com/pseudomuto/protoc-gen-doc/cmd/protoc-gen-doc@v1.5.1
 RUN go install -mod=readonly github.com/circadence-official/protoc-gen-validate@v0.6.8
-RUN go install -mod=readonly github.com/circadence-official/protoc-gen-gorm@v1.1.3
+RUN go install -mod=readonly github.com/jgkawell/protoc-gen-gorm@v1.1.4
