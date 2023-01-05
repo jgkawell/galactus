@@ -48,7 +48,7 @@ export namespace TodoCreationFailed {
 }
 
 export enum TodoEventCode { 
-  TODO_EVENT_CODE_INVALID = 0,
+  TODO_EVENT_CODE_INVALID_UNSPECIFIED = 0,
   TODO_EVENT_CODE_CREATED = 1,
   TODO_EVENT_CODE_DELETED = 2,
 }

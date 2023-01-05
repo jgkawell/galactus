@@ -398,7 +398,7 @@ proto.generic.events.v1.TodoCreationFailed.prototype.setError = function(value) 
  * @enum {number}
  */
 proto.generic.events.v1.TodoEventCode = {
-  TODO_EVENT_CODE_INVALID: 0,
+  TODO_EVENT_CODE_INVALID_UNSPECIFIED: 0,
   TODO_EVENT_CODE_CREATED: 1,
   TODO_EVENT_CODE_DELETED: 2
 };

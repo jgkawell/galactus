@@ -75,7 +75,8 @@
         "CONSUMER_KIND_QUEUE",
         "CONSUMER_KIND_TOPIC"
       ],
-      "default": "CONSUMER_KIND_UNSPECIFIED"
+      "default": "CONSUMER_KIND_UNSPECIFIED",
+      "title": "consumer kind is whether the consumer is a queue (unicast - 1:N queue to consumer) or topic (multicast - 1:1 queue to consumer)"
     },
     "v1ConsumerRequest": {
       "type": "object",

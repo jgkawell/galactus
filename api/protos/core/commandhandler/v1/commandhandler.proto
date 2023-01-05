@@ -8,30 +8,30 @@ import "validate/validate.proto";
 option go_package = "github.com/jgkawell/galactus/api/gen/go/core/commandhandler/v1";
 
 service CommandHandler {
-  // this is ASYNCHRONOUS and will only return a transaction ID. the client should listen for
-  // a completed event on the notifier service
-  rpc Apply(ApplyCommandRequest) returns (ApplyCommandResponse) {}
+    // this is ASYNCHRONOUS and will only return a transaction ID. the client should listen for
+    // a completed event on the notifier service
+    rpc Apply(ApplyCommandRequest) returns (ApplyCommandResponse) {}
 }
 
 message ApplyCommandRequest {
-  // the string identifier (enum value) of the aggregate type this event belongs to
-  // NOTE: this is simply a string to keep the eventstore from depending on changing types
-  string aggregate_type = 1;
-  // map of all event types
-  // NOTE: this is simply a string to keep the eventstore from depending on changing types
-  string event_type = 2;
-  // TODO: is this the way we want to route things?
-  string event_code = 3;
-  // the id of the aggregate that this command belongs to
-  string aggregate_id = 4 [(validate.rules).string.uuid = true];
-  // data representing the change to the state of the system that this command encapsulates
-  // it is saved as a json string so that the core services can be completey agnostic to the
-  // the data structure of the system (and thus be static services)
-  // this data MUST be able to be unmarshalled into a Proto message type
-  string command_data = 5;
+    // the string identifier (enum value) of the aggregate type this event belongs to
+    // NOTE: this is simply a string to keep the eventstore from depending on changing types
+    string aggregate_type = 1;
+    // map of all event types
+    // NOTE: this is simply a string to keep the eventstore from depending on changing types
+    string event_type = 2;
+    // TODO: is this the way we want to route things?
+    string event_code = 3;
+    // the id of the aggregate that this command belongs to
+    string aggregate_id = 4 [(validate.rules).string.uuid = true];
+    // data representing the change to the state of the system that this command encapsulates
+    // it is saved as a json string so that the core services can be completey agnostic to the
+    // the data structure of the system (and thus be static services)
+    // this data MUST be able to be unmarshalled into a Proto message type
+    string command_data = 5;
 }
 
 message ApplyCommandResponse {
-  string id = 1;
-  string transaction_id = 2;
+    string id = 1;
+    string transaction_id = 2;
 }

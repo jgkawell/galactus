@@ -1,8 +1,8 @@
 import * as jspb from 'google-protobuf'
 
-import * as validate_validate_pb from '../../../validate/validate_pb';
-import * as options_gorm_pb from '../../../options/gorm_pb';
 import * as google_protobuf_timestamp_pb from 'google-protobuf/google/protobuf/timestamp_pb';
+import * as options_gorm_pb from '../../../options/gorm_pb';
+import * as validate_validate_pb from '../../../validate/validate_pb';
 
 
 export class Todo extends jspb.Message {
@@ -36,7 +36,7 @@ export namespace Todo {
 }
 
 export enum TodoStatus { 
-  TODO_STATUS_INVALID = 0,
-  COMPLETE = 1,
-  INCOMPLETE = 2,
+  TODO_STATUS_INVALID_UNSPECIFIED = 0,
+  TODO_STATUS_COMPLETE = 1,
+  TODO_STATUS_INCOMPLETE = 2,
 }

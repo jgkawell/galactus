@@ -27,8 +27,8 @@
   
 - [core/aggregates/v1/registry.proto](#core_aggregates_v1_registry-proto)
     - [Consumer](#core-aggregates-v1-Consumer)
-    - [Protocol](#core-aggregates-v1-Protocol)
     - [Registration](#core-aggregates-v1-Registration)
+    - [Route](#core-aggregates-v1-Route)
   
     - [ConsumerKind](#core-aggregates-v1-ConsumerKind)
     - [ProtocolKind](#core-aggregates-v1-ProtocolKind)
@@ -509,27 +509,10 @@
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | id | [string](#string) |  | the table primary key |
-| routing_key | [string](#string) |  | routing key (this should match with an event type on the above aggregate) |
-| kind | [ConsumerKind](#core-aggregates-v1-ConsumerKind) |  | consumer kind is whether the consumer is a queue (unicast - 1:N queue to consumer) or topic (multicast - 1:1 queue to consumer) |
-
-
-
-
-
-
-<a name="core-aggregates-v1-Protocol"></a>
-
-### Protocol
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| id | [string](#string) |  | the table primary key |
-| kind | [ProtocolKind](#core-aggregates-v1-ProtocolKind) |  | the api kind |
-| version | [string](#string) |  | the api version (e.g. &#34;v1&#34; or &#34;v2&#34;) |
-| port | [int32](#int32) |  | the api port (e.g. 8080 or 8090) |
-| route | [string](#string) |  | the base route |
+| aggregate_type | [string](#string) |  | NOTE: the aggregate_type &#43; event_type &#43; event_code must be unique |
+| event_type | [string](#string) |  |  |
+| event_code | [string](#string) |  |  |
+| kind | [ConsumerKind](#core-aggregates-v1-ConsumerKind) |  |  |
 
 
 
@@ -545,14 +528,32 @@
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | id | [string](#string) |  | the table primary key |
-| name | [string](#string) |  | NOTE: name &#43; version &#43; domain must be unique the service name |
+| domain | [string](#string) |  | NOTE: name &#43; version &#43; domain must be unique the service domain |
+| name | [string](#string) |  | the service name |
 | version | [string](#string) |  | the service version |
-| domain | [string](#string) |  | the service domain |
 | description | [string](#string) |  | plain text description of the service |
-| address | [string](#string) |  | the service address in the environment. e.g. &#34;http://localhost:8080&#34; when local or &#34;eventstore:8090&#34; when remote |
-| status | [ServiceStatus](#core-aggregates-v1-ServiceStatus) |  | the service current status |
-| protocols | [Protocol](#core-aggregates-v1-Protocol) | repeated | the protocols this service exposes |
+| status | [ServiceStatus](#core-aggregates-v1-ServiceStatus) |  | the service&#39; current status |
+| routes | [Route](#core-aggregates-v1-Route) | repeated | the routes this service exposes |
 | consumers | [Consumer](#core-aggregates-v1-Consumer) | repeated | the consumer configuration of the service |
+
+
+
+
+
+
+<a name="core-aggregates-v1-Route"></a>
+
+### Route
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| id | [string](#string) |  | the table primary key |
+| path | [string](#string) |  | NOTE: the route path must be unique the route path (e.g. &#39;/core.commandhandler.v1.CommandHandler&#39; (grpc) or &#39;/core/eventstore/v1&#39; (http)) |
+| host | [string](#string) |  | the host of the route (e.g. &#39;localhost&#39; or the name of the service in Istio) |
+| port | [int32](#int32) |  | the route port (e.g. 8080 or 8090) |
+| kind | [ProtocolKind](#core-aggregates-v1-ProtocolKind) |  |  |
 
 
 
@@ -564,7 +565,7 @@
 <a name="core-aggregates-v1-ConsumerKind"></a>
 
 ### ConsumerKind
-
+consumer kind is whether the consumer is a queue (unicast - 1:N queue to consumer) or topic (multicast - 1:1 queue to consumer)
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
@@ -845,9 +846,7 @@ users. This will allow the service to push messages to the correct clients.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  |  |
-| version | [string](#string) |  | this is the major version of the service to connect to (v1, v2, etc.) |
-| type | [core.aggregates.v1.ProtocolKind](#core-aggregates-v1-ProtocolKind) |  | TODO: add domain |
+| path | [string](#string) |  |  |
 
 
 
@@ -1076,7 +1075,7 @@ to only one client) Then a `client_id` should also be provided.
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
-| NOTIFICATION_EVENT_CODE_INVALID | 0 |  |
+| NOTIFICATION_EVENT_CODE_INVALID_UNSPECIFIED | 0 |  |
 | NOTIFICATION_EVENT_CODE_DELIVERY_REQUESTED | 1 |  |
 | NOTIFICATION_EVENT_CODE_DELIVERED | 2 |  |
 
@@ -1120,7 +1119,7 @@ to only one client) Then a `client_id` should also be provided.
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
-| SYSTEM_ERROR_CODE_INVALID | 0 |  |
+| SYSTEM_ERROR_CODE_INVALID_UNSPECIFIED | 0 |  |
 | SYSTEM_ERROR_CODE_FAILED_EVENT_PUBLISH | 1 |  |
 | SYSTEM_ERROR_CODE_FAILED_EVENT_SAVED | 2 |  |
 | SYSTEM_ERROR_CODE_FAILED_EVENT_FORWARD | 3 |  |
@@ -1135,7 +1134,7 @@ to only one client) Then a `client_id` should also be provided.
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
-| SYSTEM_EVENT_CODE_INVALID | 0 |  |
+| SYSTEM_EVENT_CODE_INVALID_UNSPECIFIED | 0 |  |
 | SYSTEM_EVENT_CODE_ERROR | 1 |  |
 
 
@@ -1181,9 +1180,9 @@ to only one client) Then a `client_id` should also be provided.
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
-| TODO_STATUS_INVALID | 0 |  |
-| COMPLETE | 1 |  |
-| INCOMPLETE | 2 |  |
+| TODO_STATUS_INVALID_UNSPECIFIED | 0 |  |
+| TODO_STATUS_COMPLETE | 1 |  |
+| TODO_STATUS_INCOMPLETE | 2 |  |
 
 
  
@@ -1241,7 +1240,7 @@ to only one client) Then a `client_id` should also be provided.
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
-| TODO_EVENT_CODE_INVALID | 0 |  |
+| TODO_EVENT_CODE_INVALID_UNSPECIFIED | 0 |  |
 | TODO_EVENT_CODE_CREATED | 1 |  |
 | TODO_EVENT_CODE_DELETED | 2 |  |
 
@@ -1287,7 +1286,7 @@ map of all aggregate types, add to it as more aggregates are added to the applic
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
-| AGGREGATE_TYPE_INVALID | 0 |  |
+| AGGREGATE_TYPE_INVALID_UNSPECIFIED | 0 |  |
 | AGGREGATE_TYPE_SYSTEM | 1 |  |
 | AGGREGATE_TYPE_NOTIFICATION | 2 |  |
 | AGGREGATE_TYPE_TODO | 3 |  |

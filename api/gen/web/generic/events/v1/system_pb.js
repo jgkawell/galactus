@@ -173,7 +173,7 @@ proto.generic.events.v1.SystemError.prototype.setCode = function(value) {
  * @enum {number}
  */
 proto.generic.events.v1.SystemEventCode = {
-  SYSTEM_EVENT_CODE_INVALID: 0,
+  SYSTEM_EVENT_CODE_INVALID_UNSPECIFIED: 0,
   SYSTEM_EVENT_CODE_ERROR: 1
 };
 
@@ -181,7 +181,7 @@ proto.generic.events.v1.SystemEventCode = {
  * @enum {number}
  */
 proto.generic.events.v1.SystemErrorCode = {
-  SYSTEM_ERROR_CODE_INVALID: 0,
+  SYSTEM_ERROR_CODE_INVALID_UNSPECIFIED: 0,
   SYSTEM_ERROR_CODE_FAILED_EVENT_PUBLISH: 1,
   SYSTEM_ERROR_CODE_FAILED_EVENT_SAVED: 2,
   SYSTEM_ERROR_CODE_FAILED_EVENT_FORWARD: 3,

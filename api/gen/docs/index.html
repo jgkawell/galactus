@@ -273,11 +273,11 @@
                 </li>
               
                 <li>
-                  <a href="#core.aggregates.v1.Protocol"><span class="badge">M</span>Protocol</a>
+                  <a href="#core.aggregates.v1.Registration"><span class="badge">M</span>Registration</a>
                 </li>
               
                 <li>
-                  <a href="#core.aggregates.v1.Registration"><span class="badge">M</span>Registration</a>
+                  <a href="#core.aggregates.v1.Route"><span class="badge">M</span>Route</a>
                 </li>
               
               
@@ -1913,17 +1913,31 @@ this data MUST be able to be unmarshalled into a Proto message type </p></td>
                 </tr>
               
                 <tr>
-                  <td>routing_key</td>
+                  <td>aggregate_type</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>routing key (this should match with an event type on the above aggregate) </p></td>
+                  <td><p>NOTE: the aggregate_type &#43; event_type &#43; event_code must be unique </p></td>
+                </tr>
+              
+                <tr>
+                  <td>event_type</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>event_code</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
                 </tr>
               
                 <tr>
                   <td>kind</td>
                   <td><a href="#core.aggregates.v1.ConsumerKind">ConsumerKind</a></td>
                   <td></td>
-                  <td><p>consumer kind is whether the consumer is a queue (unicast - 1:N queue to consumer) or topic (multicast - 1:1 queue to consumer) </p></td>
+                  <td><p> </p></td>
                 </tr>
               
             </tbody>
@@ -1954,7 +1968,33 @@ this data MUST be able to be unmarshalled into a Proto message type </p></td>
                 </tr>
               
                 <tr>
-                  <td>routing_key</td>
+                  <td>aggregate_type</td>
+                  <td>
+                    <ul>
+                    
+                      <li>string.min_len: 1</li>
+                    
+                      <li>string.max_len: 255</li>
+                    
+                    </ul>
+                  </td>
+                </tr>
+              
+                <tr>
+                  <td>event_type</td>
+                  <td>
+                    <ul>
+                    
+                      <li>string.min_len: 1</li>
+                    
+                      <li>string.max_len: 255</li>
+                    
+                    </ul>
+                  </td>
+                </tr>
+              
+                <tr>
+                  <td>event_code</td>
                   <td>
                     <ul>
                     
@@ -1972,135 +2012,6 @@ this data MUST be able to be unmarshalled into a Proto message type </p></td>
                     <ul>
                     
                       <li>enum.defined_only: true</li>
-                    
-                    </ul>
-                  </td>
-                </tr>
-              
-              </tbody>
-            </table>
-            
-          
-
-        
-      
-        <h3 id="core.aggregates.v1.Protocol">Protocol</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>id</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>the table primary key </p></td>
-                </tr>
-              
-                <tr>
-                  <td>kind</td>
-                  <td><a href="#core.aggregates.v1.ProtocolKind">ProtocolKind</a></td>
-                  <td></td>
-                  <td><p>the api kind </p></td>
-                </tr>
-              
-                <tr>
-                  <td>version</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>the api version (e.g. &#34;v1&#34; or &#34;v2&#34;) </p></td>
-                </tr>
-              
-                <tr>
-                  <td>port</td>
-                  <td><a href="#int32">int32</a></td>
-                  <td></td>
-                  <td><p>the api port (e.g. 8080 or 8090) </p></td>
-                </tr>
-              
-                <tr>
-                  <td>route</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>the base route </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-            
-            
-            <h4>Validated Fields</h4>
-            <table>
-              <thead>
-                <tr>
-                  <td>Field</td>
-                  <td>Validations</td>
-                </tr>
-              </thead>
-              <tbody>
-              
-                <tr>
-                  <td>id</td>
-                  <td>
-                    <ul>
-                    
-                      <li>string.uuid: true</li>
-                    
-                    </ul>
-                  </td>
-                </tr>
-              
-                <tr>
-                  <td>kind</td>
-                  <td>
-                    <ul>
-                    
-                      <li>enum.defined_only: true</li>
-                    
-                    </ul>
-                  </td>
-                </tr>
-              
-                <tr>
-                  <td>version</td>
-                  <td>
-                    <ul>
-                    
-                      <li>string.min_len: 1</li>
-                    
-                      <li>string.max_len: 255</li>
-                    
-                    </ul>
-                  </td>
-                </tr>
-              
-                <tr>
-                  <td>port</td>
-                  <td>
-                    <ul>
-                    
-                      <li>int32.lt: 65535</li>
-                    
-                      <li>int32.gt: 1</li>
-                    
-                    </ul>
-                  </td>
-                </tr>
-              
-                <tr>
-                  <td>route</td>
-                  <td>
-                    <ul>
-                    
-                      <li>string.min_len: 1</li>
-                    
-                      <li>string.max_len: 255</li>
                     
                     </ul>
                   </td>
@@ -2131,11 +2042,18 @@ this data MUST be able to be unmarshalled into a Proto message type </p></td>
                 </tr>
               
                 <tr>
-                  <td>name</td>
+                  <td>domain</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>NOTE: name &#43; version &#43; domain must be unique
-the service name </p></td>
+the service domain </p></td>
+                </tr>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>the service name </p></td>
                 </tr>
               
                 <tr>
@@ -2146,13 +2064,6 @@ the service name </p></td>
                 </tr>
               
                 <tr>
-                  <td>domain</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>the service domain </p></td>
-                </tr>
-              
-                <tr>
                   <td>description</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
@@ -2160,24 +2071,17 @@ the service name </p></td>
                 </tr>
               
                 <tr>
-                  <td>address</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>the service address in the environment. e.g. &#34;http://localhost:8080&#34; when local or &#34;eventstore:8090&#34; when remote </p></td>
-                </tr>
-              
-                <tr>
                   <td>status</td>
                   <td><a href="#core.aggregates.v1.ServiceStatus">ServiceStatus</a></td>
                   <td></td>
-                  <td><p>the service current status </p></td>
+                  <td><p>the service&#39; current status </p></td>
                 </tr>
               
                 <tr>
-                  <td>protocols</td>
-                  <td><a href="#core.aggregates.v1.Protocol">Protocol</a></td>
+                  <td>routes</td>
+                  <td><a href="#core.aggregates.v1.Route">Route</a></td>
                   <td>repeated</td>
-                  <td><p>the protocols this service exposes </p></td>
+                  <td><p>the routes this service exposes </p></td>
                 </tr>
               
                 <tr>
@@ -2215,6 +2119,19 @@ the service name </p></td>
                 </tr>
               
                 <tr>
+                  <td>domain</td>
+                  <td>
+                    <ul>
+                    
+                      <li>string.min_len: 1</li>
+                    
+                      <li>string.max_len: 255</li>
+                    
+                    </ul>
+                  </td>
+                </tr>
+              
+                <tr>
                   <td>name</td>
                   <td>
                     <ul>
@@ -2241,33 +2158,7 @@ the service name </p></td>
                 </tr>
               
                 <tr>
-                  <td>domain</td>
-                  <td>
-                    <ul>
-                    
-                      <li>string.min_len: 1</li>
-                    
-                      <li>string.max_len: 255</li>
-                    
-                    </ul>
-                  </td>
-                </tr>
-              
-                <tr>
                   <td>description</td>
-                  <td>
-                    <ul>
-                    
-                      <li>string.min_len: 1</li>
-                    
-                      <li>string.max_len: 255</li>
-                    
-                    </ul>
-                  </td>
-                </tr>
-              
-                <tr>
-                  <td>address</td>
                   <td>
                     <ul>
                     
@@ -2297,10 +2188,140 @@ the service name </p></td>
 
         
       
+        <h3 id="core.aggregates.v1.Route">Route</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>the table primary key </p></td>
+                </tr>
+              
+                <tr>
+                  <td>path</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>NOTE: the route path must be unique
+the route path (e.g. &#39;/core.commandhandler.v1.CommandHandler&#39; (grpc) or &#39;/core/eventstore/v1&#39; (http)) </p></td>
+                </tr>
+              
+                <tr>
+                  <td>host</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>the host of the route (e.g. &#39;localhost&#39; or the name of the service in Istio) </p></td>
+                </tr>
+              
+                <tr>
+                  <td>port</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p>the route port (e.g. 8080 or 8090) </p></td>
+                </tr>
+              
+                <tr>
+                  <td>kind</td>
+                  <td><a href="#core.aggregates.v1.ProtocolKind">ProtocolKind</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+            
+            
+            <h4>Validated Fields</h4>
+            <table>
+              <thead>
+                <tr>
+                  <td>Field</td>
+                  <td>Validations</td>
+                </tr>
+              </thead>
+              <tbody>
+              
+                <tr>
+                  <td>id</td>
+                  <td>
+                    <ul>
+                    
+                      <li>string.uuid: true</li>
+                    
+                    </ul>
+                  </td>
+                </tr>
+              
+                <tr>
+                  <td>path</td>
+                  <td>
+                    <ul>
+                    
+                      <li>string.min_len: 1</li>
+                    
+                      <li>string.max_len: 255</li>
+                    
+                    </ul>
+                  </td>
+                </tr>
+              
+                <tr>
+                  <td>host</td>
+                  <td>
+                    <ul>
+                    
+                      <li>string.min_len: 1</li>
+                    
+                      <li>string.max_len: 255</li>
+                    
+                    </ul>
+                  </td>
+                </tr>
+              
+                <tr>
+                  <td>port</td>
+                  <td>
+                    <ul>
+                    
+                      <li>int32.lt: 65535</li>
+                    
+                      <li>int32.gt: 1</li>
+                    
+                    </ul>
+                  </td>
+                </tr>
+              
+                <tr>
+                  <td>kind</td>
+                  <td>
+                    <ul>
+                    
+                      <li>enum.defined_only: true</li>
+                    
+                    </ul>
+                  </td>
+                </tr>
+              
+              </tbody>
+            </table>
+            
+          
+
+        
+      
 
       
         <h3 id="core.aggregates.v1.ConsumerKind">ConsumerKind</h3>
-        <p></p>
+        <p>consumer kind is whether the consumer is a queue (unicast - 1:N queue to consumer) or topic (multicast - 1:1 queue to consumer)</p>
         <table class="enum-table">
           <thead>
             <tr><td>Name</td><td>Number</td><td>Description</td></tr>
@@ -2878,24 +2899,10 @@ in javascript is an object </p></td>
             <tbody>
               
                 <tr>
-                  <td>name</td>
+                  <td>path</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>version</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>this is the major version of the service to connect to (v1, v2, etc.) </p></td>
-                </tr>
-              
-                <tr>
-                  <td>type</td>
-                  <td><a href="#core.aggregates.v1.ProtocolKind">core.aggregates.v1.ProtocolKind</a></td>
-                  <td></td>
-                  <td><p>TODO: add domain </p></td>
                 </tr>
               
             </tbody>
@@ -3344,7 +3351,7 @@ to send data to those connected clients whitout having to change the underlying 
           <tbody>
             
               <tr>
-                <td>NOTIFICATION_EVENT_CODE_INVALID</td>
+                <td>NOTIFICATION_EVENT_CODE_INVALID_UNSPECIFIED</td>
                 <td>0</td>
                 <td><p></p></td>
               </tr>
@@ -3411,7 +3418,7 @@ to send data to those connected clients whitout having to change the underlying 
           <tbody>
             
               <tr>
-                <td>SYSTEM_ERROR_CODE_INVALID</td>
+                <td>SYSTEM_ERROR_CODE_INVALID_UNSPECIFIED</td>
                 <td>0</td>
                 <td><p></p></td>
               </tr>
@@ -3452,7 +3459,7 @@ to send data to those connected clients whitout having to change the underlying 
           <tbody>
             
               <tr>
-                <td>SYSTEM_EVENT_CODE_INVALID</td>
+                <td>SYSTEM_EVENT_CODE_INVALID_UNSPECIFIED</td>
                 <td>0</td>
                 <td><p></p></td>
               </tr>
@@ -3588,19 +3595,19 @@ google.protobuf.Timestamp scheduled_time = 5 [(gorm.field).tag = {type: &#34;tim
           <tbody>
             
               <tr>
-                <td>TODO_STATUS_INVALID</td>
+                <td>TODO_STATUS_INVALID_UNSPECIFIED</td>
                 <td>0</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>COMPLETE</td>
+                <td>TODO_STATUS_COMPLETE</td>
                 <td>1</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>INCOMPLETE</td>
+                <td>TODO_STATUS_INCOMPLETE</td>
                 <td>2</td>
                 <td><p></p></td>
               </tr>
@@ -3686,7 +3693,7 @@ google.protobuf.Timestamp scheduled_time = 5 [(gorm.field).tag = {type: &#34;tim
           <tbody>
             
               <tr>
-                <td>TODO_EVENT_CODE_INVALID</td>
+                <td>TODO_EVENT_CODE_INVALID_UNSPECIFIED</td>
                 <td>0</td>
                 <td><p></p></td>
               </tr>
@@ -3767,7 +3774,7 @@ google.protobuf.Timestamp scheduled_time = 5 [(gorm.field).tag = {type: &#34;tim
           <tbody>
             
               <tr>
-                <td>AGGREGATE_TYPE_INVALID</td>
+                <td>AGGREGATE_TYPE_INVALID_UNSPECIFIED</td>
                 <td>0</td>
                 <td><p></p></td>
               </tr>

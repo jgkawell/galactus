@@ -74,11 +74,11 @@
     "v1TodoStatus": {
       "type": "string",
       "enum": [
-        "TODO_STATUS_INVALID",
-        "COMPLETE",
-        "INCOMPLETE"
+        "TODO_STATUS_INVALID_UNSPECIFIED",
+        "TODO_STATUS_COMPLETE",
+        "TODO_STATUS_INCOMPLETE"
       ],
-      "default": "TODO_STATUS_INVALID"
+      "default": "TODO_STATUS_INVALID_UNSPECIFIED"
     }
   }
 }

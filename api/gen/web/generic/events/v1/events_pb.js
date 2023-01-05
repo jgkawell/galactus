@@ -320,7 +320,7 @@ proto.generic.events.v1.EventType.prototype.hasTodoEventCode = function() {
  * @enum {number}
  */
 proto.generic.events.v1.AggregateType = {
-  AGGREGATE_TYPE_INVALID: 0,
+  AGGREGATE_TYPE_INVALID_UNSPECIFIED: 0,
   AGGREGATE_TYPE_SYSTEM: 1,
   AGGREGATE_TYPE_NOTIFICATION: 2,
   AGGREGATE_TYPE_TODO: 3

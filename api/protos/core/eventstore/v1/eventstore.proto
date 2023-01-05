@@ -9,29 +9,29 @@ import "validate/validate.proto";
 option go_package = "github.com/jgkawell/galactus/api/gen/go/core/eventstore/v1";
 
 service EventStore {
-  // Create a new event in the event store
-  rpc Create(CreateRequest) returns (CreateResponse) {}
+    // Create a new event in the event store
+    rpc Create(CreateRequest) returns (CreateResponse) {}
 }
 
 message CreateRequest {
-  // the string identifier (enum value) of the aggregate type this event belongs to
-  // NOTE: this is simply a string to keep the eventstore from depending on changing types
-  string aggregate_type = 1;
-  // map of all event types
-  // NOTE: this is simply a string to keep the eventstore from depending on changing types
-  string event_type = 2;
-  // TODO: is this the way we want to route things?
-  string event_code = 3;
-  // the id of the aggregate that this event belongs to
-  string aggregate_id = 4 [(validate.rules).string.uuid = true];
-  // data representing the state of the system that this event encapsulates
-  // it is saved as a json string so that the eventstore can be completey agnostic to the
-  // the data structure of the system (and thus be a static service)
-  // this data MUST be able to be unmarshalled into a Proto message type
-  string event_data = 5;
+    // the string identifier (enum value) of the aggregate type this event belongs to
+    // NOTE: this is simply a string to keep the eventstore from depending on changing types
+    string aggregate_type = 1;
+    // map of all event types
+    // NOTE: this is simply a string to keep the eventstore from depending on changing types
+    string event_type = 2;
+    // TODO: is this the way we want to route things?
+    string event_code = 3;
+    // the id of the aggregate that this event belongs to
+    string aggregate_id = 4 [(validate.rules).string.uuid = true];
+    // data representing the state of the system that this event encapsulates
+    // it is saved as a json string so that the eventstore can be completey agnostic to the
+    // the data structure of the system (and thus be a static service)
+    // this data MUST be able to be unmarshalled into a Proto message type
+    string event_data = 5;
 }
 
 message CreateResponse {
-  // event id
-  string id = 1;
+    // event id
+    string id = 1;
 }

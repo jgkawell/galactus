@@ -1592,9 +1592,7 @@ proto.core.registry.v1.ConnectionRequest.prototype.toObject = function(opt_inclu
  */
 proto.core.registry.v1.ConnectionRequest.toObject = function(includeInstance, msg) {
   var f, obj = {
-    name: jspb.Message.getFieldWithDefault(msg, 1, ""),
-    version: jspb.Message.getFieldWithDefault(msg, 2, ""),
-    type: jspb.Message.getFieldWithDefault(msg, 3, 0)
+    path: jspb.Message.getFieldWithDefault(msg, 1, "")
   };
 
   if (includeInstance) {
@@ -1633,15 +1631,7 @@ proto.core.registry.v1.ConnectionRequest.deserializeBinaryFromReader = function(
     switch (field) {
     case 1:
       var value = /** @type {string} */ (reader.readString());
-      msg.setName(value);
-      break;
-    case 2:
-      var value = /** @type {string} */ (reader.readString());
-      msg.setVersion(value);
-      break;
-    case 3:
-      var value = /** @type {!proto.core.aggregates.v1.ProtocolKind} */ (reader.readEnum());
-      msg.setType(value);
+      msg.setPath(value);
       break;
     default:
       reader.skipField();
@@ -1672,24 +1662,10 @@ proto.core.registry.v1.ConnectionRequest.prototype.serializeBinary = function() 
  */
 proto.core.registry.v1.ConnectionRequest.serializeBinaryToWriter = function(message, writer) {
   var f = undefined;
-  f = message.getName();
+  f = message.getPath();
   if (f.length > 0) {
     writer.writeString(
       1,
-      f
-    );
-  }
-  f = message.getVersion();
-  if (f.length > 0) {
-    writer.writeString(
-      2,
-      f
-    );
-  }
-  f = message.getType();
-  if (f !== 0.0) {
-    writer.writeEnum(
-      3,
       f
     );
   }
@@ -1697,10 +1673,10 @@ proto.core.registry.v1.ConnectionRequest.serializeBinaryToWriter = function(mess
 
 
 /**
- * optional string name = 1;
+ * optional string path = 1;
  * @return {string}
  */
-proto.core.registry.v1.ConnectionRequest.prototype.getName = function() {
+proto.core.registry.v1.ConnectionRequest.prototype.getPath = function() {
   return /** @type {string} */ (jspb.Message.getFieldWithDefault(this, 1, ""));
 };
 
@@ -1709,44 +1685,8 @@ proto.core.registry.v1.ConnectionRequest.prototype.getName = function() {
  * @param {string} value
  * @return {!proto.core.registry.v1.ConnectionRequest} returns this
  */
-proto.core.registry.v1.ConnectionRequest.prototype.setName = function(value) {
+proto.core.registry.v1.ConnectionRequest.prototype.setPath = function(value) {
   return jspb.Message.setProto3StringField(this, 1, value);
-};
-
-
-/**
- * optional string version = 2;
- * @return {string}
- */
-proto.core.registry.v1.ConnectionRequest.prototype.getVersion = function() {
-  return /** @type {string} */ (jspb.Message.getFieldWithDefault(this, 2, ""));
-};
-
-
-/**
- * @param {string} value
- * @return {!proto.core.registry.v1.ConnectionRequest} returns this
- */
-proto.core.registry.v1.ConnectionRequest.prototype.setVersion = function(value) {
-  return jspb.Message.setProto3StringField(this, 2, value);
-};
-
-
-/**
- * optional core.aggregates.v1.ProtocolKind type = 3;
- * @return {!proto.core.aggregates.v1.ProtocolKind}
- */
-proto.core.registry.v1.ConnectionRequest.prototype.getType = function() {
-  return /** @type {!proto.core.aggregates.v1.ProtocolKind} */ (jspb.Message.getFieldWithDefault(this, 3, 0));
-};
-
-
-/**
- * @param {!proto.core.aggregates.v1.ProtocolKind} value
- * @return {!proto.core.registry.v1.ConnectionRequest} returns this
- */
-proto.core.registry.v1.ConnectionRequest.prototype.setType = function(value) {
-  return jspb.Message.setProto3EnumField(this, 3, value);
 };
 
 

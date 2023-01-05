@@ -9,28 +9,25 @@ export class Registration extends jspb.Message {
   getId(): string;
   setId(value: string): Registration;
 
+  getDomain(): string;
+  setDomain(value: string): Registration;
+
   getName(): string;
   setName(value: string): Registration;
 
   getVersion(): string;
   setVersion(value: string): Registration;
 
-  getDomain(): string;
-  setDomain(value: string): Registration;
-
   getDescription(): string;
   setDescription(value: string): Registration;
-
-  getAddress(): string;
-  setAddress(value: string): Registration;
 
   getStatus(): ServiceStatus;
   setStatus(value: ServiceStatus): Registration;
 
-  getProtocolsList(): Array<Protocol>;
-  setProtocolsList(value: Array<Protocol>): Registration;
-  clearProtocolsList(): Registration;
-  addProtocols(value?: Protocol, index?: number): Protocol;
+  getRoutesList(): Array<Route>;
+  setRoutesList(value: Array<Route>): Registration;
+  clearRoutesList(): Registration;
+  addRoutes(value?: Route, index?: number): Route;
 
   getConsumersList(): Array<Consumer>;
   setConsumersList(value: Array<Consumer>): Registration;
@@ -48,48 +45,47 @@ export class Registration extends jspb.Message {
 export namespace Registration {
   export type AsObject = {
     id: string,
+    domain: string,
     name: string,
     version: string,
-    domain: string,
     description: string,
-    address: string,
     status: ServiceStatus,
-    protocolsList: Array<Protocol.AsObject>,
+    routesList: Array<Route.AsObject>,
     consumersList: Array<Consumer.AsObject>,
   }
 }
 
-export class Protocol extends jspb.Message {
+export class Route extends jspb.Message {
   getId(): string;
-  setId(value: string): Protocol;
+  setId(value: string): Route;
 
-  getKind(): ProtocolKind;
-  setKind(value: ProtocolKind): Protocol;
+  getPath(): string;
+  setPath(value: string): Route;
 
-  getVersion(): string;
-  setVersion(value: string): Protocol;
+  getHost(): string;
+  setHost(value: string): Route;
 
   getPort(): number;
-  setPort(value: number): Protocol;
+  setPort(value: number): Route;
 
-  getRoute(): string;
-  setRoute(value: string): Protocol;
+  getKind(): ProtocolKind;
+  setKind(value: ProtocolKind): Route;
 
   serializeBinary(): Uint8Array;
-  toObject(includeInstance?: boolean): Protocol.AsObject;
-  static toObject(includeInstance: boolean, msg: Protocol): Protocol.AsObject;
-  static serializeBinaryToWriter(message: Protocol, writer: jspb.BinaryWriter): void;
-  static deserializeBinary(bytes: Uint8Array): Protocol;
-  static deserializeBinaryFromReader(message: Protocol, reader: jspb.BinaryReader): Protocol;
+  toObject(includeInstance?: boolean): Route.AsObject;
+  static toObject(includeInstance: boolean, msg: Route): Route.AsObject;
+  static serializeBinaryToWriter(message: Route, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): Route;
+  static deserializeBinaryFromReader(message: Route, reader: jspb.BinaryReader): Route;
 }
 
-export namespace Protocol {
+export namespace Route {
   export type AsObject = {
     id: string,
-    kind: ProtocolKind,
-    version: string,
+    path: string,
+    host: string,
     port: number,
-    route: string,
+    kind: ProtocolKind,
   }
 }
 
@@ -97,8 +93,14 @@ export class Consumer extends jspb.Message {
   getId(): string;
   setId(value: string): Consumer;
 
-  getRoutingKey(): string;
-  setRoutingKey(value: string): Consumer;
+  getAggregateType(): string;
+  setAggregateType(value: string): Consumer;
+
+  getEventType(): string;
+  setEventType(value: string): Consumer;
+
+  getEventCode(): string;
+  setEventCode(value: string): Consumer;
 
   getKind(): ConsumerKind;
   setKind(value: ConsumerKind): Consumer;
@@ -114,7 +116,9 @@ export class Consumer extends jspb.Message {
 export namespace Consumer {
   export type AsObject = {
     id: string,
-    routingKey: string,
+    aggregateType: string,
+    eventType: string,
+    eventCode: string,
     kind: ConsumerKind,
   }
 }

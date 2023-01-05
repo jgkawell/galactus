@@ -72,6 +72,17 @@ func (m *Registration) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
+	if l := utf8.RuneCountInString(m.GetDomain()); l < 1 || l > 255 {
+		err := RegistrationValidationError{
+			field:  "Domain",
+			reason: "value length must be between 1 and 255 runes, inclusive",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
 	if l := utf8.RuneCountInString(m.GetName()); l < 1 || l > 255 {
 		err := RegistrationValidationError{
 			field:  "Name",
@@ -94,31 +105,9 @@ func (m *Registration) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	if l := utf8.RuneCountInString(m.GetDomain()); l < 1 || l > 255 {
-		err := RegistrationValidationError{
-			field:  "Domain",
-			reason: "value length must be between 1 and 255 runes, inclusive",
-		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
-	}
-
 	if l := utf8.RuneCountInString(m.GetDescription()); l < 1 || l > 255 {
 		err := RegistrationValidationError{
 			field:  "Description",
-			reason: "value length must be between 1 and 255 runes, inclusive",
-		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
-	}
-
-	if l := utf8.RuneCountInString(m.GetAddress()); l < 1 || l > 255 {
-		err := RegistrationValidationError{
-			field:  "Address",
 			reason: "value length must be between 1 and 255 runes, inclusive",
 		}
 		if !all {
@@ -138,7 +127,7 @@ func (m *Registration) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	for idx, item := range m.GetProtocols() {
+	for idx, item := range m.GetRoutes() {
 		_, _ = idx, item
 
 		if all {
@@ -146,7 +135,7 @@ func (m *Registration) validate(all bool) error {
 			case interface{ ValidateAll() error }:
 				if err := v.ValidateAll(); err != nil {
 					errors = append(errors, RegistrationValidationError{
-						field:  fmt.Sprintf("Protocols[%v]", idx),
+						field:  fmt.Sprintf("Routes[%v]", idx),
 						reason: "embedded message failed validation",
 						cause:  err,
 					})
@@ -154,7 +143,7 @@ func (m *Registration) validate(all bool) error {
 			case interface{ Validate() error }:
 				if err := v.Validate(); err != nil {
 					errors = append(errors, RegistrationValidationError{
-						field:  fmt.Sprintf("Protocols[%v]", idx),
+						field:  fmt.Sprintf("Routes[%v]", idx),
 						reason: "embedded message failed validation",
 						cause:  err,
 					})
@@ -163,7 +152,7 @@ func (m *Registration) validate(all bool) error {
 		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
 			if err := v.Validate(); err != nil {
 				return RegistrationValidationError{
-					field:  fmt.Sprintf("Protocols[%v]", idx),
+					field:  fmt.Sprintf("Routes[%v]", idx),
 					reason: "embedded message failed validation",
 					cause:  err,
 				}
@@ -291,22 +280,21 @@ var _ interface {
 	ErrorName() string
 } = RegistrationValidationError{}
 
-// Validate checks the field values on Protocol with the rules defined in the
+// Validate checks the field values on Route with the rules defined in the
 // proto definition for this message. If any rules are violated, the first
 // error encountered is returned, or nil if there are no violations.
-func (m *Protocol) Validate() error {
+func (m *Route) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on Protocol with the rules defined in
-// the proto definition for this message. If any rules are violated, the
-// result is a list of violation errors wrapped in ProtocolMultiError, or nil
-// if none found.
-func (m *Protocol) ValidateAll() error {
+// ValidateAll checks the field values on Route with the rules defined in the
+// proto definition for this message. If any rules are violated, the result is
+// a list of violation errors wrapped in RouteMultiError, or nil if none found.
+func (m *Route) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *Protocol) validate(all bool) error {
+func (m *Route) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -314,7 +302,7 @@ func (m *Protocol) validate(all bool) error {
 	var errors []error
 
 	if err := m._validateUuid(m.GetId()); err != nil {
-		err = ProtocolValidationError{
+		err = RouteValidationError{
 			field:  "Id",
 			reason: "value must be a valid UUID",
 			cause:  err,
@@ -325,10 +313,10 @@ func (m *Protocol) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	if _, ok := ProtocolKind_name[int32(m.GetKind())]; !ok {
-		err := ProtocolValidationError{
-			field:  "Kind",
-			reason: "value must be one of the defined enum values",
+	if l := utf8.RuneCountInString(m.GetPath()); l < 1 || l > 255 {
+		err := RouteValidationError{
+			field:  "Path",
+			reason: "value length must be between 1 and 255 runes, inclusive",
 		}
 		if !all {
 			return err
@@ -336,9 +324,9 @@ func (m *Protocol) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	if l := utf8.RuneCountInString(m.GetVersion()); l < 1 || l > 255 {
-		err := ProtocolValidationError{
-			field:  "Version",
+	if l := utf8.RuneCountInString(m.GetHost()); l < 1 || l > 255 {
+		err := RouteValidationError{
+			field:  "Host",
 			reason: "value length must be between 1 and 255 runes, inclusive",
 		}
 		if !all {
@@ -348,7 +336,7 @@ func (m *Protocol) validate(all bool) error {
 	}
 
 	if val := m.GetPort(); val <= 1 || val >= 65535 {
-		err := ProtocolValidationError{
+		err := RouteValidationError{
 			field:  "Port",
 			reason: "value must be inside range (1, 65535)",
 		}
@@ -358,10 +346,10 @@ func (m *Protocol) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	if l := utf8.RuneCountInString(m.GetRoute()); l < 1 || l > 255 {
-		err := ProtocolValidationError{
-			field:  "Route",
-			reason: "value length must be between 1 and 255 runes, inclusive",
+	if _, ok := ProtocolKind_name[int32(m.GetKind())]; !ok {
+		err := RouteValidationError{
+			field:  "Kind",
+			reason: "value must be one of the defined enum values",
 		}
 		if !all {
 			return err
@@ -370,13 +358,13 @@ func (m *Protocol) validate(all bool) error {
 	}
 
 	if len(errors) > 0 {
-		return ProtocolMultiError(errors)
+		return RouteMultiError(errors)
 	}
 
 	return nil
 }
 
-func (m *Protocol) _validateUuid(uuid string) error {
+func (m *Route) _validateUuid(uuid string) error {
 	if matched := _registry_uuidPattern.MatchString(uuid); !matched {
 		return errors.New("invalid uuid format")
 	}
@@ -384,12 +372,12 @@ func (m *Protocol) _validateUuid(uuid string) error {
 	return nil
 }
 
-// ProtocolMultiError is an error wrapping multiple validation errors returned
-// by Protocol.ValidateAll() if the designated constraints aren't met.
-type ProtocolMultiError []error
+// RouteMultiError is an error wrapping multiple validation errors returned by
+// Route.ValidateAll() if the designated constraints aren't met.
+type RouteMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m ProtocolMultiError) Error() string {
+func (m RouteMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -398,11 +386,11 @@ func (m ProtocolMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m ProtocolMultiError) AllErrors() []error { return m }
+func (m RouteMultiError) AllErrors() []error { return m }
 
-// ProtocolValidationError is the validation error returned by
-// Protocol.Validate if the designated constraints aren't met.
-type ProtocolValidationError struct {
+// RouteValidationError is the validation error returned by Route.Validate if
+// the designated constraints aren't met.
+type RouteValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -410,22 +398,22 @@ type ProtocolValidationError struct {
 }
 
 // Field function returns field value.
-func (e ProtocolValidationError) Field() string { return e.field }
+func (e RouteValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e ProtocolValidationError) Reason() string { return e.reason }
+func (e RouteValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e ProtocolValidationError) Cause() error { return e.cause }
+func (e RouteValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e ProtocolValidationError) Key() bool { return e.key }
+func (e RouteValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e ProtocolValidationError) ErrorName() string { return "ProtocolValidationError" }
+func (e RouteValidationError) ErrorName() string { return "RouteValidationError" }
 
 // Error satisfies the builtin error interface
-func (e ProtocolValidationError) Error() string {
+func (e RouteValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -437,14 +425,14 @@ func (e ProtocolValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sProtocol.%s: %s%s",
+		"invalid %sRoute.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = ProtocolValidationError{}
+var _ error = RouteValidationError{}
 
 var _ interface {
 	Field() string
@@ -452,7 +440,7 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = ProtocolValidationError{}
+} = RouteValidationError{}
 
 // Validate checks the field values on Consumer with the rules defined in the
 // proto definition for this message. If any rules are violated, the first
@@ -488,9 +476,31 @@ func (m *Consumer) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	if l := utf8.RuneCountInString(m.GetRoutingKey()); l < 1 || l > 255 {
+	if l := utf8.RuneCountInString(m.GetAggregateType()); l < 1 || l > 255 {
 		err := ConsumerValidationError{
-			field:  "RoutingKey",
+			field:  "AggregateType",
+			reason: "value length must be between 1 and 255 runes, inclusive",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if l := utf8.RuneCountInString(m.GetEventType()); l < 1 || l > 255 {
+		err := ConsumerValidationError{
+			field:  "EventType",
+			reason: "value length must be between 1 and 255 runes, inclusive",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if l := utf8.RuneCountInString(m.GetEventCode()); l < 1 || l > 255 {
+		err := ConsumerValidationError{
+			field:  "EventCode",
 			reason: "value length must be between 1 and 255 runes, inclusive",
 		}
 		if !all {

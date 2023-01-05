@@ -184,14 +184,8 @@ export namespace ConsumerResponse {
 }
 
 export class ConnectionRequest extends jspb.Message {
-  getName(): string;
-  setName(value: string): ConnectionRequest;
-
-  getVersion(): string;
-  setVersion(value: string): ConnectionRequest;
-
-  getType(): core_aggregates_v1_registry_pb.ProtocolKind;
-  setType(value: core_aggregates_v1_registry_pb.ProtocolKind): ConnectionRequest;
+  getPath(): string;
+  setPath(value: string): ConnectionRequest;
 
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): ConnectionRequest.AsObject;
@@ -203,9 +197,7 @@ export class ConnectionRequest extends jspb.Message {
 
 export namespace ConnectionRequest {
   export type AsObject = {
-    name: string,
-    version: string,
-    type: core_aggregates_v1_registry_pb.ProtocolKind,
+    path: string,
   }
 }
 

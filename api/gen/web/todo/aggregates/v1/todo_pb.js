@@ -15,12 +15,12 @@ var jspb = require('google-protobuf');
 var goog = jspb;
 var global = Function('return this')();
 
-var validate_validate_pb = require('../../../validate/validate_pb.js');
-goog.object.extend(proto, validate_validate_pb);
-var options_gorm_pb = require('../../../options/gorm_pb.js');
-goog.object.extend(proto, options_gorm_pb);
 var google_protobuf_timestamp_pb = require('google-protobuf/google/protobuf/timestamp_pb.js');
 goog.object.extend(proto, google_protobuf_timestamp_pb);
+var options_gorm_pb = require('../../../options/gorm_pb.js');
+goog.object.extend(proto, options_gorm_pb);
+var validate_validate_pb = require('../../../validate/validate_pb.js');
+goog.object.extend(proto, validate_validate_pb);
 goog.exportSymbol('proto.todo.aggregates.v1.Todo', null, global);
 goog.exportSymbol('proto.todo.aggregates.v1.TodoStatus', null, global);
 /**
@@ -268,9 +268,9 @@ proto.todo.aggregates.v1.Todo.prototype.setStatus = function(value) {
  * @enum {number}
  */
 proto.todo.aggregates.v1.TodoStatus = {
-  TODO_STATUS_INVALID: 0,
-  COMPLETE: 1,
-  INCOMPLETE: 2
+  TODO_STATUS_INVALID_UNSPECIFIED: 0,
+  TODO_STATUS_COMPLETE: 1,
+  TODO_STATUS_INCOMPLETE: 2
 };
 
 goog.object.extend(exports, proto.todo.aggregates.v1);

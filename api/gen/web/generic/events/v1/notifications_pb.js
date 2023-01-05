@@ -378,7 +378,7 @@ proto.generic.events.v1.NotificationDelivered.serializeBinaryToWriter = function
  * @enum {number}
  */
 proto.generic.events.v1.NotificationEventCode = {
-  NOTIFICATION_EVENT_CODE_INVALID: 0,
+  NOTIFICATION_EVENT_CODE_INVALID_UNSPECIFIED: 0,
   NOTIFICATION_EVENT_CODE_DELIVERY_REQUESTED: 1,
   NOTIFICATION_EVENT_CODE_DELIVERED: 2
 };

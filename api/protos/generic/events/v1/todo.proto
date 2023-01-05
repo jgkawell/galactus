@@ -1,14 +1,13 @@
-
 syntax = "proto3";
 
 package generic.events.v1;
 
-option go_package = "github.com/jgkawell/galactus/api/gen/go/generic/events/v1";
-
 import "todo/aggregates/v1/todo.proto";
 
+option go_package = "github.com/jgkawell/galactus/api/gen/go/generic/events/v1";
+
 enum TodoEventCode {
-    TODO_EVENT_CODE_INVALID = 0;
+    TODO_EVENT_CODE_INVALID_UNSPECIFIED = 0;
     TODO_EVENT_CODE_CREATED = 1;
     TODO_EVENT_CODE_DELETED = 2;
 }

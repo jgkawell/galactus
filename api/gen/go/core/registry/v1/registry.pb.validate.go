@@ -829,11 +829,7 @@ func (m *ConnectionRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for Name
-
-	// no validation rules for Version
-
-	// no validation rules for Type
+	// no validation rules for Path
 
 	if len(errors) > 0 {
 		return ConnectionRequestMultiError(errors)
