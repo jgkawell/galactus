@@ -179,7 +179,7 @@ func (c *NotificationChannel) CreateHeartbeat(logger l.Logger) *ntpb.Notificatio
 	}
 
 	return &ntpb.Notification{
-		NotificationType: ntpb.NotificationType_HEARTBEAT,
+		NotificationType: ntpb.NotificationType_NOTIFICATION_TYPE_HEARTBEAT,
 		Data:             string(byt),
 	}
 }

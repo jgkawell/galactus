@@ -84,7 +84,7 @@ func (s *service) mergeRegistrations(ctx ct.ExecutionContext, request *pb.Regist
 			new := &agpb.ConsumerORM{
 				Id:             uuid.NewString(),
 				Kind:           int32(newC.Kind),
-				RegistrationId: &existing.Id,
+				// RegistrationId: &existing.Id,
 				RoutingKey:     routingKey,
 			}
 			existing.Consumers = append(existing.Consumers, new)
