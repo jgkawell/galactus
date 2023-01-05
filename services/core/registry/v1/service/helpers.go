@@ -26,13 +26,6 @@ func (s *service) mergeRegistrations(ctx ct.ExecutionContext, request *pb.Regist
 	if existing.Id == "" {
 		existing.Id = uuid.NewString()
 	}
-	// generate address if empty
-	if existing.Address == "" {
-		existing.Address = request.Name
-		if s.isDevMode {
-			existing.Address = "localhost"
-		}
-	}
 	// copy over requested metadata
 	existing.Name = request.Name
 	existing.Domain = request.Domain
@@ -43,8 +36,8 @@ func (s *service) mergeRegistrations(ctx ct.ExecutionContext, request *pb.Regist
 	for _, newP := range request.Protocols {
 		// if already exists, break
 		found := false
-		for _, existingP := range existing.Protocols {
-			if newP.Route == existingP.Route {
+		for _, existingP := range existing.Routes {
+			if newP.Route == existingP.Path {
 				found = true
 				break
 			}
@@ -55,15 +48,21 @@ func (s *service) mergeRegistrations(ctx ct.ExecutionContext, request *pb.Regist
 			if err != nil {
 				return nil, ctx.Logger.WrapError(err)
 			}
-			new := &agpb.ProtocolORM{
+			// default to service name (must match Istio)
+			host := request.Name
+			if s.isDevMode {
+				host = "localhost"
+			}
+
+			new := &agpb.RouteORM{
 				Id:             uuid.NewString(),
 				Kind:           int32(newP.Kind),
 				Port:           port,
 				RegistrationId: &existing.Id,
-				Route:          newP.Route,
-				Version:        existing.Version,
+				Path:           newP.Route,
+				Host:           host,
 			}
-			existing.Protocols = append(existing.Protocols, new)
+			existing.Routes = append(existing.Routes, new)
 		}
 	}
 
@@ -82,10 +81,10 @@ func (s *service) mergeRegistrations(ctx ct.ExecutionContext, request *pb.Regist
 		// create new consumer and add to existing
 		if !found {
 			new := &agpb.ConsumerORM{
-				Id:             uuid.NewString(),
-				Kind:           int32(newC.Kind),
+				Id:   uuid.NewString(),
+				Kind: int32(newC.Kind),
 				// RegistrationId: &existing.Id,
-				RoutingKey:     routingKey,
+				RoutingKey: routingKey,
 			}
 			existing.Consumers = append(existing.Consumers, new)
 		}
@@ -120,7 +119,7 @@ func (s *service) generateLocalPort(logger l.Logger) (int32, l.Error) {
 	for i := 0; i < localPortConflictRetryLimit; i++ {
 		randomPort := rand.Intn(localMaxPort-localMinPort) + localMinPort
 		var count int64
-		err := s.db.Model(&agpb.ProtocolORM{}).Where("port = ?", randomPort).Count(&count).Error
+		err := s.db.Model(&agpb.RouteORM{}).Where("port = ?", randomPort).Count(&count).Error
 		if err != nil {
 			return 0, logger.WrapError(l.NewError(err, "failed to query for port usage while generating random local port"))
 		}

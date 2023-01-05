@@ -36,7 +36,7 @@ func main() {
 				db := b.GetSqlClient()
 				db.AutoMigrate(
 					&agpb.RegistrationORM{},
-					&agpb.ProtocolORM{},
+					&agpb.RouteORM{},
 					&agpb.ConsumerORM{},
 				)
 			},

@@ -58,7 +58,7 @@ func (s *service) Register(ctx ct.ExecutionContext, req *pb.RegisterRequest) (*p
 	// check for existing registration before creating new one
 	registrationORM := &agpb.RegistrationORM{}
 	r := s.db.Where("domain = ? AND name = ? AND version = ?", req.Domain, req.Name, req.Version).
-		Preload("Protocols").
+		Preload("Routes").
 		Preload("Consumers").
 		Find(registrationORM)
 
@@ -86,7 +86,7 @@ func (s *service) Register(ctx ct.ExecutionContext, req *pb.RegisterRequest) (*p
 	}
 
 	// pull out protocol values from ORM
-	for i, p := range registrationORM.Protocols {
+	for i, p := range registrationORM.Routes {
 		response.Protocols[i] = &pb.ProtocolResponse{
 			Kind: agpb.ProtocolKind(p.Kind),
 			Port: p.Port,
@@ -138,36 +138,19 @@ func (s *service) Register(ctx ct.ExecutionContext, req *pb.RegisterRequest) (*p
 
 func (s *service) Connection(ctx ct.ExecutionContext, req *pb.ConnectionRequest) (*pb.ConnectionResponse, l.Error) {
 	ctx.Logger = ctx.Logger.WithFields(l.Fields{
-		"service_name":    req.GetName(),
-		"service_version": req.GetVersion(),
-		"protocol_kind":   req.GetType(),
+		"route":    req.Path,
 	})
 
-	req.Version = reduceVersion(req.Version)
-	if req.Version == "" {
-		return nil, ctx.Logger.WrapError(errors.New("invalid requested version"))
-	}
-
-	result := &agpb.RegistrationORM{}
-	err := s.db.Model(&agpb.RegistrationORM{}).Where("name = ? AND version = ?", req.GetName(), req.GetVersion()).Preload("Protocols").Find(result).Error
+	result := &agpb.RouteORM{}
+	err := s.db.Model(&agpb.RouteORM{}).Where("path = ?", req.Path).First(result).Error
 	if err != nil {
-		return nil, ctx.Logger.WrapError(l.NewError(err, "failed to find registration"))
-	}
-
-	var port int32
-	for _, protocolORM := range result.Protocols {
-		if protocolORM.Kind == int32(req.GetType()) {
-			port = protocolORM.Port
-		}
-	}
-	if port == 0 {
-		return nil, ctx.Logger.WrapError(errors.New("failed to find port for given protocol kind"))
+		return nil, ctx.Logger.WrapError(l.NewError(err, "failed to find route with matching path"))
 	}
 
 	// TODO: check the health of the service
 
 	return &pb.ConnectionResponse{
-		Address: result.Address,
-		Port:    port,
+		Address: result.Host,
+		Port:    result.Port,
 	}, nil
 }
