@@ -22,12 +22,12 @@ To test out your changes you _could_ create a playground application to test run
 
 ### Update the go.mod
 
-Update the file `/services/core/eventstore/v1/go.mod` to include the replace call on the `logging` module (update versions accordingly):
+Update the file `/services/core/eventer/v1/go.mod` to include the replace call on the `logging` module (update versions accordingly):
 
 ```go.mod
 module asset
 
-go 1.19
+go 1.21
 
 require (
     ...
@@ -48,13 +48,13 @@ You can stop here if you're only going to build/run the service locally. For rem
 
 ### Update the Dockerfile
 
-Update the file `/services/core/eventstore/v1/Dockerfile` so that you are copying over the `/pkg/logging` directory:
+Update the file `/services/core/eventer/v1/Dockerfile` so that you are copying over the `/pkg/logging` directory:
 
 ```Dockerfile
 # We want to populate the module cache based on the go.{mod,sum} files.
 COPY ./pkg/logging ./pkg/logging
-COPY ./services/core/eventstore/v1/go.mod ./services/core/eventstore/v1/go.mod
-COPY ./services/core/eventstore/v1/go.sum ./services/core/eventstore/v1/go.sum
+COPY ./services/core/eventer/v1/go.mod ./services/core/eventer/v1/go.mod
+COPY ./services/core/eventer/v1/go.sum ./services/core/eventer/v1/go.sum
 ```
 
 Now you can run the service remotely using: TODO
