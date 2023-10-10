@@ -71,7 +71,10 @@ func Start(cmd *cobra.Command, args []string) (err error) {
 	// mongo
 	config = &container.Config{
 		Image: mongoImage,
-		Env:   []string{},
+		Env: []string{
+			"MONGO_INITDB_ROOT_USERNAME=admin",
+			"MONGO_INITDB_ROOT_PASSWORD=admin",
+		},
 		ExposedPorts: map[nat.Port]struct{}{
 			"27017/tcp": {}},
 	}

@@ -47,11 +47,11 @@ func Core(cmd *cobra.Command, args []string) error {
 		return errors.New("registry failed to start")
 	}
 
-	// start commandhandler
-	go runService(ctx, "core", "commandhandler", commandHandlerVersion, output.Cyan)
+	// start command
+	go runService(ctx, "core", "command", commandHandlerVersion, output.Cyan)
 
-	// start eventstore
-	go runService(ctx, "core", "eventstore", eventStoreVersion, output.Green)
+	// start eventer
+	go runService(ctx, "core", "eventer", eventStoreVersion, output.Green)
 
 	// start notifier
 	go runService(ctx, "core", "notifier", notifierVersion, output.Yellow)
