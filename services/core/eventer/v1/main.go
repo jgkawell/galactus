@@ -9,7 +9,7 @@ import (
 	"github.com/jgkawell/galactus/pkg/chassis/messagebus"
 	"github.com/jgkawell/galactus/pkg/databases/postgres/gorm"
 	"github.com/jgkawell/galactus/pkg/messaging/nats"
-	"github.com/jgkawell/galactus/pkg/vault"
+	"github.com/jgkawell/galactus/pkg/secrets/vault"
 
 	pb "github.com/jgkawell/galactus/api/gen/go/core/eventer/v1"
 )
