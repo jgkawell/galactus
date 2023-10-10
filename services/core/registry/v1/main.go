@@ -7,9 +7,8 @@ import (
 	"github.com/jgkawell/galactus/pkg/chassis"
 	"github.com/jgkawell/galactus/pkg/chassis/database"
 	"github.com/jgkawell/galactus/pkg/databases/postgres/gorm"
-	"github.com/jgkawell/galactus/pkg/vault"
+	"github.com/jgkawell/galactus/pkg/secrets/vault"
 
-	agpb "github.com/jgkawell/galactus/api/gen/go/core/registry/v1"
 	pb "github.com/jgkawell/galactus/api/gen/go/core/registry/v1"
 )
 
@@ -17,8 +16,7 @@ func main() {
 	var (
 		svc s.Service
 	)
-	gormdb := gorm.New("")
-
+	db := gorm.New("")
 
 	b := chassis.NewMainBuilder(&chassis.MainBuilderConfig{
 		ApplicationName:      "registry",
@@ -29,21 +27,21 @@ func main() {
 		},
 		DatabaseConfig: &chassis.DatabaseConfig{
 			Databases: []database.Client{
-				gormdb,
+				db,
 			},
 		},
 		DaoLayerConfig: &chassis.DaoLayerConfig{
 			CreateDaoLayer: func(b chassis.MainBuilder) {
-				gormdb.Client().AutoMigrate(
-					&agpb.RegistrationORM{},
-					&agpb.ServerORM{},
-					&agpb.ConsumerORM{},
+				db.Client().AutoMigrate(
+					&pb.RegistrationORM{},
+					&pb.ServerORM{},
+					&pb.ConsumerORM{},
 				)
 			},
 		},
 		ServiceLayerConfig: &chassis.ServiceLayerConfig{
 			CreateServiceLayer: func(b chassis.MainBuilder) {
-				svc = s.NewService(b.GetLogger(), gormdb.Client(), b.IsDevMode())
+				svc = s.NewService(b.GetLogger(), db.Client(), b.IsDevMode())
 			},
 		},
 		HandlerLayerConfig: &chassis.HandlerLayerConfig{

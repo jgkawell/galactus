@@ -1,10 +1,6 @@
 {
     "folders": [
         {
-            "name": "azkeyvault",
-            "path": "azkeyvault"
-        },
-        {
             "name": "chassis",
             "path": "chassis"
         },
@@ -21,8 +17,8 @@
             "path": "messaging"
         },
         {
-            "name": "vault",
-            "path": "vault"
+            "name": "secrets",
+            "path": "secrets"
         },
     ]
 }

@@ -6,15 +6,15 @@ import (
 	"math"
 	"time"
 
-	eventspb "github.com/cloudevents/sdk-go/binding/format/protobuf/v2/pb"
-	pb "github.com/jgkawell/galactus/api/gen/go/core/eventer/v1"
-	"google.golang.org/protobuf/types/known/timestamppb"
-
 	ct "github.com/jgkawell/galactus/pkg/chassis/context"
 	"github.com/jgkawell/galactus/pkg/chassis/events"
 	"github.com/jgkawell/galactus/pkg/chassis/messagebus"
 	l "github.com/jgkawell/galactus/pkg/logging"
 
+	pb "github.com/jgkawell/galactus/api/gen/go/core/eventer/v1"
+
+	eventspb "github.com/cloudevents/sdk-go/binding/format/protobuf/v2/pb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 	"gorm.io/gorm"
 )
 

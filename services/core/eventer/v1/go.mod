@@ -8,11 +8,9 @@ replace github.com/jgkawell/galactus/pkg/chassis => ../../../../pkg/chassis
 
 replace github.com/jgkawell/galactus/pkg/logging => ../../../../pkg/logging
 
-replace github.com/jgkawell/galactus/pkg/azkeyvault => ../../../../pkg/azkeyvault
-
 replace github.com/jgkawell/galactus/pkg/databases => ../../../../pkg/databases
 
-replace github.com/jgkawell/galactus/pkg/vault => ../../../../pkg/vault
+replace github.com/jgkawell/galactus/pkg/secrets => ../../../../pkg/secrets
 
 replace github.com/jgkawell/galactus/pkg/messaging => ../../../../pkg/messaging
 
@@ -20,11 +18,12 @@ require (
 	github.com/cloudevents/sdk-go/binding/format/protobuf/v2 v2.14.0
 	github.com/jgkawell/galactus/api/gen/go v1.0.0
 	github.com/jgkawell/galactus/pkg/chassis v1.0.0
-	github.com/jgkawell/galactus/pkg/databases v0.0.0-00010101000000-000000000000
+	github.com/jgkawell/galactus/pkg/databases v1.0.0
 	github.com/jgkawell/galactus/pkg/logging v1.0.0
-	github.com/jgkawell/galactus/pkg/messaging v0.0.0-00010101000000-000000000000
-	github.com/jgkawell/galactus/pkg/vault v0.0.0-00010101000000-000000000000
+	github.com/jgkawell/galactus/pkg/messaging v1.0.0
+	github.com/jgkawell/galactus/pkg/secrets v1.0.0
 	google.golang.org/grpc v1.58.2
+	google.golang.org/protobuf v1.31.0
 	gorm.io/gorm v1.25.4
 )
 
@@ -122,7 +121,6 @@ require (
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
 	google.golang.org/genproto v0.0.0-20230920204549-e6e6cdab5c13 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20230920183334-c177e329c48b // indirect
-	google.golang.org/protobuf v1.31.0 // indirect
 	gopkg.in/DataDog/dd-trace-go.v1 v1.45.1 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
