@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package domain2.aggregate1.v1;
+
+option go_package = "github.com/jgkawell/galactus/api/gen/go/domain2/aggregate1/v1";
+
+message Created {
+    string id = 1;
+}
+
+message Updated {
+    string id = 1;
+}
