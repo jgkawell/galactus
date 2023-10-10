@@ -1,6 +1,6 @@
 module github.com/jgkawell/galactus/pkg/logging
 
-go 1.19
+go 1.21
 
 require (
 	github.com/banzaicloud/logrus-runtime-formatter v0.0.0-20190729070250-5ae5475bae5e
