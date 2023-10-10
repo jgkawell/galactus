@@ -1,129 +1,92 @@
-// Package azkeyvault provided functionality to access the Azure KeyVault and Manage Azure Tokens
 package azkeyvault
 
 import (
 	"context"
 	"encoding/json"
-	"io/ioutil"
-	"time"
+	"fmt"
+	"os"
 
-	m "github.com/jgkawell/galactus/pkg/azkeyvault/model"
-	s "github.com/jgkawell/galactus/pkg/azkeyvault/service"
-	t "github.com/jgkawell/galactus/pkg/azkeyvault/token"
-	l "github.com/jgkawell/galactus/pkg/logging"
+	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/keyvault/armkeyvault"
+	"github.com/jgkawell/galactus/pkg/chassis/env"
+	"github.com/jgkawell/galactus/pkg/chassis/secrets"
 )
 
-// KeyVaultClient key vault client interface
-type KeyVaultClient interface {
-	// GetKeyVaultSecret retrieves secret value from rg/vault/secret.
-	GetKeyVaultSecret(ctx context.Context, logger l.Logger, secret string) (string, l.Error)
-	// SetKeyVaultSecret Add/update secret.
-	SetKeyVaultSecret(ctx context.Context, logger l.Logger, secret string, value string) l.Error
-	// Delete keyvault secret
-	DeleteKeyVaultSecret(ctx context.Context, logger l.Logger, secret string) l.Error
-}
-
-type keyVaultClient struct {
-	ks            s.KeyVaultService
-	logger        l.Logger
-	resourceGroup string
-	keyVault      string
-}
-
-// newKeyVaultClient key vault client
-func newKeyVaultClient(ts t.Service, config m.AzureAuthConfig, logger l.Logger, resourceGroup, keyVault string) (KeyVaultClient, l.Error) {
-	mgmtToken, err := ts.GetManagementToken(
-		config.Cloud,
-		config.TenantID,
-		config.AADClientSecret,
-		config.AADClientID)
-	if err != nil {
-		return nil, logger.WrapError(l.NewError(err, "failed to get management token"))
+type (
+	keyVaultClient struct {
+		client        *armkeyvault.SecretsClient
+		resourceGroup string
+		keyVault      string
 	}
-	kvToken, err := ts.GetKeyvaultToken(
-		config.Cloud,
-		config.TenantID,
-		config.AADClientSecret,
-		config.AADClientID)
-	if err != nil {
-		return nil, logger.WrapError(l.NewError(err, "failed to get key vault token"))
+	// azureAuthConfig represents the configuration for authenticating to Azure
+	azureAuthConfig struct {
+		// TenantID is the Azure tenant ID
+		TenantID string `json:"tenantId"`
+		// ClientID is the Azure client ID
+		ClientID string `json:"clientId"`
+		// ClientSecret is the Azure client secret
+		ClientSecret string `json:"clientSecret"`
+		// SubscriptionID is the Azure subscription ID
+		SubscriptionID string `json:"subscriptionId"`
+		// ResourceGroup is the Azure resource group
+		ResourceGroup string `json:"resourceGroup"`
+		// KeyVaultName is the Azure key vault name
+		KeyVaultName string `json:"keyVaultName"`
+	}
+)
+
+func New() secrets.Client {
+	return &keyVaultClient{}
+}
+
+func (c *keyVaultClient) Initialize(ctx context.Context, config env.Reader) error {
+	// get the path to the azure config file
+	azureJsonPath := config.GetString("azureJsonPath")
+	if azureJsonPath == "" {
+		return fmt.Errorf("azureJsonPath config value required")
 	}
 
-	// use tokens to initialize keyvault service
-	ks := s.NewService(config, mgmtToken, kvToken, logger)
-
-	return &keyVaultClient{
-		ks:            ks,
-		logger:        logger.WithField("struct", "KeyVaultClient"),
-		resourceGroup: resourceGroup,
-		keyVault:      keyVault,
-	}, nil
-}
-
-// NewClientConfigStruct - takes configuration struct instead of reading a file in the system.
-func NewClientConfigStruct(logger l.Logger, config m.AzureAuthConfig, resourceGroup, kvName string) (KeyVaultClient, l.Error) {
-	logger = logger.WithField("cloud", config.Cloud)
-	logger.Info("initializing keyvault client via config struct")
-	ts := t.NewTokenService(config)
-	return newKeyVaultClient(ts, config, logger, resourceGroup, kvName)
-}
-
-// NewClientConfigPath - takes a configuration file path instead of reading a file in the system.
-func NewClientConfigPath(logger l.Logger, configPath, resourceGroup, keyVault string) (KeyVaultClient, l.Error) {
-	logger = logger.WithField("config_path", configPath)
-	logger.Info("initializing keyvault client via config path")
-
-	// Parse Config Map
-	var config m.AzureAuthConfig
-	nbytes, err := ioutil.ReadFile(configPath)
+	// read the config file
+	var azureConfig azureAuthConfig
+	nbytes, err := os.ReadFile(azureJsonPath)
 	if err != nil {
-		return nil, logger.WrapError(err)
+		return fmt.Errorf("failed to read azure config file: %w", err)
 	}
 
-	// Unmarshal configmap into struct
-	err = json.Unmarshal(nbytes, &config)
+	// unmarshal file contents into  struct
+	err = json.Unmarshal(nbytes, &azureConfig)
 	if err != nil {
-		return nil, logger.WrapError(err)
+		return fmt.Errorf("failed to unmarshal azure config: %w", err)
 	}
 
-	// initialize token service and use it to get tokens
-	ts := t.NewTokenService(config)
-	return newKeyVaultClient(ts, config, logger, resourceGroup, keyVault)
+	// create credential
+	cred, err := azidentity.NewClientSecretCredential(azureConfig.TenantID, azureConfig.ClientID, azureConfig.ClientSecret, nil)
+	if err != nil {
+		return fmt.Errorf("failed to create credential: %w", err)
+	}
+
+	// create client factory
+	clientFactory, err := armkeyvault.NewClientFactory(azureConfig.SubscriptionID, cred, nil)
+	if err != nil {
+		return fmt.Errorf("failed to create client factory: %w", err)
+	}
+
+	// set config values
+	c.client = clientFactory.NewSecretsClient()
+	c.resourceGroup = azureConfig.ResourceGroup
+	c.keyVault = azureConfig.KeyVaultName
+
+	return nil
 }
 
-// GetKeyVaultSecret lookup secret value from rg/vault/secret
-func (c *keyVaultClient) GetKeyVaultSecret(ctx context.Context, logger l.Logger, secret string) (string, l.Error) {
-	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
-	defer cancel()
-	c.logger.WithFields(l.Fields{
-		"resource_group": c.resourceGroup,
-		"key_vault":      c.keyVault,
-		"secret":        secret,
-	}).Debug("getting keyvault secret")
-
-	return c.ks.GetSecret(ctx, logger, c.resourceGroup, c.keyVault, secret)
+func (c *keyVaultClient) Get(ctx context.Context, key string) (string, error) {
+	return "fake_secret", nil
 }
 
-// SetKeyVaultSecret Add/update secret.
-func (c *keyVaultClient) SetKeyVaultSecret(ctx context.Context, logger l.Logger, secret, value string) l.Error {
-	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
-	defer cancel()
-	logger.WithFields(l.Fields{
-		"resource_group": c.resourceGroup,
-		"key_vault":      c.keyVault,
-		"secret":        secret,
-	}).Info("setting keyvault secret")
-	return c.ks.SetSecret(ctx, logger, c.resourceGroup, c.keyVault, secret, value)
+func (c *keyVaultClient) Set(ctx context.Context, key string, value string) error {
+	return nil
 }
 
-// DeleteKeyVaultSecret remove secret from key vault
-func (c *keyVaultClient) DeleteKeyVaultSecret(ctx context.Context, logger l.Logger, secret string) l.Error {
-	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
-	defer cancel()
-	logger.WithFields(l.Fields{
-		"resource_group": c.resourceGroup,
-		"key_vault":      c.keyVault,
-		"secret":        secret,
-	}).Info("deleting keyvault secret")
-	return c.ks.DeleteSecret(ctx, logger, c.resourceGroup, c.keyVault, secret)
+func (c *keyVaultClient) Delete(ctx context.Context, key string) error {
+	return nil
 }
