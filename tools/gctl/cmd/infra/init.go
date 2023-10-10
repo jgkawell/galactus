@@ -1,13 +1,10 @@
 package infra
 
 import (
-	"path/filepath"
-
 	"gctl/docker"
 	"gctl/output"
 
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
 func Init(cmd *cobra.Command, args []string) error {
@@ -17,18 +14,13 @@ func Init(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
-	rootPath := viper.GetString("config.root")
-
-	// build custom rabbitmq image
-	output.Println("Building custom RabbitMQ Docker image...")
-	fullPath := filepath.Join(rootPath, "third_party", "rabbitmq")
-	err = dctl.BuildImage(ctx, fullPath, rabbitImage)
+	// pull needed images
+	output.Println("Pulling NATS Docker image...")
+	err = dctl.PullImage(ctx, natsImage)
 	if err != nil {
 		output.Error(err)
 		return err
 	}
-
-	// pull needed images
 	output.Println("Pulling Mongo Docker image...")
 	err = dctl.PullImage(ctx, mongoImage)
 	if err != nil {

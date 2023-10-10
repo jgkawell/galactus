@@ -22,7 +22,7 @@ func Clean(cmd *cobra.Command, args []string) (err error) {
 	if err != nil {
 		output.Error(err)
 	}
-	err = dctl.RemoveContainerByName(ctx, rabbitContainer)
+	err = dctl.RemoveContainerByName(ctx, natsContainer)
 	if err != nil {
 		output.Error(err)
 	}

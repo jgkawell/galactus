@@ -17,14 +17,14 @@ var (
 )
 
 const (
-	mongoImage        = "mongo:6.0.3"
+	mongoImage        = "mongo:7.0.2"
 	mongoContainer    = "galactus-mongo"
-	postgresImage     = "postgres:14.4"
+	postgresImage     = "postgres:16.0"
 	postgresContainer = "galactus-postgres"
-	rabbitImage       = "rabbitmq:galactus"
-	rabbitContainer   = "galactus-rabbitmq"
-	hasuraImage       = "hasura/graphql-engine:v2.15.2"
+	hasuraImage       = "hasura/graphql-engine:v2.34.0"
 	hasuraContainer   = "galactus-hasura"
+	natsImage         = "nats:2.10.2"
+	natsContainer     = "galactus-nats"
 )
 
 func Start(cmd *cobra.Command, args []string) (err error) {
@@ -44,7 +44,7 @@ func Start(cmd *cobra.Command, args []string) (err error) {
 		Env: []string{
 			"POSTGRES_PASSWORD=admin",
 			"POSTGRES_USER=admin",
-			"POSTGRES_DB=dev",
+			"POSTGRES_DB=postgres",
 		},
 		ExposedPorts: map[nat.Port]struct{}{
 			"5432/tcp": {}},
@@ -54,7 +54,7 @@ func Start(cmd *cobra.Command, args []string) (err error) {
 			"5432/tcp": []nat.PortBinding{
 				{
 					HostIP:   "0.0.0.0",
-					HostPort: "5434",
+					HostPort: "5432",
 				},
 			},
 		},
@@ -97,32 +97,25 @@ func Start(cmd *cobra.Command, args []string) (err error) {
 		defer stop(context.Background(), dctl, id)
 	}
 
-	// rabbitmq
+	// nats
 	config = &container.Config{
-		Image: rabbitImage,
+		Image: natsImage,
 		Env:   []string{},
 		ExposedPorts: map[nat.Port]struct{}{
-			"15672/tcp": {},
-			"5672/tcp":  {},
+			"4222/tcp": {},
 		},
 	}
 	hostConfig = &container.HostConfig{
 		PortBindings: nat.PortMap{
-			"15672/tcp": []nat.PortBinding{
+			"4222/tcp": []nat.PortBinding{
 				{
 					HostIP:   "0.0.0.0",
-					HostPort: "15672",
-				},
-			},
-			"5672/tcp": []nat.PortBinding{
-				{
-					HostIP:   "0.0.0.0",
-					HostPort: "5672",
+					HostPort: "4222",
 				},
 			},
 		},
 	}
-	id, err = dctl.StartContainer(ctx, rabbitContainer, config, hostConfig, Follow)
+	id, err = dctl.StartContainer(ctx, natsContainer, config, hostConfig, Follow)
 	if err != nil {
 		output.Error(err)
 		return err
@@ -131,14 +124,15 @@ func Start(cmd *cobra.Command, args []string) (err error) {
 		defer stop(context.Background(), dctl, id)
 	}
 
+	// wait for databases to start before starting hasura
 	time.Sleep(5 * time.Second)
 
 	// hasura
 	config = &container.Config{
 		Image: hasuraImage,
 		Env: []string{
-			"HASURA_GRAPHQL_METADATA_DATABASE_URL=postgres://admin:admin@host.docker.internal:5434/dev",
-			"HASURA_GRAPHQL_DATABASE_URL=postgres://admin:admin@host.docker.internal:5434/dev",
+			"HASURA_GRAPHQL_METADATA_DATABASE_URL=postgres://admin:admin@host.docker.internal:5432/postgres",
+			"HASURA_GRAPHQL_DATABASE_URL=postgres://admin:admin@host.docker.internal:5432/postgres",
 			"HASURA_GRAPHQL_ENABLE_CONSOLE=true",
 			"HASURA_GRAPHQL_ENABLED_LOG_TYPES=startup, http-log, webhook-log, websocket-log, query-log",
 			"HASURA_GRAPHQL_ENABLE_TELEMETRY=false",
@@ -172,7 +166,6 @@ func Start(cmd *cobra.Command, args []string) (err error) {
 
 	return nil
 }
-
 
 func stop(ctx context.Context, dctl docker.DockerController, id string) {
 	err := dctl.StopContainer(ctx, id)
