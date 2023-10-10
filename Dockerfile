@@ -1,5 +1,5 @@
-ARG GO_VERSION=1.19
-ARG ALPINE_VERSION=3.17
+ARG GO_VERSION=1.21
+ARG ALPINE_VERSION=3.18
 
 # This layer builds the binary
 FROM golang:${GO_VERSION} AS builder
