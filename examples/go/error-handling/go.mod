@@ -1,6 +1,6 @@
 module error-handling
 
-go 1.19
+go 1.21
 
 replace github.com/jgkawell/galactus/pkg/logging v1.0.0 => ../../../pkg/logging
 
