@@ -2,10 +2,12 @@ package api
 
 import (
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 
 	"gctl/docker"
+	e "gctl/exec"
 	"gctl/files"
 	"gctl/output"
 
@@ -56,7 +58,7 @@ func Build(cmd *cobra.Command, args []string) (err error) {
 	}
 
 	// mod update
-	config.Cmd = []string{"mod", "update"}
+	config.Cmd = []string{"mod", "update", "protos"}
 	err = dctl.RunContainer(ctx, protoContainer, config, hostConfig, true, true)
 	if err != nil {
 		output.Error(err)
@@ -64,22 +66,40 @@ func Build(cmd *cobra.Command, args []string) (err error) {
 	}
 
 	// generate
-	config.Cmd = []string{"generate"}
+	config.Cmd = []string{"generate", "protos"}
 	err = dctl.RunContainer(ctx, protoContainer, config, hostConfig, true, true)
 	if err != nil {
 		output.Error(err)
 		return err
 	}
 
+	// if running on linux, we need to chown the files to the current user
+	c := exec.Command("uname", "-s")
+	o, err := e.ExecuteCommandReturnStdout(ctx, c)
+	if err != nil {
+		output.Error(err)
+		return err
+	}
+	if strings.TrimSpace(o) == "Linux" {
+		c = exec.Command("sudo", "chown", "-R", "1000:1000", apiPath)
+		err = e.ExecuteCommand(ctx, "chown", output.Magenta, c)
+		if err != nil {
+			output.Error(err)
+			return err
+		}
+	}
+
 	// extra steps for go
 	processor := files.NewProcessor(goFileCleanup)
 	processor.Start(filepath.Join(apiPath, "gen", "go"))
 	processor.Wait()
-
-	// extra steps for web
-	processor = files.NewProcessor(webFileCleanup)
-	processor.Start(filepath.Join(apiPath, "gen", "web"))
-	processor.Wait()
+	c = exec.Command("go", "mod", "tidy")
+	c.Dir = filepath.Join(apiPath, "gen", "go")
+	err = e.ExecuteCommand(ctx, "go", output.Green, c)
+	if err != nil {
+		output.Error(err)
+		return err
+	}
 
 	output.Println("Finished")
 	return err
@@ -91,25 +111,6 @@ func goFileCleanup(filePath string) {
 	if strings.HasSuffix(filePath, ".pb.gorm.go") {
 		old := "_ google.golang.org/protobuf/types/known/timestamppb"
 		new := "google.golang.org/protobuf/types/known/timestamppb"
-		sed(old, new, filePath)
-	}
-}
-
-// webFileCleanup fixes issues with generated web protobuf files
-func webFileCleanup(filePath string) {
-	// these imports aren't actually needed and so are removed
-	if strings.HasSuffix(filePath, ".d.ts") {
-		old := "import * as validate_validate_pb from '../../../validate/validate_pb';"
-		new := ""
-		sed(old, new, filePath)
-	}
-	if strings.HasSuffix(filePath, "_pb.js") {
-		old := "var validate_validate_pb = require('../../../validate/validate_pb.js');\ngoog.object.extend(proto, validate_validate_pb);\n"
-		new := ""
-		sed(old, new, filePath)
-
-		old = "var validate_validate_pb = require('../../../validate/validate_pb.js')\n"
-		new = ""
 		sed(old, new, filePath)
 	}
 }

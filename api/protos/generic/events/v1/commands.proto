@@ -1,7 +1,0 @@
-syntax = "proto3";
-
-package generic.commands.v1;
-
-option go_package = "github.com/jgkawell/galactus/api/gen/go/generic/commands/v1";
-
-// TODO

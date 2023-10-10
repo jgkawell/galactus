@@ -1,0 +1,20 @@
+
+syntax = "proto3";
+
+package core.eventer.v1;
+
+option go_package = "github.com/jgkawell/galactus/api/gen/go/core/eventer/v1";
+
+import "google/protobuf/timestamp.proto";
+import "cloudevents/v1/cloudevent.proto";
+
+message SaveFailed {
+    // event is the event that failed to save
+    io.cloudevents.v1.CloudEvent event = 1;
+    // error is the error that occurred while trying to save the event
+    string error = 2;
+    // received_time is the time the original event was received by the eventer service
+    google.protobuf.Timestamp received_time = 3;
+    // published_time is the time the original event was published by the eventer service
+    google.protobuf.Timestamp published_time = 4;
+}

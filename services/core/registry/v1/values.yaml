@@ -84,3 +84,15 @@ readinessProbe:
 configMap:
   traceName: registry
   enable: true
+
+  # secret mounted by AKS (azure kubernetes service)
+  azureJsonPath: "/etc/kubernetes/azure.json"
+
+  # secretsOverrides are values to override using the provided secrets client
+  # secretsOverrides:
+  #   - configKey: postgres.url
+  #     secretKey: core/database/postgres/registry/url
+  #   - configKey: mongo.url
+  #     secretKey: core/database/mongo/registry/url
+  #   - configKey: rabbitmq.url
+  #     secretKey: core/messaging/rabbitmq/registry/url

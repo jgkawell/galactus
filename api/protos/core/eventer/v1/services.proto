@@ -1,0 +1,24 @@
+
+syntax = "proto3";
+
+package core.eventer.v1;
+
+option go_package = "github.com/jgkawell/galactus/api/gen/go/core/eventer/v1";
+
+import "google/protobuf/timestamp.proto";
+import "validate/validate.proto";
+import "cloudevents/v1/cloudevent.proto";
+
+
+// TODO: rework service implementation of this
+service Eventer {
+    rpc Emit(EmitRequest) returns (EmitResponse) {}
+}
+
+message EmitRequest {
+    io.cloudevents.v1.CloudEvent event = 1;
+}
+
+message EmitResponse {
+    string id = 1 [(validate.rules).string.uuid = true];
+}

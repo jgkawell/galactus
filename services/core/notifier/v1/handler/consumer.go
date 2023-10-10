@@ -8,7 +8,7 @@ import (
 	ct "github.com/jgkawell/galactus/pkg/chassis/context"
 	ev "github.com/jgkawell/galactus/pkg/chassis/events"
 	mb "github.com/jgkawell/galactus/pkg/chassis/messagebus"
-	l "github.com/jgkawell/galactus/pkg/logging/v2"
+	l "github.com/jgkawell/galactus/pkg/logging"
 )
 
 type consumer struct {

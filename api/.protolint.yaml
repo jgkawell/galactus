@@ -1,0 +1,7 @@
+lint:
+  rules:
+    remove:
+      - MAX_LINE_LENGTH
+  rules_option:
+    indent:
+      style: 4

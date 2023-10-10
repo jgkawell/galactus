@@ -1,0 +1,8 @@
+# local development values
+configMap:
+  isDevMode: true
+  disableTracer: true
+  version: v1.0.0
+  domain: core
+  env: local
+  registryServiceAddress: http://localhost:35001

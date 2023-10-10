@@ -3,7 +3,7 @@ package test
 import (
 	"errors"
 
-	l "github.com/jgkawell/galactus/pkg/logging/v2"
+	l "github.com/jgkawell/galactus/pkg/logging"
 )
 
 func Function3(logger l.Logger) l.Error {

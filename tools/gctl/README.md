@@ -4,7 +4,7 @@
 
 ## How to install
 
-First make sure you have Go 1.19 installed. Then run `go install` from this directory.
+First make sure you have go 1.21 installed. Then run `go install` from this directory.
 
 ## How to use
 

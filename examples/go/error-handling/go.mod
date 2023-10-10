@@ -1,10 +1,10 @@
 module error-handling
 
-go 1.19
+go 1.21
 
-replace github.com/jgkawell/galactus/pkg/logging/v2 v2.0.0 => ../../../pkg/logging
+replace github.com/jgkawell/galactus/pkg/logging v1.0.0 => ../../../pkg/logging
 
-require github.com/jgkawell/galactus/pkg/logging/v2 v2.0.0
+require github.com/jgkawell/galactus/pkg/logging v1.0.0
 
 require (
 	github.com/DataDog/datadog-agent/pkg/obfuscate v0.41.1 // indirect

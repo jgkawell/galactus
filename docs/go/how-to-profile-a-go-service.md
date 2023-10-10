@@ -52,7 +52,7 @@ The below steps assume you have access to the `galactus` repo, `make`, `go` and 
 
 ```sh
 # run all core infra locally in docker (mongo, pg, rabbitmq, proxy),
-# and the core services of the whole system (commandhandler, eventstore, notifier).
+# and the core services of the whole system (command, eventer, notifier).
 make local
 
 # run the notifier load test, this will establish 1000 connections to the notifier service simulating 1000 connected users.

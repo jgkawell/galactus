@@ -1,0 +1,24 @@
+{
+    "folders": [
+        {
+            "name": "commander",
+            "path": "commander/v1"
+        },
+        {
+            "name": "eventer",
+            "path": "eventer/v1"
+        },
+        {
+            "name": "notifier",
+            "path": "notifier/v1"
+        },
+        {
+            "name": "registry",
+            "path": "registry/v1"
+        },
+        {
+            "name": "protos",
+            "path": "../../api/protos/core"
+        }
+    ]
+}

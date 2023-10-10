@@ -7,7 +7,7 @@ The purpose of these tests are to check functionality of the galactus services f
 Deploy a service with the test you want with the correct values set using the `Makefile` from the root of `galactus`. For example:
 
 ```bash
-HAS_FUNCTIONAL_TESTS=true make eventstore
+HAS_FUNCTIONAL_TESTS=true make eventer
 ```
 
 This will build and deploy the service and tests into your personal dev namespace.

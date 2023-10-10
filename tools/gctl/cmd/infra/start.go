@@ -17,7 +17,7 @@ var (
 )
 
 const (
-	mongoImage        = "mongo:4.2.21"
+	mongoImage        = "mongo:6.0.3"
 	mongoContainer    = "galactus-mongo"
 	postgresImage     = "postgres:14.4"
 	postgresContainer = "galactus-postgres"
@@ -71,7 +71,10 @@ func Start(cmd *cobra.Command, args []string) (err error) {
 	// mongo
 	config = &container.Config{
 		Image: mongoImage,
-		Env:   []string{},
+		Env: []string{
+			"MONGO_INITDB_ROOT_USERNAME=admin",
+			"MONGO_INITDB_ROOT_PASSWORD=admin",
+		},
 		ExposedPorts: map[nat.Port]struct{}{
 			"27017/tcp": {}},
 	}

@@ -3,11 +3,11 @@ package chassis
 import (
 	"context"
 	"net/http"
+	"strings"
 	"time"
 
-	"github.com/jgkawell/galactus/pkg/chassis/db"
 	"github.com/jgkawell/galactus/pkg/chassis/terminator"
-	l "github.com/jgkawell/galactus/pkg/logging/v2"
+	l "github.com/jgkawell/galactus/pkg/logging"
 
 	"github.com/DeanThompson/ginpprof"
 	"github.com/gin-gonic/gin"
@@ -41,7 +41,7 @@ func (b *mainBuilder) createHttpServer() {
 	}
 
 	// tracing middleware for datadog
-	b.httpRouter.Use(gintrace.Middleware(b.viper.GetString("traceName")))
+	b.httpRouter.Use(gintrace.Middleware(b.appConfig.GetString("traceName")))
 	b.httpRouter.Use(l.GinMiddleware([]string{"/health", "/readiness", "/metrics", "/applicationstate"}))
 
 	// k8s health and readiness checks
@@ -58,7 +58,7 @@ func (b *mainBuilder) createHttpServer() {
 	l.RegisterHTTPEndpointsWithGin(b.httpRouter)
 }
 
-func (b *mainBuilder) StartHttpServer() {
+func (b *mainBuilder) startHttpServer() {
 	b.logger.WithField("port", b.httpPort).Info("starting http server")
 
 	b.httpServer = &http.Server{Addr: "localhost:" + b.httpPort}
@@ -74,7 +74,7 @@ func (b *mainBuilder) StartHttpServer() {
 	terminator.TerminateApplication()
 }
 
-func (b *mainBuilder) StopHttpServer() {
+func (b *mainBuilder) stopHttpServer() {
 	if b.httpServer != nil {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
@@ -85,68 +85,46 @@ func (b *mainBuilder) StopHttpServer() {
 	}
 }
 
-func (b *mainBuilder) healthHandler(ctx *gin.Context) {
-	logger := b.logger.WithHTTPContext(ctx)
+func (b *mainBuilder) healthHandler(c *gin.Context) {
+	logger := b.logger.WithHTTPContext(c)
 	logger.Trace("liveness handler called")
-	if b.noSqlClient != nil {
-		if err := db.PingNoSqlClient(b.noSqlClient); err != nil {
-			msg := "failed to ping mongo client"
-			logger.WithError(err).Error(msg)
-			ctx.JSON(http.StatusFailedDependency, gin.H{"message": msg})
-		} else {
-			msg := "Health check: succeeded in pinging mongo client"
-			logger.Trace(msg)
-			ctx.JSON(http.StatusOK, gin.H{})
-		}
-	}
 
-	if b.sqlClient != nil {
-		if err := db.PingSqlClient(logger, b.sqlClient); err != nil {
-			msg := "failed to ping sql client"
+	for _, db := range b.databases {
+		if err := db.Ping(c.Request.Context()); err != nil {
+			msg := "failed to ping database"
 			logger.WithError(err).Error(msg)
-			ctx.JSON(http.StatusFailedDependency, gin.H{"message": msg})
-		} else {
-			msg := "Health check: succeeded in pinging sql client"
-			logger.Trace(msg)
-			ctx.JSON(http.StatusOK, gin.H{})
+			c.JSON(http.StatusFailedDependency, gin.H{"message": msg})
+			return
 		}
 	}
 
 	if b.wellnessCheckConfig != nil {
-		b.wellnessCheckConfig.Check(ctx)
+		b.wellnessCheckConfig.Check(c)
 	}
+
+	logger.Trace("liveness check succeeded")
+	c.JSON(http.StatusOK, gin.H{})
 }
 
-func (b *mainBuilder) readinessHandler(ctx *gin.Context) {
-	logger := b.logger.WithHTTPContext(ctx)
+func (b *mainBuilder) readinessHandler(c *gin.Context) {
+	logger := b.logger.WithHTTPContext(c)
 	logger.Trace("readiness handler called")
-	if b.noSqlClient != nil {
-		if err := db.PingNoSqlClient(b.noSqlClient); err != nil {
-			msg := "failed to ping mongo client"
-			logger.WithError(err).Error(msg)
-			ctx.JSON(http.StatusFailedDependency, gin.H{"message": msg})
-		} else {
-			msg := "Readiness check: succeeded in pinging mongo client"
-			logger.Trace(msg)
-			ctx.JSON(http.StatusOK, gin.H{})
-		}
-	}
 
-	if b.sqlClient != nil {
-		if err := db.PingSqlClient(logger, b.sqlClient); err != nil {
-			msg := "failed to ping sql client"
+	for _, db := range b.databases {
+		if err := db.Ping(c.Request.Context()); err != nil {
+			msg := "failed to ping database"
 			logger.WithError(err).Error(msg)
-			ctx.JSON(http.StatusFailedDependency, gin.H{"message": msg})
-		} else {
-			msg := "Health check: succeeded in pinging sql client"
-			logger.Trace(msg)
-			ctx.JSON(http.StatusOK, gin.H{})
+			c.JSON(http.StatusFailedDependency, gin.H{"message": msg})
+			return
 		}
 	}
 
 	if b.readinessCheckConfig != nil {
-		b.readinessCheckConfig.Check(ctx)
+		b.readinessCheckConfig.Check(c)
 	}
+
+	logger.Trace("readiness check succeeded")
+	c.JSON(http.StatusOK, gin.H{})
 }
 
 // serviceStatusNotification is responsible for handling the POST requests from the shawarma sidecar when
@@ -164,6 +142,7 @@ func (b *mainBuilder) serviceStatusNotification(ctx *gin.Context) {
 		return
 	}
 	// k8s_service = the name of the k8s endpoint/service (e.g. "users" or "users-preview")
+	// TODO: how does this handle canary deployments?
 	logger = logger.WithFields(l.Fields{
 		"status":      state.Status,
 		"k8s_service": state.Service,
@@ -173,12 +152,11 @@ func (b *mainBuilder) serviceStatusNotification(ctx *gin.Context) {
 	switch state.Status {
 	case statusActive:
 		logger.Info("service is active")
-		// start new consumers based on the service name
-		b.initializeBrokerListeners(state.Service)
+		b.subscribeConsumers(preview(state.Service))
 	case statusInactive:
 		logger.Info("service is inactive")
 		// stop existing consumer channels based on the service name
-		b.cancelBrokerListeners(state.Service)
+		b.unsubscribeConsumers(preview(state.Service))
 	default:
 		logger.Error("unknown status")
 		ctx.AbortWithStatus(http.StatusBadRequest)
@@ -186,4 +164,10 @@ func (b *mainBuilder) serviceStatusNotification(ctx *gin.Context) {
 	}
 
 	ctx.Status(http.StatusOK)
+}
+
+// HELPERS
+
+func preview(service string) bool {
+	return strings.Contains(service, "preview")
 }

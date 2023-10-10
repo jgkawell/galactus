@@ -11,8 +11,8 @@ ROOT_DIR=$(PWD)
 HAS_INTEGRATION_TESTS?=false
 HAS_FUNCTIONAL_TESTS?=false
 SVC_DIRS=\
-	services/core/commandhandler \
-	services/core/eventstore \
+	services/core/commander \
+	services/core/eventer \
 	services/core/notifier \
 	services/core/queryhandler \
 	services/core/registry
@@ -78,7 +78,7 @@ endif # end HAS_FUNCTIONAL_TESTS
 		./deployments/service/ | kubectl apply -f - -n $(NAMESPACE)
 
 # helm template - render the deployment manifest for a specific service
-# $ make template SVC="core/eventstore" NAMESPACE="dev" OVERRIDE_VALUES="dev"
+# $ make template SVC="core/eventer" NAMESPACE="dev" OVERRIDE_VALUES="dev"
 .PHONY: template
 template:
 	VERSION=$$(cat services/$(SVC)/VERSION) ; \
@@ -99,7 +99,7 @@ template:
 
 # Uses prebuilt images from the registry with the versions defined in the service directory
 # To deploy all services: make remote
-# To deploy a specific service: make remote SVCS=eventstore
+# To deploy a specific service: make remote SVCS=eventer
 .PHONY: remote
 remote:
 	for service in $(SVCS) ; do \

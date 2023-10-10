@@ -12,7 +12,7 @@ import (
 
 	ct "github.com/jgkawell/galactus/pkg/chassis/context"
 	ev "github.com/jgkawell/galactus/pkg/chassis/events"
-	l "github.com/jgkawell/galactus/pkg/logging/v2"
+	l "github.com/jgkawell/galactus/pkg/logging"
 )
 
 type service struct {
@@ -179,7 +179,7 @@ func (c *NotificationChannel) CreateHeartbeat(logger l.Logger) *ntpb.Notificatio
 	}
 
 	return &ntpb.Notification{
-		NotificationType: ntpb.NotificationType_HEARTBEAT,
+		NotificationType: ntpb.NotificationType_NOTIFICATION_TYPE_HEARTBEAT,
 		Data:             string(byt),
 	}
 }

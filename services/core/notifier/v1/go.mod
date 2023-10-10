@@ -1,24 +1,23 @@
 module notifier
 
-go 1.19
+go 1.21
 
-replace github.com/jgkawell/galactus/api/gen/go v0.0.0 => ../../../../api/gen/go
+replace github.com/jgkawell/galactus/api/gen/go v1.0.0 => ../../../../api/gen/go
 
-replace github.com/jgkawell/galactus/pkg/azkeyvault v0.0.0 => ../../../../pkg/azkeyvault
+replace github.com/jgkawell/galactus/pkg/azkeyvault v1.0.0 => ../../../../pkg/azkeyvault
 
-replace github.com/jgkawell/galactus/pkg/chassis v0.0.0 => ../../../../pkg/chassis
+replace github.com/jgkawell/galactus/pkg/chassis v1.0.0 => ../../../../pkg/chassis
 
-replace github.com/jgkawell/galactus/pkg/logging/v2 v2.0.0 => ../../../../pkg/logging
+replace github.com/jgkawell/galactus/pkg/logging v1.0.0 => ../../../../pkg/logging
 
 require (
 	github.com/google/uuid v1.3.0
-	github.com/jgkawell/galactus/api/gen/go v0.0.0
-	github.com/jgkawell/galactus/pkg/chassis v0.0.0
-	github.com/jgkawell/galactus/pkg/logging/v2 v2.0.0
+	github.com/jgkawell/galactus/api/gen/go v1.0.0
+	github.com/jgkawell/galactus/pkg/chassis v1.0.0
+	github.com/jgkawell/galactus/pkg/logging v1.0.0
 )
 
 require (
-	bou.ke/monkey v1.0.2 // indirect
 	github.com/Azure/azure-sdk-for-go v67.2.0+incompatible // indirect
 	github.com/Azure/go-autorest v14.2.0+incompatible // indirect
 	github.com/Azure/go-autorest/autorest v0.11.28 // indirect
@@ -59,7 +58,6 @@ require (
 	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0 // indirect
 	github.com/hashicorp/golang-lru v0.5.4 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
-	github.com/infobloxopen/protoc-gen-gorm v1.1.2 // indirect
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
 	github.com/jackc/pgconn v1.13.0 // indirect
 	github.com/jackc/pgio v1.0.0 // indirect
@@ -68,13 +66,13 @@ require (
 	github.com/jackc/pgservicefile v0.0.0-20221227161230-091c0ba34f0a // indirect
 	github.com/jackc/pgtype v1.13.0 // indirect
 	github.com/jackc/pgx/v4 v4.17.2 // indirect
-	github.com/jgkawell/galactus/pkg/azkeyvault v0.0.0 // indirect
+	github.com/jgkawell/galactus/pkg/azkeyvault v1.0.0 // indirect
+	github.com/jgkawell/protoc-gen-gorm v1.1.3 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/compress v1.15.13 // indirect
 	github.com/leodido/go-urn v1.2.1 // indirect
-	github.com/lucsky/cuid v1.2.1 // indirect
 	github.com/magiconair/properties v1.8.7 // indirect
 	github.com/mattn/go-isatty v0.0.17 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.4 // indirect

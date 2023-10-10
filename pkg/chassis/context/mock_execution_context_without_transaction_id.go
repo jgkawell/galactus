@@ -5,7 +5,7 @@ package context
 import (
 	"context"
 
-	logging "github.com/jgkawell/galactus/pkg/logging/v2"
+	logging "github.com/jgkawell/galactus/pkg/logging"
 	mock "github.com/stretchr/testify/mock"
 )
 

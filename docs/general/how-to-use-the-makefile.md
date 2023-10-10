@@ -52,7 +52,7 @@ HAS_INTEGRATION_TESTS=true make asset
 HAS_FUNCTIONAL_TESTS=true make asset
 
 # launch a service by name on your local machine
-make service NAME=eventstore
+make service NAME=eventer
 
 # launch local development system (ie. `rabbitMQ` and `mongo`)
 make local

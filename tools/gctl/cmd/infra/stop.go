@@ -14,6 +14,11 @@ func Stop(cmd *cobra.Command, args []string) (err error) {
 		return nil
 	}
 
+	// stop hasura before any databases
+	err = dctl.StopContainerByName(ctx, hasuraContainer)
+	if err != nil {
+		output.Error(err)
+	}
 	err = dctl.StopContainerByName(ctx, postgresContainer)
 	if err != nil {
 		output.Error(err)
@@ -23,10 +28,6 @@ func Stop(cmd *cobra.Command, args []string) (err error) {
 		output.Error(err)
 	}
 	err = dctl.StopContainerByName(ctx, rabbitContainer)
-	if err != nil {
-		output.Error(err)
-	}
-	err = dctl.StopContainerByName(ctx, hasuraContainer)
 	if err != nil {
 		output.Error(err)
 	}

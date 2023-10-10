@@ -1,0 +1,81 @@
+syntax = "proto3";
+
+package core.registry.v1;
+
+import "google/protobuf/timestamp.proto";
+import "gorm/options/gorm.proto";
+
+option go_package = "github.com/jgkawell/galactus/api/gen/go/core/registry/v1";
+
+message Registration {
+    option (gorm.opts).ormable = true;
+
+    // the table primary key
+    string id = 1 [(gorm.field).tag = {type: "uuid" primary_key: true}];
+
+    // NOTE: name + version + domain must be unique
+    // the service domain
+    string domain = 2 [(gorm.field).tag = {unique_index: "idx"}];
+
+    // the service name
+    string name = 3 [(gorm.field).tag = {unique_index: "idx"}];
+
+    // the service version
+    string version = 4 [(gorm.field).tag = {unique_index: "idx"}];
+
+    // the service status
+    ServiceStatus status = 5;
+}
+
+// deregister vs unregister reference: https://grammarhow.com/unregister-vs-deregister/
+enum ServiceStatus {
+    SERVICE_STATUS_UNSPECIFIED = 0;
+    SERVICE_STATUS_REGISTERED = 1;
+    SERVICE_STATUS_DEREGISTERED = 2;
+    SERVICE_STATUS_HEALTHY = 3;
+    SERVICE_STATUS_UNHEALTHY = 4;
+}
+
+message Server {
+    option (gorm.opts).ormable = true;
+
+    // the table primary key
+    string id = 1 [(gorm.field).tag = {type: "uuid" primary_key: true}];
+
+    string scheme = 2;
+    string host = 3;
+    string port = 4;
+    string route = 5;
+
+    ServerKind kind = 6;
+}
+
+enum ServerKind {
+    SERVER_KIND_UNSPECIFIED = 0;
+    SERVER_KIND_GRPC = 1;
+    SERVER_KIND_HTTP = 2;
+}
+
+message Consumer {
+    option (gorm.opts).ormable = true;
+
+    // the table primary key
+    string id = 1 [(gorm.field).tag = {type: "uuid" primary_key: true}];
+
+    // event_source is the source of events the consumer is listening for
+    string event_source = 2;
+
+    // event_type is the type of event the consumer is listening for: when empty, the consumer is listening for all events
+    // of the given event_source
+    string event_type = 3;
+
+    ConsumerKind kind = 4;
+}
+
+enum ConsumerKind {
+    CONSUMER_KIND_UNSPECIFIED = 0;
+    // CONSUMER_KIND_ONE means that only one replica of the microservice will consume the event
+    CONSUMER_KIND_ONE = 1;
+    // CONSUMER_KIND_ALL means that all replicas of the microservice will consume the event
+    CONSUMER_KIND_ALL = 2;
+}

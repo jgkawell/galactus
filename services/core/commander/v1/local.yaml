@@ -1,0 +1,9 @@
+# Local values that will be read when you run this service using `go run main.go`
+# This is a YAML-formatted file.
+
+configMap:
+  disableTracer: true
+  isDevMode: true
+  version: v1
+  # other service values
+  registryServiceAddress: localhost:35001

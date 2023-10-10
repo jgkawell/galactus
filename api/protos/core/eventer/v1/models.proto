@@ -1,0 +1,33 @@
+syntax = "proto3";
+
+package core.aggregates.v1;
+
+import "google/protobuf/timestamp.proto";
+import "gorm/options/gorm.proto";
+
+option go_package = "github.com/jgkawell/galactus/api/gen/go/core/eventer/v1";
+
+message Event {
+    option (gorm.opts).ormable = true;
+
+    // METADATA
+
+    // id is the table primary key
+    string id = 1 [(gorm.field).tag = {type: "uuid" primary_key: true}];
+    // received_time is the time the event emit request was received
+    google.protobuf.Timestamp received_time = 2 [(gorm.field).tag = {type: "timestamp"}];
+    // published_time the time the event was been published the messagebus
+    google.protobuf.Timestamp published_time = 3 [(gorm.field).tag = {type: "timestamp"}];
+    // transaction_id is a uuid that tracks all events that are part of the same transaction
+    string transaction_id = 4 [(gorm.field).tag = {type: "uuid"}];
+
+    // EVENT DATA
+
+    // event_source is cloudevent source
+    string event_source = 11 [(gorm.field).tag = {type: "varchar(255)"}];
+    // event_type is cloudevent type
+    string event_type = 12 [(gorm.field).tag = {type: "varchar(255)"}];
+    // event_data of the cloudevent type
+    // it is saved as a json string for querying and interoperability
+    string event_data = 21 [(gorm.field).tag = {type: "json"}];
+}

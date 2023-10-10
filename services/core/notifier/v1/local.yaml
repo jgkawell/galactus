@@ -4,7 +4,7 @@
 configMap:
   disableTracer: true
   isDevMode: true
-  version: 0.0.0
+  version: v1
   # other service values
   registryServiceAddress: localhost:35001
   # messagebus values
