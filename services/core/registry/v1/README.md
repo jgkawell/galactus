@@ -11,7 +11,7 @@ Process:
 - The other services at bootup will connect to the registry service and register themselves.
   - They will send all their information (listed below) to the registry service
   - The registry service will return the ports that the service should listen on (e.g. gRPC=8090 when remote, generated value when local)
-  - The registry service will send a notification to any subscribed services that the service is now active (e.g. eventstore, commandhandler, etc.)
+  - The registry service will send a notification to any subscribed services that the service is now active (e.g. eventer, command, etc.)
 - When a service wishes to make a connection to another service, it will first send a request to the registry service asking for connection information. If the service is registered and active, the registry will return the connection information.
 - The registry is responsible for keeping track of the services that are registered and active. It will do this by polling a health endpoint OR checking the service status from k8s (only when remote).
   - Question: If a service is inactive for a while, should the registry still keep track of it? Should it unregister it so we don't keep polling the health endpoint?

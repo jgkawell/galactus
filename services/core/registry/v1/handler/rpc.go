@@ -8,6 +8,9 @@ import (
 	pb "github.com/jgkawell/galactus/api/gen/go/core/registry/v1"
 	ct "github.com/jgkawell/galactus/pkg/chassis/context"
 	l "github.com/jgkawell/galactus/pkg/logging"
+
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type registryHandler struct {
@@ -15,36 +18,78 @@ type registryHandler struct {
 	service s.Service
 }
 
-// NewRegistryHandler
 func NewRegistryHandler(logger l.Logger, service s.Service) pb.RegistryServer {
 	return &registryHandler{logger, service}
 }
 
-// Register
 func (h *registryHandler) Register(c context.Context, req *pb.RegisterRequest) (*pb.RegisterResponse, error) {
-	// build execution context, with request context that contains `transaction_id` in metadata
 	ctx, err := ct.NewExecutionContextFromContextWithMetadata(c, h.logger)
 	if err != nil {
 		h.logger.WithFields(err.Fields()).WithError(err).Error("failed to create application context from current context")
 		return nil, err.Unwrap()
 	}
 
-	response, err := h.service.Register(*ctx, req)
+	stdErr := req.ValidateAll()
+	if stdErr != nil {
+		h.logger.WithError(stdErr).Warn("invalid request received")
+		return nil, stdErr
+	}
+
+	id, err := h.service.Register(*ctx, req)
 	if err != nil {
 		h.logger.WithFields(err.Fields()).WithError(err).Error("failed to register")
 		return nil, err.Unwrap()
 	}
 
-	return response, err
+	return &pb.RegisterResponse{
+		Id: id,
+	}, err
+}
+
+func (h *registryHandler) RegisterGrpcServer(c context.Context, req *pb.RegisterGrpcServerRequest) (*pb.RegisterGrpcServerResponse, error) {
+	ctx, err := ct.NewExecutionContextFromContextWithMetadata(c, h.logger)
+	if err != nil {
+		h.logger.WithFields(err.Fields()).WithError(err).Error("failed to create application context from current context")
+		return nil, err.Unwrap()
+	}
+
+	stdErr := req.ValidateAll()
+	if stdErr != nil {
+		h.logger.WithError(stdErr).Warn("invalid request received")
+		return nil, stdErr
+	}
+
+	port, err := h.service.RegisterGrpcServer(*ctx, req)
+	if err != nil {
+		h.logger.WithFields(err.Fields()).WithError(err).Error("failed to register grpc server")
+		return nil, err.Unwrap()
+	}
+
+	return &pb.RegisterGrpcServerResponse{
+		Port: port,
+	}, err
+}
+
+func (h *registryHandler) RegisterHttpServer(c context.Context, req *pb.RegisterHttpServerRequest) (*pb.RegisterHttpServerResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "not implemented")
+}
+
+func (h *registryHandler) RegisterConsumers(c context.Context, req *pb.RegisterConsumersRequest) (*pb.RegisterConsumersResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "not implemented")
 }
 
 // Connection
 func (h *registryHandler) Connection(c context.Context, req *pb.ConnectionRequest) (*pb.ConnectionResponse, error) {
-	// build execution context, with request context that contains `transaction_id` in metadata
 	ctx, err := ct.NewExecutionContextFromContextWithMetadata(c, h.logger)
 	if err != nil {
 		h.logger.WithFields(err.Fields()).WithError(err).Error("failed to create application context from current context")
 		return nil, err
+	}
+
+	stdErr := req.ValidateAll()
+	if stdErr != nil {
+		h.logger.WithError(stdErr).Warn("invalid request received")
+		return nil, stdErr
 	}
 
 	response, err := h.service.Connection(*ctx, req)
@@ -54,10 +99,4 @@ func (h *registryHandler) Connection(c context.Context, req *pb.ConnectionReques
 	}
 
 	return response, err
-}
-
-// HELPERS
-
-func validateServiceVersion(version string) error {
-	return nil
 }

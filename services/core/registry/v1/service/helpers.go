@@ -2,12 +2,9 @@ package service
 
 import (
 	"errors"
-	"fmt"
 	"math/rand"
-	"strings"
+	"strconv"
 
-	"github.com/google/uuid"
-	agpb "github.com/jgkawell/galactus/api/gen/go/core/aggregates/v1"
 	pb "github.com/jgkawell/galactus/api/gen/go/core/registry/v1"
 
 	ct "github.com/jgkawell/galactus/pkg/chassis/context"
@@ -20,98 +17,25 @@ const localPortConflictRetryLimit = 1000
 const localMinPort = 3502
 const localMaxPort = 4500
 
-func (s *service) mergeRegistrations(ctx ct.ExecutionContext, request *pb.RegisterRequest, existing *agpb.RegistrationORM) (*agpb.RegistrationORM, l.Error) {
-
-	// generate new id if empty
-	if existing.Id == "" {
-		existing.Id = uuid.NewString()
-	}
-	// copy over requested metadata
-	existing.Name = request.Name
-	existing.Domain = request.Domain
-	existing.Version = request.Version
-	existing.Description = request.Description
-
-	// add any new protocols
-	for _, newP := range request.Protocols {
-		// if already exists, break
-		found := false
-		for _, existingP := range existing.Routes {
-			if newP.Route == existingP.Path {
-				found = true
-				break
-			}
-		}
-		// create new protocol and add to existing
-		if !found {
-			port, err := s.generatePort(ctx, agpb.ProtocolKind(newP.Kind))
-			if err != nil {
-				return nil, ctx.Logger.WrapError(err)
-			}
-			// default to service name (must match Istio)
-			host := request.Name
-			if s.isDevMode {
-				host = "localhost"
-			}
-
-			new := &agpb.RouteORM{
-				Id:             uuid.NewString(),
-				Kind:           int32(newP.Kind),
-				Port:           port,
-				RegistrationId: &existing.Id,
-				Path:           newP.Route,
-				Host:           host,
-			}
-			existing.Routes = append(existing.Routes, new)
-		}
-	}
-
-	// add any new consumers
-	for _, newC := range request.Consumers {
-		routingKey := generateRoutingKey(newC.AggregateType, newC.EventType, newC.EventCode)
-		// if already exists, break
-		// TODO: what do we do if there are existing consumers that are no longer being used?
-		found := false
-		for _, existingC := range existing.Consumers {
-			if routingKey == existingC.RoutingKey {
-				found = true
-				break
-			}
-		}
-		// create new consumer and add to existing
-		if !found {
-			new := &agpb.ConsumerORM{
-				Id:   uuid.NewString(),
-				Kind: int32(newC.Kind),
-				// RegistrationId: &existing.Id,
-				RoutingKey: routingKey,
-			}
-			existing.Consumers = append(existing.Consumers, new)
-		}
-	}
-
-	return existing, nil
-}
-
-func (s *service) generatePort(ctx ct.ExecutionContext, kind agpb.ProtocolKind) (int32, l.Error) {
+func (s *service) generatePort(ctx ct.ExecutionContext, kind pb.ServerKind) (string, l.Error) {
 	var port int32
 	var err l.Error
 	if s.isDevMode {
 		port, err = s.generateLocalPort(ctx.Logger)
 		if err != nil {
-			return 0, ctx.Logger.WrapError(err)
+			return "", ctx.Logger.WrapError(err)
 		}
 	} else {
 		port, err = s.generateRemotePort(ctx.Logger, kind)
 		if err != nil {
-			return 0, ctx.Logger.WrapError(err)
+			return "", ctx.Logger.WrapError(err)
 		}
 	}
-	return port, nil
+	return strconv.Itoa(int(port)), nil
 }
 
 /*
-generateLocalPort will generate a random port between 3500 and 4500 making sure it is not already in use.
+generateLocalPort will generate a random port between `localMinPort` and `localMaxPort` making sure it is not already in use.
 
 If an unused port is not found after 1000 attempts, an error is returned.
 */
@@ -119,7 +43,7 @@ func (s *service) generateLocalPort(logger l.Logger) (int32, l.Error) {
 	for i := 0; i < localPortConflictRetryLimit; i++ {
 		randomPort := rand.Intn(localMaxPort-localMinPort) + localMinPort
 		var count int64
-		err := s.db.Model(&agpb.RouteORM{}).Where("port = ?", randomPort).Count(&count).Error
+		err := s.db.Model(&pb.ServerORM{}).Where("port = ?", strconv.Itoa(randomPort)).Count(&count).Error
 		if err != nil {
 			return 0, logger.WrapError(l.NewError(err, "failed to query for port usage while generating random local port"))
 		}
@@ -138,57 +62,13 @@ generateRemotePort will generate the remote port based on the protocol kind:
 
 If an invalid protocol kind is given, an error is returned.
 */
-func (s *service) generateRemotePort(logger l.Logger, kind agpb.ProtocolKind) (int32, l.Error) {
+func (s *service) generateRemotePort(logger l.Logger, kind pb.ServerKind) (int32, l.Error) {
 	switch kind {
-	case agpb.ProtocolKind_PROTOCOL_KIND_HTTP:
+	case pb.ServerKind_SERVER_KIND_HTTP:
 		return 8080, nil
-	case agpb.ProtocolKind_PROTOCOL_KIND_GRPC:
+	case pb.ServerKind_SERVER_KIND_GRPC:
 		return 8090, nil
 	default:
 		return 0, logger.WrapError(errors.New("unsupported protocol kind"))
 	}
-}
-
-/*
-generateExchangeName will generate an exchange name based on the given base name and the service environment (k8s namespace or local)
-
-The result will have the following form:
-
-	exchangeName = "ENV.EXCHANGE_NAME"
-*/
-func generateExchangeName(env, exchangeName string) string {
-	return fmt.Sprintf("%s.%s", env, exchangeName)
-}
-
-func generateRoutingKey(aggregateType, eventType, eventCode string) string {
-	return fmt.Sprintf("%s.%s.%s", aggregateType, eventType, eventCode)
-}
-
-/*
-generateQueueName will generate queue name based on the given exchange, routingKey, service and identifier.
-
-The result will have the following form:
-
-	    exchangeName = "EXCHANGE_NAME"
-	    // if identifier is not empty
-	    queueName = "EXCHANGE_NAME.ROUTING_KEY.SERVICE_NAME.IDENTIFIER"
-		// if identifier is empty
-		queueName = "EXCHANGE_NAME.ROUTING_KEY.SERVICE_NAME"
-*/
-func (s *service) generateQueueName(exchangeName, routingKey, serviceName, identifier string) (queueName string) {
-	queueName = fmt.Sprintf("%s.%s.%s.%s", exchangeName, routingKey, serviceName, identifier)
-	// if the queue name is empty, remove trailing period
-	if identifier == "" {
-		queueName = strings.TrimSuffix(queueName, ".")
-	}
-	return queueName
-}
-
-// reduceVersion simplifies the semver to just the major version (e.g. if requested version is "v2.3.5", then queried version is "v2")
-func reduceVersion(version string) string {
-	version = strings.Split(version, ".")[0]
-	if !strings.HasPrefix(version, "v") {
-		return ""
-	}
-	return version
 }
