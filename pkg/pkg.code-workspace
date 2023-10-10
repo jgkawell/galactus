@@ -1,0 +1,28 @@
+{
+    "folders": [
+        {
+            "name": "azkeyvault",
+            "path": "azkeyvault"
+        },
+        {
+            "name": "chassis",
+            "path": "chassis"
+        },
+        {
+            "name": "databases",
+            "path": "databases"
+        },
+        {
+            "name": "logging",
+            "path": "logging"
+        },
+        {
+            "name": "messaging",
+            "path": "messaging"
+        },
+        {
+            "name": "vault",
+            "path": "vault"
+        },
+    ]
+}
