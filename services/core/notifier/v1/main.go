@@ -17,8 +17,8 @@ func main() {
 	b := chassis.NewMainBuilder(&chassis.MainBuilderConfig{
 		ApplicationName:        "notifier",
 		CreateEventStoreClient: true,
-		KeyVaultConfig: &chassis.KeyVaultConfig{
-			RequireKeyVault:               func(b chassis.MainBuilder) bool { return !b.GetConfig().GetBool("isDevMode") },
+		VaultConfig: &chassis.VaultConfig{
+			Required:               func(b chassis.MainBuilder) bool { return !b.GetConfig().GetBool("isDevMode") },
 			KeyVaultResourceGroupVariable: "resourceGroup",
 			KeyVaultNameVariable:          "keyVault",
 			KeyVaultOverridesVariable:     "keyVaultOverrides",

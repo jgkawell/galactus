@@ -1,6 +1,6 @@
 module notifier
 
-go 1.19
+go 1.21
 
 replace github.com/jgkawell/galactus/api/gen/go v1.0.0 => ../../../../api/gen/go
 
