@@ -4,7 +4,7 @@ import (
 	"github.com/jgkawell/galactus/pkg/chassis"
 	"github.com/jgkawell/galactus/pkg/chassis/database"
 	"github.com/jgkawell/galactus/pkg/databases/postgres/gorm"
-	"github.com/jgkawell/galactus/pkg/vault"
+	"github.com/jgkawell/galactus/pkg/secrets/vault"
 )
 
 func main() {

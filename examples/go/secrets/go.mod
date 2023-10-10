@@ -10,12 +10,12 @@ replace github.com/jgkawell/galactus/pkg/logging => ../../../pkg/logging
 
 replace github.com/jgkawell/galactus/pkg/databases => ../../../pkg/databases
 
-replace github.com/jgkawell/galactus/pkg/vault => ../../../pkg/vault
+replace github.com/jgkawell/galactus/pkg/secrets => ../../../pkg/secrets
 
 require (
 	github.com/jgkawell/galactus/pkg/chassis v1.0.0
 	github.com/jgkawell/galactus/pkg/databases v1.0.0
-	github.com/jgkawell/galactus/pkg/vault v1.0.0
+	github.com/jgkawell/galactus/pkg/secrets v1.0.0
 )
 
 require (
@@ -101,7 +101,7 @@ require (
 	go4.org/unsafe/assume-no-moving-gc v0.0.0-20220617031537-928513b29760 // indirect
 	golang.org/x/crypto v0.13.0 // indirect
 	golang.org/x/mod v0.11.0 // indirect
-	golang.org/x/net v0.12.0 // indirect
+	golang.org/x/net v0.14.0 // indirect
 	golang.org/x/sys v0.12.0 // indirect
 	golang.org/x/text v0.13.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
