@@ -25,6 +25,8 @@ const (
 	rabbitContainer   = "galactus-rabbitmq"
 	hasuraImage       = "hasura/graphql-engine:v2.15.2"
 	hasuraContainer   = "galactus-hasura"
+	natsImage         = "nats:2.10.2"
+	natsContainer     = "galactus-nats"
 )
 
 func Start(cmd *cobra.Command, args []string) (err error) {
@@ -97,32 +99,25 @@ func Start(cmd *cobra.Command, args []string) (err error) {
 		defer stop(context.Background(), dctl, id)
 	}
 
-	// rabbitmq
+	// nats
 	config = &container.Config{
-		Image: rabbitImage,
+		Image: natsImage,
 		Env:   []string{},
 		ExposedPorts: map[nat.Port]struct{}{
-			"15672/tcp": {},
-			"5672/tcp":  {},
+			"4222/tcp": {},
 		},
 	}
 	hostConfig = &container.HostConfig{
 		PortBindings: nat.PortMap{
-			"15672/tcp": []nat.PortBinding{
+			"4222/tcp": []nat.PortBinding{
 				{
 					HostIP:   "0.0.0.0",
-					HostPort: "15672",
-				},
-			},
-			"5672/tcp": []nat.PortBinding{
-				{
-					HostIP:   "0.0.0.0",
-					HostPort: "5672",
+					HostPort: "4222",
 				},
 			},
 		},
 	}
-	id, err = dctl.StartContainer(ctx, rabbitContainer, config, hostConfig, Follow)
+	id, err = dctl.StartContainer(ctx, natsContainer, config, hostConfig, Follow)
 	if err != nil {
 		output.Error(err)
 		return err

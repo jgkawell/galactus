@@ -27,7 +27,7 @@ func Stop(cmd *cobra.Command, args []string) (err error) {
 	if err != nil {
 		output.Error(err)
 	}
-	err = dctl.StopContainerByName(ctx, rabbitContainer)
+	err = dctl.StopContainerByName(ctx, natsContainer)
 	if err != nil {
 		output.Error(err)
 	}
