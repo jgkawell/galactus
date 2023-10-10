@@ -17,9 +17,5 @@ configMap:
     database: eventer
   mongo:
     url: mongodb://admin:admin@localhost:27017
-  rabbitmq:
-    url: 'amqp://guest:guest@localhost:5672'
-  vault:
-    url: http://localhost:8200
   nats:
     url: nats://localhost:4222

@@ -1,27 +1,16 @@
 # local development values
 configMap:
+  # base config values
+  domain: examples
+  version: v1.0.0
+  env: local
+
+  # options
   isDevMode: true
   disableTracer: true
-  version: v1
-  domain: core
-  env: local
-  postgres:
-    url: postgres://admin:admin@localhost:5432/postgres?sslmode=disable
-    database: registry
-  mongo:
-    url: mongodb://admin:admin@localhost:27017
+
+  # infrastructure
   amqp:
     url: 'amqp://guest:guest@localhost:5672'
-  vault:
-    url: http://localhost:8200
   nats:
     url: nats://localhost:4222
-
-  # secretsOverrides are values to override using the provided secrets client
-  # secretsOverrides:
-  #   - configKey: postgres.url
-  #     secretKey: core/database/postgres/registry/url
-  #   - configKey: mongo.url
-  #     secretKey: core/database/mongo/registry/url
-  #   - configKey: rabbitmq.url
-  #     secretKey: core/messaging/rabbitmq/registry/url
