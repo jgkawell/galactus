@@ -1,14 +1,13 @@
 package clientfactory
 
 import (
+	"context"
 	"errors"
-	"strings"
+	"net/url"
 	"time"
 
-	chpb "github.com/jgkawell/galactus/api/gen/go/core/commandhandler/v1"
-	espb "github.com/jgkawell/galactus/api/gen/go/core/eventstore/v1"
+	espb "github.com/jgkawell/galactus/api/gen/go/core/eventer/v1"
 	rgpb "github.com/jgkawell/galactus/api/gen/go/core/registry/v1"
-
 	l "github.com/jgkawell/galactus/pkg/logging"
 
 	"google.golang.org/grpc"
@@ -22,12 +21,9 @@ const defaultTimeout = time.Second * 15
 type ClientFactory interface {
 	// CloseConnection will close the specified gRPC connection
 	CloseConnection(logger l.Logger, connection *grpc.ClientConn)
-	// CreateEventStoreClient creates a client connection to the EventStore RPC interface.
+	// CreatEventerClient creates a client connection to the EventStore RPC interface.
 	// `defer CloseConnection(logger, conn)` will need to be called by the caller of this method.
-	CreateEventStoreClient(logger l.Logger, url string) (espb.EventStoreClient, *grpc.ClientConn, error)
-	// CreateCommandHandlerClient creates a client connection to the CommandHandler RPC interface.
-	// `defer CloseConnection(logger, conn)` will need to be called by the caller of this method.
-	CreateCommandHandlerClient(logger l.Logger, url string) (chpb.CommandHandlerClient, *grpc.ClientConn, error)
+	CreatEventerClient(logger l.Logger, url string) (espb.EventerClient, *grpc.ClientConn, error)
 	// CreateRegistryClient creates a client connection to the Registry RPC interface.
 	// `defer CloseConnection(logger, conn)` will need to be called by the caller of this method.
 	CreateRegistryClient(logger l.Logger, url string) (rgpb.RegistryClient, *grpc.ClientConn, error)
@@ -37,13 +33,21 @@ type ClientFactory interface {
 
 type clientFactory struct{}
 
-func NewClientFactory(logger l.Logger) ClientFactory {
+func NewClientFactory() ClientFactory {
 	return &clientFactory{}
 }
 
 func (f *clientFactory) Create(logger l.Logger, desc grpc.ServiceDesc) *grpc.ClientConn {
 	// TODO: look up connection in registry
 	target := "todo"
+
+	conn, _ := f.createRpcConnection(logger, target)
+	registry := rgpb.NewRegistryClient(conn)
+
+	request := &rgpb.ConnectionRequest{
+		Route: desc.ServiceName,
+	}
+	_, _ = registry.Connection(context.Background(), request)
 
 	conn, err := f.createRpcConnection(logger, target)
 	if err != nil {
@@ -69,21 +73,21 @@ func (f *clientFactory) CloseConnection(logger l.Logger, connection *grpc.Client
 	CloseConnection(logger, connection)
 }
 
-func (f *clientFactory) CreateEventStoreClient(logger l.Logger, target string) (espb.EventStoreClient, *grpc.ClientConn, error) {
+func (f *clientFactory) CreatEventerClient(logger l.Logger, target string) (espb.EventerClient, *grpc.ClientConn, error) {
 	connection, err := f.createRpcConnection(logger, target)
 	if err != nil {
 		return nil, nil, err
 	}
-	return espb.NewEventStoreClient(connection), connection, nil
+	return espb.NewEventerClient(connection), connection, nil
 }
 
-func (f *clientFactory) CreateCommandHandlerClient(logger l.Logger, target string) (chpb.CommandHandlerClient, *grpc.ClientConn, error) {
-	connection, err := f.createRpcConnection(logger, target)
-	if err != nil {
-		return nil, nil, err
-	}
-	return chpb.NewCommandHandlerClient(connection), connection, nil
-}
+// func (f *clientFactory) CreateCommandHandlerClient(logger l.Logger, target string) (chpb.CommandHandlerClient, *grpc.ClientConn, error) {
+// 	connection, err := f.createRpcConnection(logger, target)
+// 	if err != nil {
+// 		return nil, nil, err
+// 	}
+// 	return chpb.NewCommandHandlerClient(connection), connection, nil
+// }
 
 func (f *clientFactory) CreateRegistryClient(logger l.Logger, target string) (rgpb.RegistryClient, *grpc.ClientConn, error) {
 	connection, err := f.createRpcConnection(logger, target)
@@ -102,13 +106,17 @@ func (f *clientFactory) createRpcConnection(logger l.Logger, target string) (*gr
 		return nil, logger.WrapError(errors.New("gRPC dial target cannot be empty"))
 	}
 
-	// Strip off port from target for trace service name
-	s := strings.Split(target, ":")
-	si := grpctrace.StreamClientInterceptor(grpctrace.WithServiceName(s[0]))
-	ui := grpctrace.UnaryClientInterceptor(grpctrace.WithServiceName(s[0]))
+	// Get hostname for tracing
+	u, stdErr := url.Parse(target)
+	if stdErr != nil {
+		return nil, logger.WrapError(l.NewError(stdErr, "failed to parse target as url"))
+	}
+	si := grpctrace.StreamClientInterceptor(grpctrace.WithServiceName(u.Hostname()))
+	ui := grpctrace.UnaryClientInterceptor(grpctrace.WithServiceName(u.Hostname()))
 
+	// Create connection
 	connection, stdErr := grpc.Dial(
-		target,
+		u.Host,
 		// NOTE: We use insecure here since TLS is handled by the Istio sidecar
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithConnectParams(grpc.ConnectParams{MinConnectTimeout: defaultTimeout}),

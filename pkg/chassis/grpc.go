@@ -20,14 +20,14 @@ func (b *mainBuilder) createRpcServer(opts ...grpc.ServerOption) {
 	opts = append(
 		opts,
 		grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(
-			grpctrace.UnaryServerInterceptor(grpctrace.WithServiceName(b.viper.GetString("traceName"))),
+			grpctrace.UnaryServerInterceptor(grpctrace.WithServiceName(b.appConfig.GetString("traceName"))),
 		)),
-		grpc.StreamInterceptor(grpctrace.StreamServerInterceptor(grpctrace.WithServiceName(b.viper.GetString("traceName")))),
+		grpc.StreamInterceptor(grpctrace.StreamServerInterceptor(grpctrace.WithServiceName(b.appConfig.GetString("traceName")))),
 	)
 	b.rpcServer = grpc.NewServer(opts...)
 }
 
-func (b *mainBuilder) StartRpcServer() {
+func (b *mainBuilder) startRpcServer() {
 	logger := b.logger.WithField("port", b.rpcPort)
 	logger.Info("starting grpc server")
 
@@ -44,7 +44,7 @@ func (b *mainBuilder) StartRpcServer() {
 	terminator.TerminateApplication()
 }
 
-func (b *mainBuilder) StopRpcServer() {
+func (b *mainBuilder) stopRpcServer() {
 	if b.rpcServer != nil {
 		b.rpcServer.Stop()
 		b.logger.Info("grpc server stopped")

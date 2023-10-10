@@ -4,8 +4,6 @@ import (
 	"context"
 	"errors"
 
-	agpb "github.com/jgkawell/galactus/api/gen/go/core/aggregates/v1"
-
 	l "github.com/jgkawell/galactus/pkg/logging"
 
 	"google.golang.org/grpc/metadata"
@@ -55,19 +53,19 @@ func NewExecutionContextWithoutTransactionID(ctx context.Context, logger l.Logge
 
 // NewExecutionContextFromEvent creates a new execution context from an event and pulls the transaction id from the event.
 // This function will return an error if the transaction id is empty.
-func NewExecutionContextFromEvent(ctx context.Context, logger l.Logger, event *agpb.Event) (*ExecutionContext, l.Error) {
-	transactionID := event.GetTransactionId()
-	if transactionID == "" {
-		return nil, logger.WrapError(errors.New(TransactionIDNotSet))
-	}
+// func NewExecutionContextFromEvent(ctx context.Context, logger l.Logger, event *agpb.Event) (*ExecutionContext, l.Error) {
+// 	transactionID := event.GetTransactionId()
+// 	if transactionID == "" {
+// 		return nil, logger.WrapError(errors.New(TransactionIDNotSet))
+// 	}
 
-	logger = logger.WithField(TransactionIDLoggerFieldKey, transactionID)
-	return &ExecutionContext{
-		context:       ctx,
-		Logger:        logger,
-		transactionID: transactionID,
-	}, nil
-}
+// 	logger = logger.WithField(TransactionIDLoggerFieldKey, transactionID)
+// 	return &ExecutionContext{
+// 		context:       ctx,
+// 		Logger:        logger,
+// 		transactionID: transactionID,
+// 	}, nil
+// }
 
 // NewExecutionContextFromMetadata creates a new execution context and pulls the transaction id from the metadata of the gRPC context.
 // This function will return an error if the transaction id is empty.

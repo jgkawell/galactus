@@ -7,45 +7,38 @@ import (
 	"fmt"
 	"net/http"
 	_ "net/http/pprof"
-	"net/url"
 	"os"
 	"os/signal"
-	"path"
-	"strings"
 	"syscall"
 	"time"
 
 	// chassis packages
-	runtime "github.com/banzaicloud/logrus-runtime-formatter"
-	"github.com/jgkawell/galactus/pkg/chassis/broker"
 	cf "github.com/jgkawell/galactus/pkg/chassis/clientfactory"
 	ct "github.com/jgkawell/galactus/pkg/chassis/context"
-	"github.com/jgkawell/galactus/pkg/chassis/db"
+	"github.com/jgkawell/galactus/pkg/chassis/database"
 	ec "github.com/jgkawell/galactus/pkg/chassis/env"
 	"github.com/jgkawell/galactus/pkg/chassis/events"
 	messagebus "github.com/jgkawell/galactus/pkg/chassis/messagebus"
+	"github.com/jgkawell/galactus/pkg/chassis/secrets"
 	"github.com/jgkawell/galactus/pkg/chassis/terminator"
 
 	// other galactus modules
-	azkeyvault "github.com/jgkawell/galactus/pkg/azkeyvault"
 	l "github.com/jgkawell/galactus/pkg/logging"
 
 	// galactus api packages
-	agpb "github.com/jgkawell/galactus/api/gen/go/core/aggregates/v1"
+
 	rgpb "github.com/jgkawell/galactus/api/gen/go/core/registry/v1"
-	evpb "github.com/jgkawell/galactus/api/gen/go/generic/events/v1"
 
 	// third party libraries
+	runtime "github.com/banzaicloud/logrus-runtime-formatter"
 	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis/v8"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
-	"go.mongodb.org/mongo-driver/mongo"
 	"google.golang.org/grpc"
+	"google.golang.org/protobuf/reflect/protoreflect"
 	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
 )
 
 // MainBuilder is an interface that exposes the functionality for using the chassis module
@@ -57,16 +50,17 @@ type MainBuilder interface {
 	Run()
 	// Close releases all assets. Call via defer.
 	Close()
-	// Initialize and open GORM db session based on dialector.
-	InitializeGORM(dbAddress string) (*gorm.DB, error)
-	// StartHttpServer launches the http server. This will consume the calling thread.
-	StartHttpServer()
+
+	// PRIVATE FUNCTIONS
+
+	// startHttpServer launches the http server. This will consume the calling thread.
+	startHttpServer()
 	// Stop HttpServer shuts the http server down.
-	StopHttpServer()
-	// StartRpcServer launches the rpc server. This will consume the calling thread.
-	StartRpcServer()
-	// StopRpcServer shuts the rpc server down.
-	StopRpcServer()
+	stopHttpServer()
+	// startRpcServer launches the rpc server. This will consume the calling thread.
+	startRpcServer()
+	// stopRpcServer shuts the rpc server down.
+	stopRpcServer()
 
 	// GETTER FUNCTIONS
 
@@ -78,23 +72,20 @@ type MainBuilder interface {
 	GetConfig() *viper.Viper
 	// GetLogger exposes the logger the application is using.
 	GetLogger() l.Logger
-	// GetMongoClient exposes the mongo client.
-	GetMongoClient() *mongo.Client
 	// GetHttpRouter exposes the gin http router.
 	GetHttpRouter() *gin.Engine
-	// GetBroker exposes the message bus.
-	GetBroker() messagebus.MessageBus
 	// GetRegistryClient exposes the registry client.
 	GetRegistryClient() rgpb.RegistryClient
 	// GetRpcServer exposes the grpc server.
 	GetRpcServer() *grpc.Server
-	// GetAzureKeyVaultClient exposes the azure key vault client.
-	GetAzureKeyVaultClient() azkeyvault.KeyVaultClient
-	// GetSqlClient exposes the sql client for services to use
-	GetSqlClient() *gorm.DB
+	// GetSecretsClient exposes the secret vault client.
+	GetSecretsClient() secrets.Client
 	// GetEventManager... TODO
 	GetEventManager() events.EventManager
 }
+
+// EventConfig defines the configuration for events
+type EventConfig struct{}
 
 // DaoLayerConfig defines the function for initializing the DAO layer if any custom setup is required
 type DaoLayerConfig struct {
@@ -102,22 +93,9 @@ type DaoLayerConfig struct {
 	CreateDaoLayer func(b MainBuilder)
 }
 
-// NoSqlConfig defines the connection confiuration for the NoSQL database (only Mongo is currently supported)
-type NoSqlConfig struct {
-	// DbAddressVariable is the config variable containing the database's address.
-	// NOTE: This address is reserved for mongo db only.
-	DbAddressVariable string
-}
-
-// SqlConfig defines the connection configuration to the SQL database (only Postgres is currently supported)
-type SqlConfig struct {
-	// Sql configuration variables that are pulled either from a secret store, or deployment configration
-	SqlDbHost   string
-	SqlDbPort   string
-	SqlDbName   string
-	SqlDbUser   string
-	SqlDbSecret string
-	SqlDbSchema string
+// DatabaseConfig defines the connection configuration to all databases
+type DatabaseConfig struct {
+	Databases []database.Client
 }
 
 // CacheConfig defines the configuration for the cache layer (only Redis is currently supported)
@@ -147,41 +125,42 @@ type GrpcHandlers struct {
 
 // HandlerLayerConfig specifies how the handler layer will be configured.
 type HandlerLayerConfig struct {
-	// HttpPortVariable will only be used if DoNotRegisterService is true. It specifies the config key to read the port from.
+	// HttpPortConfigKey will only be used if DoNotRegisterService is true. It specifies the config key to read the port from.
 	// ONLY USE THIS FOR THE REGISTRY SERVICE ITSELF OR IF YOU REALLY KNOW WHAT YOU'RE DOING.
-	HttpPortVariable string
-	// CreateRestHandlers creates the http restful interface using the gin-engine router.
+	HttpPortConfigKey string
+	// CreateRestHandlers creates the http restful interface using the gin-engine router. This needs to
+	// be a function called from main.go so that it has both the service interfaces (
+	// and access to mainbuilder attributes (e.g. the logger).
 	CreateRestHandlers func(b MainBuilder)
-	// RpcPortVariable will only be used if DoNotRegisterService is true. It specifies the config key to read the port from.
+	// GrpcPortConfigKey will only be used if DoNotRegisterService is true. It specifies the config key to read the port from.
 	// ONLY USE THIS FOR THE REGISTRY SERVICE ITSELF OR IF YOU REALLY KNOW WHAT YOU'RE DOING.
-	RpcPortVariable string
-	// CreateRpcHandlers creates the rpc interface using the grpc-server.
+	GrpcPortConfigKey string
+	// CreateRpcHandlers creates the rpc interface using the grpc server. This needs to
+	// be a function called from main.go so that it has both the service interfaces
+	// and access to mainbuilder attributes (e.g. the logger).
 	CreateRpcHandlers func(b MainBuilder) []GrpcHandlers
 	// RpcOptions is a slice of optional grpc.ServerOption structs to set on the gRPC server.
 	RpcOptions []grpc.ServerOption
-	// CreateBrokerConfig defines a function that creates the broker configuration. This needs to
-	// be a function called from main.go so that it has both the service interfaces (e.g. Handle())
+	// CreateConsumers defines a function that creates the consumer interfaces on the messagebus.
+	// This needs to be a function called from main.go so that it has both the service interfaces
 	// and access to mainbuilder attributes (e.g. the logger).
-	CreateBrokerConfig func(b MainBuilder) ConsumerConfig
+	CreateConsumers func(b MainBuilder) []ConsumerConfig
 }
 
-// ConsumerConfig defines the configuration for consumers on the messagebus layer (e.g. RabbitMQ)
+// ConsumerConfig defines the configuration for a consumer handler (processing messages off of the messagebus)
 type ConsumerConfig struct {
-	Configs []HandlerConfig
-}
-
-// HandlerConfig defines the configuration for a consumer handler (processing messages off of the messagebus)
-type HandlerConfig struct {
-	// AggregateType is mapped to the AMQP exchange name
-	AggregateType evpb.AggregateType
-	// EventType is mapped to the AMQP routing key of the queue
-	EventType *evpb.EventType
-	// EventCode ...
-	EventCode interface{}
-	// ConsumerKind is the type of consumer to create (e.g. queue, topic)
-	ConsumerKind messagebus.ExchangeKind
-	// Handler is the callback function to execute when a message is received
-	Handler messagebus.ClientHandler
+	// Event is the event type to subscribe to
+	Event protoreflect.ProtoMessage
+	// Consumer is the callback function to execute when a message is received
+	Consumer messagebus.Consumer
+	// Duplicate indicates whether or not to duplicate messages to all replicas of the service. By default, this is false and messages are
+	// load-balanced to a single replica of the service. If Duplicate is set to true, messages will instead be duplicated to each replica
+	// of the service. This is useful in special cases where you need to ensure that all replicas of a service receive a message.
+	Duplicate bool
+	// IgnoreType states whether the subscribing consumer should ignore the event type when receiving messages. If true, the consumer
+	// will receive all events that match Event.Source. If false, the consumer will only receive events that match both Event.Source and Event.Type.
+	// Essentially this is a way to subscribe to all events of a certain aggregate type instead of a specific event type.
+	IgnoreType bool
 }
 
 // CheckConfig specifies a configuration for use in readiness and wellness checks.
@@ -190,29 +169,20 @@ type CheckConfig struct {
 	Check func(ctx *gin.Context)
 }
 
-// KeyVaultConfig defines connection configuration for the keyvault module
-type KeyVaultConfig struct {
-	// RequireKeyVault should return true if the key vault client must be initialized successfully and false otherwise.
-	RequireKeyVault func(b MainBuilder) bool
-	// KeyVaultResourceGroupVariable is the config variable for the key vault resource group.
-	// One of KeyVaultResourceGroupVariable and GetKeyVaultResourceGroup must be specified.
-	KeyVaultResourceGroupVariable string
-	// GetKeyVaultResourceGroup retrieves the key vault resource group name.
-	// One of KeyVaultResourceGroup and GetKeyVaultResourceGroup must be specified.
-	GetKeyVaultResourceGroup func() string
-	// KeyVaultNameVariable is the config variable for the key vault name.
-	// One of KeyVaultNameVariable and GetKeyVaultName must be specified.
-	KeyVaultNameVariable string
-	// GetKeyVaultResourceGroup retrieves the key vault name.
-	GetKeyVaultName func() string
-	// KeyVaultOverridesVariable is the config variable for the key vault overrides mapping.
-	KeyVaultOverridesVariable string
+// SecretsConfig defines connection configuration for the secrets vault to be used by the application.
+type SecretsConfig struct {
+	Client secrets.Client
+	// Required should return true if the secrets client must be initialized successfully and false otherwise.
+	// A common usecase for this is to only require the secrets client if the application is running in production mode.
+	// For that usecase, you can use the following:
+	//
+	//  func(b chassis.MainBuilder) bool { return !b.IsDevMode() }
+	Required func(b MainBuilder) bool
 }
 
 // MessageBusConfig defines the service options for the messagebus module
 type MessageBusConfig struct {
-	// MessageBusOptions specifies additional settings when creating the message bus.
-	// MessageBusOptions []messagebus.ServiceOption
+	Buses []messagebus.Client
 }
 
 // InitializeConfig defines the beginning configuration of the application such
@@ -224,8 +194,7 @@ type InitializeConfig struct {
 	// LogFile specifies the file to print logs into.
 	// This should only be used in local debugging.
 	LogFile string
-	// OnInitialize called when main build is being initialized.
-	// This will be executed after config and key vault have been called but prior to dao, service, and handler layers.
+	// OnInitialize is called after the config and secrets have been initialized but prior to dao, service, and handler layers.
 	OnInitialize func(b MainBuilder)
 }
 
@@ -241,14 +210,12 @@ type MainBuilderConfig struct {
 	//
 	// ONLY SET THIS TO TRUE FOR THE REGISTRY SERVICE ITSELF OR IF YOU REALLY KNOW WHAT YOU'RE DOING.
 	DoNotRegisterService bool
-	// CreateEventStoreClient specifies if the service needs a persistent client to the eventstore service to create events
-	CreateEventStoreClient bool
+	// EventConfig is the event configuration.
+	EventConfig *EventConfig
 	// DaoLayerConfig is the dao layer configuration.
 	DaoLayerConfig *DaoLayerConfig
-	// NoSqlConfig is the `NoSQL` db configuatrion
-	NoSqlConfig *NoSqlConfig
-	// SqlConfig is the `SQL` db configuatrion
-	SqlConfig *SqlConfig
+	// DatabaseConfig is the `SQL` db configuatrion
+	DatabaseConfig *DatabaseConfig
 	// CacheConfig is the `Cache` configuatrion
 	CacheConfig *CacheConfig
 	// GatewayLayerConfig is the gateway layer configuration.
@@ -261,13 +228,15 @@ type MainBuilderConfig struct {
 	ReadinessCheckConfig *CheckConfig
 	// WellnessCheckConfig is the wellness check configuration.
 	WellnessCheckConfig *CheckConfig
-	// KeyVaultConfig is the key vault configuration.
-	KeyVaultConfig *KeyVaultConfig
+	// SecretsConfig is the secrets vault configuration.
+	SecretsConfig *SecretsConfig
 	// InitializeConfig is the configuration for initialize.
 	InitializeConfig *InitializeConfig
 	// MessageBusConfig is the configuration for connecting to the message bus.
 	MessageBusConfig *MessageBusConfig
 	// OnRun is called when MainBuilder.Run is called. DO NOT consume the calling thread.
+	// It will be called after the configuration and logger have been initialized but before anything
+	// else has been initialized.
 	OnRun func(b MainBuilder)
 	// OnStop is called when the application is closing.
 	OnStop func(b MainBuilder)
@@ -277,11 +246,13 @@ type mainBuilder struct {
 	logger l.Logger
 
 	// basic configuration
-	applicationName        string
-	isDevMode              bool
-	createEventStoreClient bool
-	httpPort               string
-	rpcPort                string
+	applicationName     string
+	applicationDomain   string
+	applicationVersion  string
+	isDevMode           bool
+	createEventerClient bool
+	httpPort            string
+	rpcPort             string
 
 	// http/grpc
 	httpServer     *http.Server
@@ -290,24 +261,23 @@ type mainBuilder struct {
 	rpcConnections []*grpc.ClientConn
 
 	// clients/servers
-	azureKeyVaultClient azkeyvault.KeyVaultClient
-	bus                 messagebus.MessageBus
-	cacheClient         *redis.Client
-	noSqlClient         *mongo.Client
-	sqlClient           *gorm.DB
-	registryClient      rgpb.RegistryClient
-	eventManager        *events.Manager
+	secretsClient  secrets.Client
+	cacheClient    *redis.Client
+	registryClient rgpb.RegistryClient
+	eventManager   events.EventManager
+	// eventManager   *events.Manager
+	databases []database.Client
+	buses     []messagebus.Client
 
 	// functions
 	onRun  func(b MainBuilder)
 	onStop func(b MainBuilder)
 
 	// configs
-	consumerConfig       ConsumerConfig
-	brokerConfigs        []broker.BrokerDefinition
+	consumerConfig       []ConsumerConfig
 	readinessCheckConfig *CheckConfig
 	wellnessCheckConfig  *CheckConfig
-	viper                *viper.Viper
+	appConfig            *viper.Viper
 }
 
 // PUBLIC METHODS
@@ -325,15 +295,18 @@ func NewMainBuilder(mbc *MainBuilderConfig) MainBuilder {
 		logrus.SetOutput(f)
 	}
 
+	createEventerClient := false
+	if mbc.EventConfig != nil {
+		createEventerClient = true
+	}
 	b := &mainBuilder{
-		applicationName:        mbc.ApplicationName,
-		logger:                 logger,
-		onRun:                  mbc.OnRun,
-		onStop:                 mbc.OnStop,
-		readinessCheckConfig:   mbc.ReadinessCheckConfig,
-		wellnessCheckConfig:    mbc.WellnessCheckConfig,
-		createEventStoreClient: mbc.CreateEventStoreClient,
-		eventManager:           &events.Manager{},
+		applicationName:      mbc.ApplicationName,
+		logger:               logger,
+		onRun:                mbc.OnRun,
+		onStop:               mbc.OnStop,
+		readinessCheckConfig: mbc.ReadinessCheckConfig,
+		wellnessCheckConfig:  mbc.WellnessCheckConfig,
+		createEventerClient:  createEventerClient,
 	}
 
 	// Get variables from local.yaml/values.yaml and environment variables for use by viper
@@ -348,15 +321,15 @@ func NewMainBuilder(mbc *MainBuilderConfig) MainBuilder {
 	b.setupConfig(mbc.InitializeConfig)
 
 	// Add env and versions to logs
-	logger.AddGlobalField("env", b.viper.GetString("namespace"))
-	logger.AddGlobalField("version", b.viper.GetString("version"))
+	logger.AddGlobalField("env", b.appConfig.GetString("namespace"))
+	logger.AddGlobalField("version", b.appConfig.GetString("version"))
 
 	// Determine what mode the application is running in
 	b.setupMode(mbc.IsDevModeVariable)
 
-	// Connect to key vault (only when remote/not dev mode)
-	if mbc.KeyVaultConfig != nil && !b.isDevMode {
-		b.setupKeyVault(mbc.KeyVaultConfig, baseDir)
+	// Connect to secrets vault
+	if mbc.SecretsConfig != nil {
+		b.setupSecrets(mbc.SecretsConfig, baseDir)
 	}
 
 	// Call initialize if needed
@@ -366,19 +339,14 @@ func NewMainBuilder(mbc *MainBuilderConfig) MainBuilder {
 
 	// Setup the message bus
 	if mbc.MessageBusConfig != nil {
-		b.setupMessageBus()
+		b.setupMessageBus(mbc.MessageBusConfig)
 	}
 
 	// Setup the DAO layer
 	if mbc.DaoLayerConfig != nil {
-		// establish a connection to the NoSQL database if configured
-		if mbc.NoSqlConfig != nil {
-			b.setupNoSqlDatabase(mbc.NoSqlConfig.DbAddressVariable)
-		}
-
 		// establish a connection to the SQL database if configured
-		if mbc.SqlConfig != nil {
-			b.setupSqlDatabase(mbc.SqlConfig)
+		if mbc.DatabaseConfig != nil {
+			b.setupDatabases(mbc.DatabaseConfig)
 		}
 
 		// establish a connection to the Redis cache if configured
@@ -392,7 +360,7 @@ func NewMainBuilder(mbc *MainBuilderConfig) MainBuilder {
 	// Setup the Gateway layer
 	if mbc.GatewayLayerConfig != nil {
 		if mbc.GatewayLayerConfig.CreateInternalClients != nil {
-			clientFactory := cf.NewClientFactory(logger)
+			clientFactory := cf.NewClientFactory()
 			b.rpcConnections = mbc.GatewayLayerConfig.CreateInternalClients(b, clientFactory)
 		}
 	}
@@ -402,11 +370,6 @@ func NewMainBuilder(mbc *MainBuilderConfig) MainBuilder {
 		mbc.ServiceLayerConfig.CreateServiceLayer(b)
 	}
 
-	// Setup the broker configuration
-	if mbc.HandlerLayerConfig.CreateBrokerConfig != nil {
-		b.setupBrokerConfig(mbc.HandlerLayerConfig)
-	}
-
 	// Register the service with the service registry
 	if !mbc.DoNotRegisterService {
 		b.setupRegistration(mbc.HandlerLayerConfig, mbc.ApplicationName)
@@ -414,8 +377,8 @@ func NewMainBuilder(mbc *MainBuilderConfig) MainBuilder {
 
 	// If the service is not supposed to be registered, set ports from config
 	if mbc.DoNotRegisterService {
-		b.rpcPort = b.viper.GetString(mbc.HandlerLayerConfig.RpcPortVariable)
-		b.httpPort = b.viper.GetString(mbc.HandlerLayerConfig.HttpPortVariable)
+		b.rpcPort = b.appConfig.GetString(mbc.HandlerLayerConfig.GrpcPortConfigKey)
+		b.httpPort = b.appConfig.GetString(mbc.HandlerLayerConfig.HttpPortConfigKey)
 	}
 
 	// Setup the Handler layer
@@ -442,48 +405,31 @@ func (b *mainBuilder) Run() {
 		}
 	}
 
+	// initialize eventer client if requested
+	if b.createEventerClient {
+		manager, err := events.NewEventManager(ctx, b.appConfig.GetString("registryServiceAddress"))
+		if err != nil {
+			b.GetLogger().WithError(err).Panic("failed to initialize event manager")
+		}
+		b.eventManager = manager
+		defer b.eventManager.Close()
+	}
+
 	if b.onRun != nil {
 		b.onRun(b)
 	}
 
 	if b.httpRouter != nil {
-		go b.StartHttpServer()
+		go b.startHttpServer()
 	}
 
 	if b.rpcServer != nil {
-		go b.StartRpcServer()
-	}
-
-	// initialize eventstore client if requested
-	if b.createEventStoreClient {
-		clientFactory := cf.NewClientFactory(b.logger)
-		// TODO: is there a better way to persist clients so we don't have to create them multiple times?
-		registryClient, conn, stdErr := clientFactory.CreateRegistryClient(b.GetLogger(), b.viper.GetString("registryServiceAddress"))
-		defer conn.Close()
-		if stdErr != nil {
-			b.logger.WithError(stdErr).Fatal("failed to initialize registry client")
-		}
-		b.registryClient = registryClient
-
-		resp, stdErr := b.registryClient.Connection(ctx.GetContext(), &rgpb.ConnectionRequest{
-			Name:    "eventstore",
-			Version: "v1",
-			Type:    agpb.ProtocolKind_PROTOCOL_KIND_GRPC,
-		})
-		if stdErr != nil {
-			b.logger.WithError(stdErr).Fatal("failed to request connection info from registry service during initialization of eventstore client")
-		}
-		client, conn, stdErr := clientFactory.CreateEventStoreClient(b.GetLogger(), resp.GetAddress())
-		defer conn.Close()
-		if stdErr != nil {
-			b.logger.WithError(stdErr).Fatal("failed to initialize eventstore client")
-		}
-		b.eventManager.Client = client
+		go b.startRpcServer()
 	}
 
 	// if running locally, initialize broker listeners without waiting for Shawarma call
 	if b.isDevMode {
-		b.initializeBrokerListeners(b.applicationName)
+		b.subscribeConsumers(false)
 	}
 
 	signal.Notify(terminator.ApplicationChannel, os.Interrupt, syscall.SIGTERM)
@@ -495,26 +441,37 @@ func (b *mainBuilder) Run() {
 
 // Close closes all current connections and stops all active servers
 func (b *mainBuilder) Close() {
+	ctx := context.Background()
+
+	// call service provided stop function
 	if b.onStop != nil {
 		b.onStop(b)
 	}
-	if b.noSqlClient != nil {
-		db.DisconnectNoSqlClient(b.logger, b.noSqlClient)
+
+	// close database connections
+	for _, db := range b.databases {
+		db.Disconnect(ctx)
 	}
-	if b.sqlClient != nil {
-		db.DisconnectSqlClient(b.logger, b.sqlClient)
+
+	// close all messagebus connections
+	for _, bus := range b.buses {
+		err := bus.Shutdown(false)
+		if err != nil {
+			b.logger.WithError(err).Error("failed to gracefully shutdown messagebus: forcing shutdown")
+			bus.Shutdown(true)
+		}
 	}
+
+	// close all rpc connections
 	for _, conn := range b.rpcConnections {
 		cf.CloseConnection(b.logger, conn)
 	}
-	b.StopHttpServer()
-	b.StopRpcServer()
-	b.logger.Info("service stopped")
-}
 
-// InitializeGORM sets up the GORM SQL DB connection
-func (b *mainBuilder) InitializeGORM(dbAddress string) (*gorm.DB, error) {
-	return gorm.Open(postgres.Open(dbAddress), &gorm.Config{FullSaveAssociations: true})
+	// close servers
+	b.stopHttpServer()
+	b.stopRpcServer()
+
+	b.logger.Info("service stopped")
 }
 
 // SETUP FUNCTIONS
@@ -540,18 +497,17 @@ func (b *mainBuilder) setupConfig(config *InitializeConfig) {
 		v = v.Sub("configMap")
 		v.AutomaticEnv()
 	}
-	b.viper = v
-	// TODO: how does this map to domains?
-	b.viper.SetDefault("namespace", "local")
-	// TODO: rethink this version management
-	b.viper.SetDefault("version", "0.0.0")
+	b.appConfig = v
+
+	b.applicationDomain = b.appConfig.GetString("domain")
+	b.applicationVersion = b.appConfig.GetString("version")
 }
 
 func (b *mainBuilder) setupMode(isDevModeVariable string) {
 	if isDevModeVariable == "" {
 		isDevModeVariable = "isDevMode"
 	}
-	b.isDevMode = b.viper.GetBool(isDevModeVariable)
+	b.isDevMode = b.appConfig.GetBool(isDevModeVariable)
 	if b.isDevMode {
 		b.logger.Info("Currently running in dev mode")
 		logrus.SetFormatter(&runtime.Formatter{
@@ -564,130 +520,64 @@ func (b *mainBuilder) setupMode(isDevModeVariable string) {
 	}
 }
 
-// setupKeyVault loads the keyvault configuration and overrides any defined values
-// in the values configuration file with their keyvault values.
-func (b *mainBuilder) setupKeyVault(config *KeyVaultConfig, baseDir string) {
-	var (
-		err           error
-		resourceGroup string
-		keyVaultName  string
-	)
-
-	if config.GetKeyVaultResourceGroup != nil {
-		resourceGroup = config.GetKeyVaultResourceGroup()
-	} else {
-		resourceGroup = b.viper.GetString(config.KeyVaultResourceGroupVariable)
+// setupSecrets loads the secrets vault configuration and overrides any defined values
+// in the values configuration file with their secret values.
+func (b *mainBuilder) setupSecrets(config *SecretsConfig, baseDir string) {
+	ctx := context.Background()
+	secretsVaultRequired := true
+	if config.Required != nil {
+		secretsVaultRequired = config.Required(b)
 	}
 
-	if config.GetKeyVaultName != nil {
-		keyVaultName = config.GetKeyVaultName()
-	} else {
-		keyVaultName = b.viper.GetString(config.KeyVaultNameVariable)
-	}
-
-	keyVaultRequired := true
-	if config.RequireKeyVault != nil {
-		keyVaultRequired = config.RequireKeyVault(b)
-	}
-
-	if len(resourceGroup) == 0 {
-		msg := "GetKeyVaultResourceGroup or KeyVaultResourceGroup is required"
-		if keyVaultRequired {
-			b.logger.Fatal(msg)
-		}
-		b.logger.Warn(msg)
-		return
-	}
-	if len(keyVaultName) == 0 {
-		msg := "GetKeyVaultName or KeyVaultName is required"
-		if keyVaultRequired {
-			b.logger.Fatal(msg)
-		}
-		b.logger.Warn(msg)
-		return
-	}
-
-	subFile := "/etc/kubernetes/azure.json"
-	if b.azureKeyVaultClient, err = azkeyvault.NewClientConfigPath(b.logger, subFile, resourceGroup, keyVaultName); err != nil {
-		subFile = path.Join(baseDir, "azure.json")
-		if b.azureKeyVaultClient, err = azkeyvault.NewClientConfigPath(b.logger, subFile, resourceGroup, keyVaultName); err != nil {
-			if keyVaultRequired {
-				b.logger.WithError(err).Fatal("failed to create key vault client")
-			} else {
-				b.logger.WithError(err).Warn("failed to create key vault client")
-			}
+	err := config.Client.Initialize(ctx, b.GetConfig())
+	if err != nil {
+		if secretsVaultRequired {
+			b.logger.WithError(err).Fatal("failed to create required vault client")
+		} else {
+			b.logger.WithError(err).Warn("failed to create key vault client but not required")
+			return
 		}
 	}
+	b.secretsClient = config.Client
 
-	if config.KeyVaultOverridesVariable != "" {
-		overrides := b.viper.GetStringMapString(config.KeyVaultOverridesVariable)
-		kvc := b.GetAzureKeyVaultClient()
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-		defer cancel()
-		for configKey, keyVaultKey := range overrides {
-			keyVaultValue, err := kvc.GetKeyVaultSecret(ctx, b.GetLogger(), keyVaultKey)
-			if err != nil {
-				b.GetLogger().WithError(err).Fatal("failed to get key vault value")
-			}
-			b.viper.Set(configKey, keyVaultValue)
+	type SecretOverride struct {
+		ConfigKey string
+		SecretKey string
+	}
+	overrides := []SecretOverride{}
+	err = b.GetConfig().UnmarshalKey("secretsOverrides", &overrides)
+	if err != nil {
+		b.logger.WithError(err).Fatal("failed to read secrets overrides")
+	}
+	for _, o := range overrides {
+		value, err := b.GetSecretsClient().Get(ctx, o.SecretKey)
+		if err != nil || value == "" {
+			b.logger.WithField("secret_key", o.SecretKey).WithError(err).Fatal("failed to read secret from vault")
 		}
+		b.GetConfig().Set(o.ConfigKey, value)
 	}
 }
 
-func (b *mainBuilder) setupMessageBus() {
-	var (
-		user     = b.viper.GetString("MessageBusUser")
-		password = b.viper.GetString("MessageBusPassword")
-		ips      = b.viper.GetString("MessageBusIPs")
-	)
-	b.bus = messagebus.NewMessageBus(
-		b.GetLogger(),
-		user,
-		password,
-		ips,
-	)
-
-	if err := b.bus.Connect(context.Background(), b.GetLogger()); err != nil {
-		b.logger.WithError(err).Fatal("failed to connect to message bus")
+func (b *mainBuilder) setupMessageBus(config *MessageBusConfig) {
+	ctx := context.Background()
+	for _, bus := range config.Buses {
+		err := bus.Initialize(ctx, b.GetConfig())
+		if err != nil {
+			b.logger.WithError(err).Fatal("failed to initialize messagebus client")
+		}
 	}
+	b.buses = config.Buses
 }
 
-func (b *mainBuilder) setupNoSqlDatabase(dbAddressVariable string) {
-	dbAddress := b.viper.GetString(dbAddressVariable)
-	var err error
-	b.noSqlClient, err = db.CreateNoSqlClient(b.logger, dbAddress)
-	if err != nil {
-		b.logger.WithField("db_address", dbAddress).WithError(err).Fatal("failed to create database client")
+func (b *mainBuilder) setupDatabases(config *DatabaseConfig) {
+	ctx := context.Background()
+	for _, c := range config.Databases {
+		err := c.Initialize(ctx, b.GetConfig())
+		if err != nil {
+			b.logger.WithError(err).Fatal("failed to initialize database client")
+		}
 	}
-	u, err := url.Parse(dbAddress)
-	if err != nil {
-		b.logger.WithField("db_address", dbAddress).WithError(err).Fatal("failed to parse database address")
-	}
-	if u.User != nil {
-		// remove the password so it doesn't get logged
-		u.User = url.User(u.User.Username())
-	}
-
-	b.logger.Info("Connected to " + u.String())
-}
-
-func (b *mainBuilder) setupSqlDatabase(config *SqlConfig) {
-	var err error
-	b.sqlClient, err = db.CreateSqlClient(
-		b.logger,
-		b.viper.GetString(config.SqlDbUser),
-		b.viper.GetString(config.SqlDbSecret),
-		b.viper.GetString(config.SqlDbHost),
-		b.viper.GetString(config.SqlDbPort),
-		b.viper.GetString(config.SqlDbName),
-		b.viper.GetString(config.SqlDbSchema),
-		b.isDevMode,
-	)
-	if err != nil {
-		b.logger.WithError(err).Fatal("failed to create sql database client")
-	}
-
-	b.logger.Info("connected to sql db successfully")
+	b.databases = config.Databases
 }
 
 func (b *mainBuilder) setupCache(config *CacheConfig) {
@@ -707,103 +597,71 @@ func (b *mainBuilder) setupCache(config *CacheConfig) {
 	}()
 }
 
-func (b *mainBuilder) setupBrokerConfig(config *HandlerLayerConfig) {
-	b.consumerConfig = config.CreateBrokerConfig(b)
-	for _, c := range b.consumerConfig.Configs {
-		err := events.ValidateEventCode(c.EventCode)
-		if err != nil {
-			b.logger.WithField("event_code", c.EventCode).WithError(err).Fatal("invalid event code in consumer config")
-		}
-	}
-}
-
 func (b *mainBuilder) setupRegistration(config *HandlerLayerConfig, serviceName string) {
-	// set protocols based on the chassis configuration
-	protocols := []*rgpb.ProtocolRequest{}
-	// NOTE: all services have an http handler that handles health checks. this handler can optionally be extended for other uses.
-	protocols = append(protocols, &rgpb.ProtocolRequest{
-		Kind:  agpb.ProtocolKind_PROTOCOL_KIND_HTTP,
-		Route: fmt.Sprintf("%s/%s/%s", b.viper.GetString("domain"), serviceName, b.viper.GetString("version")),
+	clientFactory := cf.NewClientFactory()
+	registryClient, conn, stdErr := clientFactory.CreateRegistryClient(b.GetLogger(), b.appConfig.GetString("registryServiceAddress"))
+	defer conn.Close()
+	if stdErr != nil {
+		b.logger.WithError(stdErr).Fatal("failed to initialize registry client")
+	}
+	b.registryClient = registryClient
+
+	// register service with registry
+	c := context.Background()
+	ctx, _ := ct.NewExecutionContext(c, b.GetLogger(), uuid.New().String())
+	response, stdErr := b.registryClient.Register(ctx.GetContext(), &rgpb.RegisterRequest{
+		Name:    b.applicationName,
+		Domain:  b.applicationDomain,
+		Version: b.applicationVersion,
 	})
-	// add rpc handlers only if requested
+	if stdErr != nil {
+		b.logger.WithError(stdErr).Fatal("failed to register service with registry")
+	}
+
+	// if no handler layer config, nothing else to register
+	if config == nil {
+		return
+	}
+
+	// register grpc handlers
 	if config.CreateRpcHandlers != nil {
 		for _, s := range config.CreateRpcHandlers(b) {
-			protocols = append(protocols, &rgpb.ProtocolRequest{
-				Kind:  agpb.ProtocolKind_PROTOCOL_KIND_GRPC,
+			response, stdErr := b.registryClient.RegisterGrpcServer(ctx.GetContext(), &rgpb.RegisterGrpcServerRequest{
+				Id:    response.Id,
 				Route: s.Desc.ServiceName,
 			})
+			if stdErr != nil {
+				b.logger.WithError(stdErr).Fatal("failed to register grpc handler with registry")
+			}
+			b.rpcPort = response.Port
 		}
 	}
 
-	// pull together producers, and consumers from chassis config
-	consumers := []*rgpb.ConsumerRequest{}
-	for i, c := range b.consumerConfig.Configs {
+	// TODO: register http handlers
 
-		// map the messagebus kind to the consumer kind
-		var protoKind agpb.ConsumerKind
-		switch c.ConsumerKind {
-		case messagebus.ExchangeKindTopic:
-			protoKind = agpb.ConsumerKind_CONSUMER_KIND_TOPIC
-		case messagebus.ExchangeKindDirect:
-			protoKind = agpb.ConsumerKind_CONSUMER_KIND_QUEUE
-		default:
-			b.logger.WithField("kind", c.ConsumerKind).Fatal("unsupported messagebus kind")
-		}
-
-		consumers = append(consumers, &rgpb.ConsumerRequest{
-			Kind:          protoKind,
-			Order:         int32(i),
-			AggregateType: events.AggregateTypeAsString(c.AggregateType),
-			EventType:     events.EventTypeAsString(c.EventType),
-			EventCode:     events.EventCodeAsString(c.EventCode),
-		})
-	}
-
-	clientFactory := cf.NewClientFactory(b.logger)
-	registryClient, registryConnection, err := clientFactory.CreateRegistryClient(b.GetLogger(), b.viper.GetString("registryServiceAddress"))
-	b.registryClient = registryClient
-	if err != nil {
-		b.logger.WithError(err).Fatal("failed to create registry client")
-	}
-	defer clientFactory.CloseConnection(b.GetLogger(), registryConnection)
-
-	ctx, err := ct.NewExecutionContext(context.Background(), b.logger, uuid.NewString())
-	if err != nil {
-		b.logger.WithError(err).Fatal("failed to create execution context for call to registry")
-	}
-	registerResponse, err := b.registryClient.Register(ctx.GetContext(), &rgpb.RegisterRequest{
-		Name:        serviceName,
-		Domain:      b.viper.GetString("domain"),
-		Version:     b.viper.GetString("version"),
-		Description: b.viper.GetString("description"),
-		Protocols:   protocols,
-		Consumers:   consumers,
-	})
-	if err != nil {
-		b.logger.WithError(err).Fatal("failed to register the service")
-	}
-
-	// set server ports based on registration values
-	for _, p := range registerResponse.GetProtocols() {
-		if p.GetKind() == agpb.ProtocolKind_PROTOCOL_KIND_GRPC {
-			b.rpcPort = fmt.Sprint(p.GetPort())
-		}
-		if p.GetKind() == agpb.ProtocolKind_PROTOCOL_KIND_HTTP {
-			b.httpPort = fmt.Sprint(p.GetPort())
-		}
-	}
-
-	// set consumer configs based on registration values
-	b.brokerConfigs = make([]broker.BrokerDefinition, len(registerResponse.GetConsumers()))
-	for _, c := range registerResponse.GetConsumers() {
-		b.brokerConfigs[c.Order] = broker.BrokerDefinition{
-			RoutingKey: c.GetRoutingKey(),
-			Exchange:   c.GetExchange(),
-			QueueName:  c.GetQueueName(),
-			Handler:    b.consumerConfig.Configs[c.Order].Handler,
-		}
-		break
-	}
+	// TODO: register consumers
+	// if config.CreateConsumers != nil {
+	// 	consumers := make([]*rgpb.ConsumerRequest, len(b.consumerConfig))
+	// 	for i, c := range b.consumerConfig {
+	// 		e, _ := events.New(c.Event)
+	// 		kind := rgpb.ConsumerKind_CONSUMER_KIND_ONE
+	// 		if c.Duplicate {
+	// 			kind = rgpb.ConsumerKind_CONSUMER_KIND_ALL
+	// 		}
+	// 		consumers[i] = &rgpb.ConsumerRequest{
+	// 			Kind:        kind,
+	// 			EventSource: e.Source,
+	// 			EventType:   &e.Type,
+	// 		}
+	// 	}
+	// 	_, stdErr = b.registryClient.RegisterConsumers(ctx.GetContext(), &rgpb.RegisterConsumersRequest{
+	// 		Id:        response.Id,
+	// 		Consumers: consumers,
+	// 	})
+	// 	if stdErr != nil {
+	// 		b.logger.WithError(stdErr).Fatal("failed to register consumer with registry")
+	// 	}
+	// }
 }
 
 func (b *mainBuilder) setupHandlers(config *HandlerLayerConfig) {
@@ -822,55 +680,80 @@ func (b *mainBuilder) setupHandlers(config *HandlerLayerConfig) {
 			b.GetRpcServer().RegisterService(&s.Desc, s.Handler)
 		}
 	}
+
+	// Validate the consumer configuration only if configured
+	if config.CreateConsumers != nil {
+		for _, c := range b.consumerConfig {
+			err := events.Validate(c.Event)
+			if err != nil {
+				b.logger.WithField("event", c.Event).WithError(err).Fatal("invalid event type in consumer config")
+			}
+		}
+		b.consumerConfig = config.CreateConsumers(b)
+	}
 }
 
 // PRIVATE METHODS
 
-// initializeBrokerListeners registers the topic and queue listeners with the messagebus according to the service configuration and preview/no preview status.
+// subscribeConsumers subscribes all configured consumers to their respective event types on all configured messagebuses.
 // This function should only be called when the shawarma sidecar makes a request to the HTTP handler saying that one of the service endpoints has been ASSIGNED to this pod.
 // This way we guarantee that the service will only read messages that it is supposed to based off of it's Argo rollout status.
-func (b *mainBuilder) initializeBrokerListeners(serviceName string) {
-	// setup queues
-	if len(b.brokerConfigs) > 0 {
-		for _, bd := range b.brokerConfigs {
-			bd.RoutingKey = modifyRoutingKey(bd.RoutingKey, serviceName)
-			broker.RegisterConsumer(b.logger, b.bus, bd)
+func (b *mainBuilder) subscribeConsumers(preview bool) {
+	ctx := context.Background()
+	for _, c := range b.consumerConfig {
+		// we can ignore the error since validation has already happened
+		e, _ := events.New(c.Event)
+		params := messagebus.SubscribeParams{
+			Event:      e,
+			Consumer:   c.Consumer,
+			IgnoreType: c.IgnoreType,
+		}
+		if !c.Duplicate {
+			params.Group = fmt.Sprintf("%s.%s.%s", b.applicationDomain, b.applicationName, b.applicationVersion)
+		}
+		if preview {
+			params.Tags = []string{"preview"}
+		}
+		for _, bus := range b.buses {
+			err := bus.Subscribe(ctx, params)
+			if err != nil {
+				b.logger.WithError(err).WithField("event", e).Fatal("failed to subscribe consumer")
+			}
+			b.logger.WithFields(l.Fields{"event": e, "tags": params.Tags}).Info("subscribed consumer")
 		}
 	}
 }
 
-// cancelBrokerListeners cancels (disconnects) the topic and queue listeners with the messagebus according to the service configuration and preview/no preview status.
+// unsubscribeConsumers unsubscribes all configured consumers from their respective event types on all configured messagebuses.
 // This function should only be called when the shawarma sidecar makes a request to the HTTP handler saying that one of the service endpoints has been UNASSIGNED from this pod.
 // This way we guarantee that the service will only read messages that it is supposed to based off of it's Argo rollout status.
-func (b *mainBuilder) cancelBrokerListeners(serviceName string) {
-	// cancel queues
-	if len(b.brokerConfigs) > 0 {
-		for _, bd := range b.brokerConfigs {
-			bd.RoutingKey = modifyRoutingKey(bd.RoutingKey, serviceName)
-			b.bus.CancelConsumerChannelsBySuffix(bd.RoutingKey, false)
+func (b *mainBuilder) unsubscribeConsumers(preview bool) {
+	ctx := context.Background()
+	for _, c := range b.consumerConfig {
+		// we can ignore the error since validation has already happened
+		e, _ := events.New(c.Event)
+		params := messagebus.UnsubscribeParams{
+			Event:      e,
+			IgnoreType: c.IgnoreType,
+		}
+		if preview {
+			params.Tags = []string{"preview"}
+		}
+		for _, bus := range b.buses {
+			err := bus.Unsubscribe(ctx, params)
+			if err != nil {
+				b.logger.WithError(err).WithField("event", e).Fatal("failed to unsubscribe consumer")
+			}
+			b.logger.WithFields(l.Fields{"event": e, "tags": params.Tags}).Info("unsubscribed consumer")
 		}
 	}
-}
-
-// modifyRoutingKey takes in a routing key and the service name (shape: SERVICE or SERVICE-preview)
-// and appends the `-preview` suffix if the service is in preview mode. This controls argo blue/green
-// routing for messagebus traffic in the same way as Istio for network traffic.
-func modifyRoutingKey(routingKey, serviceName string) string {
-	if strings.Contains(serviceName, "preview") {
-		routingKey = fmt.Sprintf("%s-%s", routingKey, "preview")
-	}
-	return routingKey
 }
 
 // GETTER FUNCTIONS
 // --- Please keep in alphabetical order ---
 
-func (b *mainBuilder) GetAzureKeyVaultClient() azkeyvault.KeyVaultClient {
-	return b.azureKeyVaultClient
-}
-
-func (b *mainBuilder) GetBroker() messagebus.MessageBus {
-	return b.bus
+func (b *mainBuilder) GetSecretsClient() secrets.Client {
+	return b.secretsClient
 }
 
 func (b *mainBuilder) GetCacheClient() *redis.Client {
@@ -878,7 +761,7 @@ func (b *mainBuilder) GetCacheClient() *redis.Client {
 }
 
 func (b *mainBuilder) GetConfig() *viper.Viper {
-	return b.viper
+	return b.appConfig
 }
 
 func (b *mainBuilder) GetHttpRouter() *gin.Engine {
@@ -889,20 +772,12 @@ func (b *mainBuilder) GetLogger() l.Logger {
 	return b.logger
 }
 
-func (b *mainBuilder) GetMongoClient() *mongo.Client {
-	return b.noSqlClient
-}
-
 func (b *mainBuilder) GetRegistryClient() rgpb.RegistryClient {
 	return b.registryClient
 }
 
 func (b *mainBuilder) GetRpcServer() *grpc.Server {
 	return b.rpcServer
-}
-
-func (b *mainBuilder) GetSqlClient() *gorm.DB {
-	return b.sqlClient
 }
 
 func (b *mainBuilder) IsDevMode() bool {
