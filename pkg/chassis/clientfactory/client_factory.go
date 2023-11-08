@@ -12,7 +12,6 @@ import (
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
-	grpctrace "gopkg.in/DataDog/dd-trace-go.v1/contrib/google.golang.org/grpc"
 )
 
 const defaultTimeout = time.Second * 15
@@ -28,7 +27,7 @@ type ClientFactory interface {
 	// `defer CloseConnection(logger, conn)` will need to be called by the caller of this method.
 	CreateRegistryClient(logger l.Logger, url string) (rgpb.RegistryClient, *grpc.ClientConn, error)
 	// TODO
-	Create(logger l.Logger, desc grpc.ServiceDesc) (*grpc.ClientConn)
+	Create(logger l.Logger, desc grpc.ServiceDesc) *grpc.ClientConn
 }
 
 type clientFactory struct{}
@@ -111,8 +110,6 @@ func (f *clientFactory) createRpcConnection(logger l.Logger, target string) (*gr
 	if stdErr != nil {
 		return nil, logger.WrapError(l.NewError(stdErr, "failed to parse target as url"))
 	}
-	si := grpctrace.StreamClientInterceptor(grpctrace.WithServiceName(u.Hostname()))
-	ui := grpctrace.UnaryClientInterceptor(grpctrace.WithServiceName(u.Hostname()))
 
 	// Create connection
 	connection, stdErr := grpc.Dial(
@@ -120,8 +117,7 @@ func (f *clientFactory) createRpcConnection(logger l.Logger, target string) (*gr
 		// NOTE: We use insecure here since TLS is handled by the Istio sidecar
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithConnectParams(grpc.ConnectParams{MinConnectTimeout: defaultTimeout}),
-		grpc.WithStreamInterceptor(si),
-		grpc.WithUnaryInterceptor(ui))
+	)
 	if stdErr != nil {
 		return nil, logger.WrapError(l.NewError(stdErr, "failed while trying to dial target"))
 	}
