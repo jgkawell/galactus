@@ -52,7 +52,7 @@ func main() {
 				return []chassis.GrpcHandlers{
 					{
 						Desc:    pb.Eventer_ServiceDesc,
-						Handler: handler.New(b.GetLogger(), c),
+						Handler: handler.New(b.GetTelemetry(), c),
 					},
 				}
 			},
