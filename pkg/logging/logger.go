@@ -6,13 +6,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
-	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
 )
-
-const ddTraceIDKey = "dd.trace_id"
-const ddSpanIDKey = "dd.span_id"
 
 // Logger is an interface wrapping around logrus to provide
 // context based logging for tracing and wrapped error handling
@@ -31,23 +26,6 @@ type Logger interface {
 	// WrapError wraps a standard Go error (OR `logging.Error`) into a custom error with the
 	// additional context of current logger fields and call stack information.
 	WrapError(error) Error
-	// WithHTTPContext injects tracing IDs into logs from context
-	// Since it returns type CustomLogger you can continue dot operations
-	// after the call. For example:
-	//
-	//  logger.WithHTTPContext(ctx).WithField("animal", "dog").Warn("Invalid species")
-	WithHTTPContext(ctx *gin.Context) *logger
-	// WithRPCContext injects tracing IDs into logs from context
-	// Since it returns type CustomLogger you can continue dot operations
-	// after the call. For example:
-	//
-	//     logger.WithRPCContext(ctx).WithField("animal", "dog").Warn("Invalid species")
-	//
-	// This function should be called as the first step in all Handler functions. For example:
-	//
-	//     func (h handlerImpl) GetContent(ctx context.Context, req *pb.GetContentRequest) (response *pb.GetContentResponse, err error) {
-	//       logger := h.logger.WithRPCContext(ctx)
-	WithRPCContext(ctx context.Context) *logger
 	// WithError - Add an error as single field (using the key defined in ErrorKey) to the Entry.
 	WithError(err error) *logger
 	// WithContext - Add a context to the Entry.
@@ -191,34 +169,6 @@ func (l *logger) WithFields(fields Fields) *logger {
 // WithTime overrides the time of the Entry.
 func (l *logger) WithTime(t time.Time) *logger {
 	newLogger := newLogger(l.entry.WithTime(t))
-	return &newLogger
-}
-
-// WithHTTPContext injects tracing IDs into logs from context
-func (l *logger) WithHTTPContext(ctx *gin.Context) *logger {
-	span, found := tracer.SpanFromContext(ctx.Request.Context())
-	if found {
-		return l.WithFields(Fields{
-			ddTraceIDKey: span.Context().TraceID(),
-			ddSpanIDKey:  span.Context().SpanID(),
-		})
-	}
-	l.withLogContext().entry.Debug("Failed to find find span from HTTP context for logger")
-	newLogger := newLogger(l.entry)
-	return &newLogger
-}
-
-// WithRPCContext injects tracing IDs into logs from context
-func (l *logger) WithRPCContext(ctx context.Context) *logger {
-	span, found := tracer.SpanFromContext(ctx)
-	if found {
-		return l.WithFields(Fields{
-			ddTraceIDKey: span.Context().TraceID(),
-			ddSpanIDKey:  span.Context().SpanID(),
-		})
-	}
-	l.withLogContext().entry.Debug("Failed to find find span from RPC context for logger")
-	newLogger := newLogger(l.entry)
 	return &newLogger
 }
 
