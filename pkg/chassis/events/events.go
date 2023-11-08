@@ -12,7 +12,7 @@ import (
 )
 
 type EventManager interface {
-	CreateAndSendEvent(ctx *c.ExecutionContext, event protoreflect.ProtoMessage) error
+	CreateAndSendEvent(ctx c.Context, event protoreflect.ProtoMessage) error
 	Close()
 
 	// TODO: ThrowSystemError - Create a system level error that is related to core components of the system, and not application level
@@ -23,17 +23,17 @@ type manager struct {
 	conn   *grpc.ClientConn
 }
 
-func NewEventManager(ctx *c.ExecutionContext, registryAddress string) (EventManager, error) {
+func NewEventManager(ctx c.Context, registryAddress string) (EventManager, error) {
 	// create registry client
 	clientFactory := cf.NewClientFactory()
-	registryClient, registryConn, err := clientFactory.CreateRegistryClient(ctx.Logger, registryAddress)
+	registryClient, registryConn, err := clientFactory.CreateRegistryClient(ctx.Logger(), registryAddress)
 	defer registryConn.Close()
 	if err != nil {
 		return nil, err
 	}
 
 	// get eventer address from registry
-	resp, err := registryClient.Connection(ctx.GetContext(), &rgpb.ConnectionRequest{
+	resp, err := registryClient.Connection(ctx, &rgpb.ConnectionRequest{
 		Route: evpb.Eventer_ServiceDesc.ServiceName,
 	})
 	if err != nil {
@@ -41,7 +41,7 @@ func NewEventManager(ctx *c.ExecutionContext, registryAddress string) (EventMana
 	}
 
 	// create eventer client
-	eventerClient, conn, err := clientFactory.CreatEventerClient(ctx.Logger, resp.GetAddress())
+	eventerClient, conn, err := clientFactory.CreatEventerClient(ctx.Logger(), resp.GetAddress())
 	if err != nil {
 		return nil, err
 	}
@@ -53,7 +53,10 @@ func NewEventManager(ctx *c.ExecutionContext, registryAddress string) (EventMana
 }
 
 // CreateAndSendEvent creates an event on the eventer service
-func (m *manager) CreateAndSendEvent(ctx *c.ExecutionContext, event protoreflect.ProtoMessage) error {
+func (m *manager) CreateAndSendEvent(ctx c.Context, event protoreflect.ProtoMessage) error {
+	ctx, span := ctx.Span()
+	defer span.End()
+
 	e, err := New(event)
 	if err != nil {
 		return err
@@ -61,7 +64,7 @@ func (m *manager) CreateAndSendEvent(ctx *c.ExecutionContext, event protoreflect
 	req := evpb.EmitRequest{
 		Event: e,
 	}
-	_, err = m.client.Emit(ctx.GetContext(), &req)
+	_, err = m.client.Emit(ctx, &req)
 	if err != nil {
 		return err
 	}

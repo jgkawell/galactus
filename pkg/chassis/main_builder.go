@@ -23,22 +23,20 @@ import (
 	"github.com/jgkawell/galactus/pkg/chassis/terminator"
 
 	// other galactus modules
+	rgpb "github.com/jgkawell/galactus/api/gen/go/core/registry/v1"
 	l "github.com/jgkawell/galactus/pkg/logging"
 
-	// galactus api packages
-
-	rgpb "github.com/jgkawell/galactus/api/gen/go/core/registry/v1"
-
 	// third party libraries
-	runtime "github.com/banzaicloud/logrus-runtime-formatter"
+
 	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis/v8"
-	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
+	"github.com/uptrace/uptrace-go/uptrace"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/reflect/protoreflect"
-	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
 )
 
 // MainBuilder is an interface that exposes the functionality for using the chassis module
@@ -82,6 +80,7 @@ type MainBuilder interface {
 	GetSecretsClient() secrets.Client
 	// GetEventManager... TODO
 	GetEventManager() events.EventManager
+	GetTelemetry() ct.Telemetry
 }
 
 // EventConfig defines the configuration for events
@@ -265,9 +264,9 @@ type mainBuilder struct {
 	cacheClient    *redis.Client
 	registryClient rgpb.RegistryClient
 	eventManager   events.EventManager
-	// eventManager   *events.Manager
-	databases []database.Client
-	buses     []messagebus.Client
+	databases      []database.Client
+	buses          []messagebus.Client
+	tracer         trace.Tracer
 
 	// functions
 	onRun  func(b MainBuilder)
@@ -319,6 +318,22 @@ func NewMainBuilder(mbc *MainBuilderConfig) MainBuilder {
 
 	// Setup application configuration
 	b.setupConfig(mbc.InitializeConfig)
+
+	// start tracer (if this value isn't set viper returns false. that way we default to starting the tracer)
+	if !b.GetConfig().GetBool("disableTracer") {
+		b.GetLogger().Info("starting tracer")
+		uptrace.ConfigureOpentelemetry(
+			uptrace.WithDSN(b.GetConfig().GetString("uptrace.dsn")),
+			uptrace.WithServiceName(b.applicationName),
+			uptrace.WithServiceVersion(b.applicationVersion),
+		)
+		b.tracer = otel.Tracer(b.applicationName)
+	} else {
+		// only warn if not running locally
+		if !b.GetConfig().GetBool("isDevMode") {
+			b.GetLogger().Warn("tracer is disabled. this should only be done when absolutely necessary (ie. memory leak)")
+		}
+	}
 
 	// Add env and versions to logs
 	logger.AddGlobalField("env", b.appConfig.GetString("namespace"))
@@ -392,17 +407,9 @@ func NewMainBuilder(mbc *MainBuilderConfig) MainBuilder {
 // Run runs the microservice applications using the mainbuilder configuration.
 // This means starting all the servers and connections and then listening for an exit condition.
 func (b *mainBuilder) Run() {
-	ctx, _ := ct.NewExecutionContext(context.Background(), b.GetLogger(), uuid.NewString())
-	// start datadog tracer (if this value isn't set viper returns false. that way we default to starting the tracer)
+	ctx := ct.New(context.Background(), b.GetTelemetry())
 	if !b.GetConfig().GetBool("disableTracer") {
-		b.GetLogger().Info("starting tracer")
-		tracer.Start()
-		defer tracer.Stop()
-	} else {
-		// only warn if not running locally
-		if !b.GetConfig().GetBool("isDevMode") {
-			b.GetLogger().Warn("tracer is disabled. this should only be done when absolutely necessary (ie. memory leak)")
-		}
+		defer uptrace.Shutdown(ctx)
 	}
 
 	// initialize eventer client if requested
@@ -510,7 +517,7 @@ func (b *mainBuilder) setupMode(isDevModeVariable string) {
 	b.isDevMode = b.appConfig.GetBool(isDevModeVariable)
 	if b.isDevMode {
 		b.logger.Info("Currently running in dev mode")
-		logrus.SetFormatter(&runtime.Formatter{
+		logrus.SetFormatter(&l.Formatter{
 			ChildFormatter: &logrus.TextFormatter{
 				ForceColors: true,
 			},
@@ -608,8 +615,9 @@ func (b *mainBuilder) setupRegistration(config *HandlerLayerConfig, serviceName 
 
 	// register service with registry
 	c := context.Background()
-	ctx, _ := ct.NewExecutionContext(c, b.GetLogger(), uuid.New().String())
-	response, stdErr := b.registryClient.Register(ctx.GetContext(), &rgpb.RegisterRequest{
+	ctx, span := ct.New(c, b.GetTelemetry()).Span()
+	defer span.End()
+	response, stdErr := b.registryClient.Register(ctx, &rgpb.RegisterRequest{
 		Name:    b.applicationName,
 		Domain:  b.applicationDomain,
 		Version: b.applicationVersion,
@@ -626,7 +634,7 @@ func (b *mainBuilder) setupRegistration(config *HandlerLayerConfig, serviceName 
 	// register grpc handlers
 	if config.CreateRpcHandlers != nil {
 		for _, s := range config.CreateRpcHandlers(b) {
-			response, stdErr := b.registryClient.RegisterGrpcServer(ctx.GetContext(), &rgpb.RegisterGrpcServerRequest{
+			response, stdErr := b.registryClient.RegisterGrpcServer(ctx, &rgpb.RegisterGrpcServerRequest{
 				Id:    response.Id,
 				Route: s.Desc.ServiceName,
 			})
@@ -654,7 +662,7 @@ func (b *mainBuilder) setupRegistration(config *HandlerLayerConfig, serviceName 
 	// 			EventType:   &e.Type,
 	// 		}
 	// 	}
-	// 	_, stdErr = b.registryClient.RegisterConsumers(ctx.GetContext(), &rgpb.RegisterConsumersRequest{
+	// 	_, stdErr = b.registryClient.RegisterConsumers(ctx, &rgpb.RegisterConsumersRequest{
 	// 		Id:        response.Id,
 	// 		Consumers: consumers,
 	// 	})
@@ -764,6 +772,10 @@ func (b *mainBuilder) GetConfig() *viper.Viper {
 	return b.appConfig
 }
 
+func (b *mainBuilder) GetEventManager() events.EventManager {
+	return b.eventManager
+}
+
 func (b *mainBuilder) GetHttpRouter() *gin.Engine {
 	return b.httpRouter
 }
@@ -780,10 +792,13 @@ func (b *mainBuilder) GetRpcServer() *grpc.Server {
 	return b.rpcServer
 }
 
-func (b *mainBuilder) IsDevMode() bool {
-	return b.isDevMode
+func (b *mainBuilder) GetTelemetry() ct.Telemetry {
+	return ct.Telemetry{
+		Logger: b.logger,
+		Tracer: b.tracer,
+	}
 }
 
-func (b *mainBuilder) GetEventManager() events.EventManager {
-	return b.eventManager
+func (b *mainBuilder) IsDevMode() bool {
+	return b.isDevMode
 }
