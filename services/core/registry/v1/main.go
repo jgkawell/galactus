@@ -51,7 +51,7 @@ func main() {
 				return []chassis.GrpcHandlers{
 					{
 						Desc:    pb.Registry_ServiceDesc,
-						Handler: h.NewRegistryHandler(b.GetLogger(), svc),
+						Handler: h.NewRegistryHandler(b.GetTelemetry(), svc),
 					},
 				}
 			},

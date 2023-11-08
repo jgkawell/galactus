@@ -12,7 +12,6 @@ import (
 	"github.com/DeanThompson/ginpprof"
 	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	gintrace "gopkg.in/DataDog/dd-trace-go.v1/contrib/gin-gonic/gin"
 )
 
 // these constants define the status values that are POSTed by the shawarma sidecar
@@ -40,8 +39,7 @@ func (b *mainBuilder) createHttpServer() {
 		ginpprof.Wrap(b.httpRouter)
 	}
 
-	// tracing middleware for datadog
-	b.httpRouter.Use(gintrace.Middleware(b.appConfig.GetString("traceName")))
+	// tracing middleware
 	b.httpRouter.Use(l.GinMiddleware([]string{"/health", "/readiness", "/metrics", "/applicationstate"}))
 
 	// k8s health and readiness checks
@@ -86,7 +84,7 @@ func (b *mainBuilder) stopHttpServer() {
 }
 
 func (b *mainBuilder) healthHandler(c *gin.Context) {
-	logger := b.logger.WithHTTPContext(c)
+	logger := b.logger.WithContext(c)
 	logger.Trace("liveness handler called")
 
 	for _, db := range b.databases {
@@ -107,7 +105,7 @@ func (b *mainBuilder) healthHandler(c *gin.Context) {
 }
 
 func (b *mainBuilder) readinessHandler(c *gin.Context) {
-	logger := b.logger.WithHTTPContext(c)
+	logger := b.logger.WithContext(c)
 	logger.Trace("readiness handler called")
 
 	for _, db := range b.databases {
@@ -130,7 +128,7 @@ func (b *mainBuilder) readinessHandler(c *gin.Context) {
 // serviceStatusNotification is responsible for handling the POST requests from the shawarma sidecar when
 // the state of the assigned endpoints/services change
 func (b *mainBuilder) serviceStatusNotification(ctx *gin.Context) {
-	logger := b.logger.WithHTTPContext(ctx)
+	logger := b.logger.WithContext(ctx)
 	logger.Info("received status notification")
 
 	// parse out the status from the request

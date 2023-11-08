@@ -13,9 +13,9 @@ import (
 )
 
 type Service interface {
-	Register(ctx ct.ExecutionContext, req *pb.RegisterRequest) (string, l.Error)
-	RegisterGrpcServer(ctx ct.ExecutionContext, req *pb.RegisterGrpcServerRequest) (string, l.Error)
-	Connection(ctx ct.ExecutionContext, req *pb.ConnectionRequest) (*pb.ConnectionResponse, l.Error)
+	Register(ctx ct.Context, req *pb.RegisterRequest) (string, l.Error)
+	RegisterGrpcServer(ctx ct.Context, req *pb.RegisterGrpcServerRequest) (string, l.Error)
+	Connection(ctx ct.Context, req *pb.ConnectionRequest) (*pb.ConnectionResponse, l.Error)
 }
 
 type service struct {
@@ -30,7 +30,9 @@ func NewService(logger l.Logger, db *gorm.DB, isDevMode bool) Service {
 	}
 }
 
-func (s *service) Register(ctx ct.ExecutionContext, req *pb.RegisterRequest) (string, l.Error) {
+func (s *service) Register(ctx ct.Context, req *pb.RegisterRequest) (string, l.Error) {
+	ctx, span := ctx.Span()
+	defer span.End()
 
 	// check for existing registration before creating new one
 	registrationORM := &pb.RegistrationORM{}
@@ -40,7 +42,7 @@ func (s *service) Register(ctx ct.ExecutionContext, req *pb.RegisterRequest) (st
 
 	// failed to check for existing registration
 	if r.Error != nil && r.Error != gorm.ErrRecordNotFound {
-		return "", ctx.Logger.WrapError(l.NewError(r.Error, "failed to check for existing registration"))
+		return "", ctx.Logger().WrapError(l.NewError(r.Error, "failed to check for existing registration"))
 	}
 
 	if registrationORM.Id != "" {
@@ -58,22 +60,25 @@ func (s *service) Register(ctx ct.ExecutionContext, req *pb.RegisterRequest) (st
 	// insert into database
 	stdErr := s.db.Create(registrationORM).Error
 	if stdErr != nil {
-		return "", ctx.Logger.WrapError(l.NewError(stdErr, "failed to create registration in db"))
+		return "", ctx.Logger().WrapError(l.NewError(stdErr, "failed to create registration in db"))
 	}
 
-	ctx.Logger.Info("registered service")
+	ctx.Logger().Info("registered service")
 
 	return registrationORM.Id, nil
 }
 
-func (s *service) RegisterGrpcServer(ctx ct.ExecutionContext, req *pb.RegisterGrpcServerRequest) (string, l.Error) {
+func (s *service) RegisterGrpcServer(ctx ct.Context, req *pb.RegisterGrpcServerRequest) (string, l.Error) {
+	ctx, span := ctx.Span()
+	defer span.End()
+
 	// check for existing server before creating new one
 	server := &pb.ServerORM{}
 	err := s.db.
 		Where("route = ?", req.Route).
 		First(server).Error
 	if err != nil && err != gorm.ErrRecordNotFound {
-		return "", ctx.Logger.WrapError(l.NewError(err, "failed to check for existing server"))
+		return "", ctx.Logger().WrapError(l.NewError(err, "failed to check for existing server"))
 	}
 
 	if server.Id != "" {
@@ -88,13 +93,13 @@ func (s *service) RegisterGrpcServer(ctx ct.ExecutionContext, req *pb.RegisterGr
 		Where("id = ?", req.Id).
 		First(registration).Error
 	if err != nil {
-		return "", ctx.Logger.WrapError(l.NewError(err, "failed to find registration with matching id"))
+		return "", ctx.Logger().WrapError(l.NewError(err, "failed to find registration with matching id"))
 	}
 
 	// get port
 	port, err := s.generatePort(ctx, pb.ServerKind_SERVER_KIND_GRPC)
 	if err != nil {
-		return "", ctx.Logger.WrapError(err)
+		return "", ctx.Logger().WrapError(err)
 	}
 
 	// define scheme and host
@@ -116,22 +121,25 @@ func (s *service) RegisterGrpcServer(ctx ct.ExecutionContext, req *pb.RegisterGr
 	}
 	err = s.db.Create(server).Error
 	if err != nil {
-		return "", ctx.Logger.WrapError(l.NewError(err, "failed to create server in db"))
+		return "", ctx.Logger().WrapError(l.NewError(err, "failed to create server in db"))
 	}
 
-	ctx.Logger.Info("registered grpc server")
+	ctx.Logger().Info("registered grpc server")
 
 	return server.Port, nil
 }
 
-func (s *service) Connection(ctx ct.ExecutionContext, req *pb.ConnectionRequest) (*pb.ConnectionResponse, l.Error) {
+func (s *service) Connection(ctx ct.Context, req *pb.ConnectionRequest) (*pb.ConnectionResponse, l.Error) {
+	ctx, span := ctx.Span()
+	defer span.End()
+
 	result := &pb.ServerORM{}
 	err := s.db.
 		Model(&pb.ServerORM{}).
 		Where("route = ?", req.Route).
 		First(result).Error
 	if err != nil {
-		return nil, ctx.Logger.WrapError(l.NewError(err, "failed to find route with matching path"))
+		return nil, ctx.Logger().WrapError(l.NewError(err, "failed to find route with matching path"))
 	}
 
 	address := fmt.Sprintf("%s://%s:%s", result.Scheme, result.Host, result.Port)

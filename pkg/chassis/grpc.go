@@ -7,9 +7,8 @@ import (
 
 	"github.com/jgkawell/galactus/pkg/chassis/terminator"
 
-	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	"google.golang.org/grpc"
-	grpctrace "gopkg.in/DataDog/dd-trace-go.v1/contrib/google.golang.org/grpc"
+	"google.golang.org/grpc/reflection"
 )
 
 // createRpcServer creates the rpc server
@@ -17,13 +16,6 @@ func (b *mainBuilder) createRpcServer(opts ...grpc.ServerOption) {
 	if opts == nil {
 		opts = make([]grpc.ServerOption, 0)
 	}
-	opts = append(
-		opts,
-		grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(
-			grpctrace.UnaryServerInterceptor(grpctrace.WithServiceName(b.appConfig.GetString("traceName"))),
-		)),
-		grpc.StreamInterceptor(grpctrace.StreamServerInterceptor(grpctrace.WithServiceName(b.appConfig.GetString("traceName")))),
-	)
 	b.rpcServer = grpc.NewServer(opts...)
 }
 
@@ -38,6 +30,7 @@ func (b *mainBuilder) startRpcServer() {
 	if err != nil {
 		b.logger.WithError(err).Fatal("failed to create grpc listener")
 	}
+	reflection.Register(b.rpcServer)
 	if err := b.rpcServer.Serve(grpcListener); err != nil {
 		b.logger.WithError(err).Fatal("grpc server failed to start. see error field for details")
 	}

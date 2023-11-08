@@ -5,25 +5,34 @@ import (
 	"os"
 	"time"
 
-	runtime "github.com/banzaicloud/logrus-runtime-formatter"
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
+	"github.com/uptrace/opentelemetry-go-extra/otellogrus"
 )
 
 var globalLogger *logger
 
-// CreateLogger creates a service level logger
-// level = the log level to instantiate the logger with
-//   Possible values for level are "panic", "fatal", "error", "warn", "warning", "info", "debug", and "trace"
-// service = the service name to include with all logs
+// CreateLogger creates a service level logger. The level is the log level
+// to instantiate the logger with. Possible values for level are "panic", "fatal",
+// "error", "warn", "warning", "info", "debug", and "trace". The service is the name
+// of the service to include with all logs.
 func CreateLogger(level string, service string) *logger {
-	logrus.SetFormatter(&runtime.Formatter{
+	logrus.SetFormatter(&Formatter{
+		Line:    true,
+		Package: true,
+		File:    true,
 		ChildFormatter: &logrus.JSONFormatter{
 			DisableHTMLEscape: true,
 		},
 	})
 	logrus.SetOutput(os.Stdout)
+	logrus.AddHook(otellogrus.NewHook(otellogrus.WithLevels(
+		logrus.PanicLevel,
+		logrus.FatalLevel,
+		logrus.ErrorLevel,
+		logrus.WarnLevel,
+	)))
 
 	// Add service field
 	newEntry := logrus.WithField("service", service)
@@ -52,7 +61,7 @@ func CreateNullLogger() (*logger, *test.Hook) {
 // - GET to retrieve the current log level
 func RegisterHTTPEndpointsWithGin(router *gin.Engine) {
 	router.POST("/log", func(c *gin.Context) {
-		logger := globalLogger.WithHTTPContext(c)
+		logger := globalLogger.WithContext(c)
 		level := c.Query("level")
 		logger.WithField("current_log_level", level).Info("Trying to set logging level")
 		if err := setLogLevel(logger, level); err != nil {
@@ -62,7 +71,7 @@ func RegisterHTTPEndpointsWithGin(router *gin.Engine) {
 		}
 	})
 	router.GET("/log", func(c *gin.Context) {
-		logger := globalLogger.WithHTTPContext(c)
+		logger := globalLogger.WithContext(c)
 		level := globalLogger.GetEntry().Logger.Level.String()
 		logger.WithField("current_log_level", level).Info("Log level")
 		c.JSON(http.StatusOK, level)
@@ -76,7 +85,7 @@ func GinMiddleware(quietRoutes []string) gin.HandlerFunc {
 		start := time.Now()
 		ctx.Next()
 		duration := time.Since(start)
-		logger := globalLogger.WithHTTPContext(ctx).WithFields(Fields{
+		logger := globalLogger.WithContext(ctx).WithFields(Fields{
 			"status_code":    ctx.Writer.Status(),
 			"duration":       duration,
 			"request_method": ctx.Request.Method,
