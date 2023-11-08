@@ -7,37 +7,33 @@ import (
 
 	pb "github.com/jgkawell/galactus/api/gen/go/core/registry/v1"
 	ct "github.com/jgkawell/galactus/pkg/chassis/context"
-	l "github.com/jgkawell/galactus/pkg/logging"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
 type registryHandler struct {
-	logger  l.Logger
-	service s.Service
+	telemetry ct.Telemetry
+	service   s.Service
 }
 
-func NewRegistryHandler(logger l.Logger, service s.Service) pb.RegistryServer {
-	return &registryHandler{logger, service}
+func NewRegistryHandler(telemetry ct.Telemetry, service s.Service) pb.RegistryServer {
+	return &registryHandler{telemetry, service}
 }
 
 func (h *registryHandler) Register(c context.Context, req *pb.RegisterRequest) (*pb.RegisterResponse, error) {
-	ctx, err := ct.NewExecutionContextFromContextWithMetadata(c, h.logger)
-	if err != nil {
-		h.logger.WithFields(err.Fields()).WithError(err).Error("failed to create application context from current context")
-		return nil, err.Unwrap()
-	}
+	ctx, span := ct.New(c, h.telemetry).Span()
+	defer span.End()
 
 	stdErr := req.ValidateAll()
 	if stdErr != nil {
-		h.logger.WithError(stdErr).Warn("invalid request received")
+		ctx.Logger().WithError(stdErr).Warn("invalid request received")
 		return nil, stdErr
 	}
 
-	id, err := h.service.Register(*ctx, req)
+	id, err := h.service.Register(ctx, req)
 	if err != nil {
-		h.logger.WithFields(err.Fields()).WithError(err).Error("failed to register")
+		ctx.Logger().WithFields(err.Fields()).WithError(err).Error("failed to register")
 		return nil, err.Unwrap()
 	}
 
@@ -47,21 +43,18 @@ func (h *registryHandler) Register(c context.Context, req *pb.RegisterRequest) (
 }
 
 func (h *registryHandler) RegisterGrpcServer(c context.Context, req *pb.RegisterGrpcServerRequest) (*pb.RegisterGrpcServerResponse, error) {
-	ctx, err := ct.NewExecutionContextFromContextWithMetadata(c, h.logger)
-	if err != nil {
-		h.logger.WithFields(err.Fields()).WithError(err).Error("failed to create application context from current context")
-		return nil, err.Unwrap()
-	}
+	ctx, span := ct.New(c, h.telemetry).Span()
+	defer span.End()
 
 	stdErr := req.ValidateAll()
 	if stdErr != nil {
-		h.logger.WithError(stdErr).Warn("invalid request received")
+		ctx.Logger().WithError(stdErr).Warn("invalid request received")
 		return nil, stdErr
 	}
 
-	port, err := h.service.RegisterGrpcServer(*ctx, req)
+	port, err := h.service.RegisterGrpcServer(ctx, req)
 	if err != nil {
-		h.logger.WithFields(err.Fields()).WithError(err).Error("failed to register grpc server")
+		ctx.Logger().WithFields(err.Fields()).WithError(err).Error("failed to register grpc server")
 		return nil, err.Unwrap()
 	}
 
@@ -71,30 +64,31 @@ func (h *registryHandler) RegisterGrpcServer(c context.Context, req *pb.Register
 }
 
 func (h *registryHandler) RegisterHttpServer(c context.Context, req *pb.RegisterHttpServerRequest) (*pb.RegisterHttpServerResponse, error) {
+	_, span := ct.New(c, h.telemetry).Span()
+	defer span.End()
 	return nil, status.Error(codes.Unimplemented, "not implemented")
 }
 
 func (h *registryHandler) RegisterConsumers(c context.Context, req *pb.RegisterConsumersRequest) (*pb.RegisterConsumersResponse, error) {
+	_, span := ct.New(c, h.telemetry).Span()
+	defer span.End()
 	return nil, status.Error(codes.Unimplemented, "not implemented")
 }
 
 // Connection
 func (h *registryHandler) Connection(c context.Context, req *pb.ConnectionRequest) (*pb.ConnectionResponse, error) {
-	ctx, err := ct.NewExecutionContextFromContextWithMetadata(c, h.logger)
-	if err != nil {
-		h.logger.WithFields(err.Fields()).WithError(err).Error("failed to create application context from current context")
-		return nil, err
-	}
+	ctx, span := ct.New(c, h.telemetry).Span()
+	defer span.End()
 
 	stdErr := req.ValidateAll()
 	if stdErr != nil {
-		h.logger.WithError(stdErr).Warn("invalid request received")
+		ctx.Logger().WithError(stdErr).Warn("invalid request received")
 		return nil, stdErr
 	}
 
-	response, err := h.service.Connection(*ctx, req)
+	response, err := h.service.Connection(ctx, req)
 	if err != nil {
-		h.logger.WithFields(err.Fields()).WithError(err).Error("failed to get connection information")
+		ctx.Logger().WithFields(err.Fields()).WithError(err).Error("failed to get connection information")
 		return nil, err.Unwrap()
 	}
 

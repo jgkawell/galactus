@@ -13,22 +13,25 @@ import (
 
 const localPortConflictRetryLimit = 1000
 
-// registry reserves 3500 (http) and 3501 (grpc) for itself when running locally
-const localMinPort = 3502
-const localMaxPort = 4500
+// registry reserves 35000 (http) and 35001 (grpc) for itself when running locally
+const localMinPort = 35002
+const localMaxPort = 45000
 
-func (s *service) generatePort(ctx ct.ExecutionContext, kind pb.ServerKind) (string, l.Error) {
+func (s *service) generatePort(ctx ct.Context, kind pb.ServerKind) (string, l.Error) {
+	ctx, span := ctx.Span()
+	defer span.End()
+
 	var port int32
 	var err l.Error
 	if s.isDevMode {
-		port, err = s.generateLocalPort(ctx.Logger)
+		port, err = s.generateLocalPort(ctx)
 		if err != nil {
-			return "", ctx.Logger.WrapError(err)
+			return "", ctx.Logger().WrapError(err)
 		}
 	} else {
-		port, err = s.generateRemotePort(ctx.Logger, kind)
+		port, err = s.generateRemotePort(ctx, kind)
 		if err != nil {
-			return "", ctx.Logger.WrapError(err)
+			return "", ctx.Logger().WrapError(err)
 		}
 	}
 	return strconv.Itoa(int(port)), nil
@@ -39,19 +42,22 @@ generateLocalPort will generate a random port between `localMinPort` and `localM
 
 If an unused port is not found after 1000 attempts, an error is returned.
 */
-func (s *service) generateLocalPort(logger l.Logger) (int32, l.Error) {
+func (s *service) generateLocalPort(ctx ct.Context) (int32, l.Error) {
+	ctx, span := ctx.Span()
+	defer span.End()
+
 	for i := 0; i < localPortConflictRetryLimit; i++ {
 		randomPort := rand.Intn(localMaxPort-localMinPort) + localMinPort
 		var count int64
 		err := s.db.Model(&pb.ServerORM{}).Where("port = ?", strconv.Itoa(randomPort)).Count(&count).Error
 		if err != nil {
-			return 0, logger.WrapError(l.NewError(err, "failed to query for port usage while generating random local port"))
+			return 0, ctx.Logger().WrapError(l.NewError(err, "failed to query for port usage while generating random local port"))
 		}
 		if count == 0 {
 			return int32(randomPort), nil
 		}
 	}
-	return 0, logger.WrapError(errors.New("failed to generate local port after maximum conflict retries"))
+	return 0, ctx.Logger().WrapError(errors.New("failed to generate local port after maximum conflict retries"))
 }
 
 /*
@@ -62,13 +68,15 @@ generateRemotePort will generate the remote port based on the protocol kind:
 
 If an invalid protocol kind is given, an error is returned.
 */
-func (s *service) generateRemotePort(logger l.Logger, kind pb.ServerKind) (int32, l.Error) {
+func (s *service) generateRemotePort(ctx ct.Context, kind pb.ServerKind) (int32, l.Error) {
+	ctx, span := ctx.Span()
+	defer span.End()
 	switch kind {
 	case pb.ServerKind_SERVER_KIND_HTTP:
 		return 8080, nil
 	case pb.ServerKind_SERVER_KIND_GRPC:
 		return 8090, nil
 	default:
-		return 0, logger.WrapError(errors.New("unsupported protocol kind"))
+		return 0, ctx.Logger().WrapError(errors.New("unsupported protocol kind"))
 	}
 }

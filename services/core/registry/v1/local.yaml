@@ -8,9 +8,11 @@ configMap:
 
   # options
   isDevMode: true
-  disableTracer: true
+  disableTracer: false
 
   # infrastructure
+  uptrace:
+    dsn: http://galactus@localhost:14317/2
   postgres:
     url: postgres://admin:admin@localhost:5432/postgres?sslmode=disable
     database: registry
