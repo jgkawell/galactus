@@ -2,102 +2,138 @@ package context
 
 import (
 	"context"
-	"errors"
+	"runtime"
+	"strings"
+	"time"
 
-	l "github.com/jgkawell/galactus/pkg/logging"
+	"github.com/jgkawell/galactus/pkg/logging"
 
-	"google.golang.org/grpc/metadata"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 )
 
-type ExecutionContext struct {
-	context       context.Context
-	Logger        l.Logger
-	transactionID string
-}
+type (
+	Context interface {
+		context.Context
 
-type ExecutionContextWithoutTransactionID struct {
-	context       context.Context
-	Logger        l.Logger
-}
+		Logger() logging.Logger
+		Span() (Context, trace.Span)
+		SpanByName(name string) (Context, trace.Span)
 
-const (
-	TransactionIDLoggerFieldKey   = "transaction_id"
-	TransactionIDNotSet           = "transaction_id not set"
-	TransactionIDNotSetInMetadata = "transaction_id not found in metadata of context"
-	MetadataNotFoundInCTX         = "metadata object not found in context"
-)
-
-// NewExecutionContext creates a new execution context with the given transaction id.
-// This function will return an error if the transaction id is empty.
-func NewExecutionContext(ctx context.Context, logger l.Logger, transactionID string) (*ExecutionContext, l.Error) {
-	if transactionID == "" {
-		return nil, logger.WrapError(errors.New(TransactionIDNotSet))
+		WithError(err error) Context
+		WithField(key string, value interface{}) Context
+		WithFields(fields logging.Fields) Context
 	}
+	contextImpl struct {
+		context context.Context
+		logger  logging.Logger
+		tracer  trace.Tracer
+		span    trace.Span
+		fields  logging.Fields
+	}
+	Telemetry struct {
+		Logger logging.Logger
+		Tracer trace.Tracer
+	}
+)
 
-	logger = logger.WithField(TransactionIDLoggerFieldKey, transactionID)
-	return &ExecutionContext{
-		context:       ctx,
-		Logger:        logger,
-		transactionID: transactionID,
-	}, nil
-}
+// Context methods
 
-// NewExecutionContextWithoutTransactionID creates a new execution context WITHOUT a transaction id
-// NOTE: you should only call this rarely. most everything should have a transaction id.
-func NewExecutionContextWithoutTransactionID(ctx context.Context, logger l.Logger) *ExecutionContextWithoutTransactionID {
-	return &ExecutionContextWithoutTransactionID{
-		context:       ctx,
-		Logger:        logger,
+func New(ctx context.Context, telemetry Telemetry) Context {
+	return contextImpl{
+		context: ctx,
+		logger:  telemetry.Logger.WithContext(ctx),
+		tracer:  telemetry.Tracer,
+		fields:  logging.Fields{},
 	}
 }
 
-// NewExecutionContextFromEvent creates a new execution context from an event and pulls the transaction id from the event.
-// This function will return an error if the transaction id is empty.
-// func NewExecutionContextFromEvent(ctx context.Context, logger l.Logger, event *agpb.Event) (*ExecutionContext, l.Error) {
-// 	transactionID := event.GetTransactionId()
-// 	if transactionID == "" {
-// 		return nil, logger.WrapError(errors.New(TransactionIDNotSet))
-// 	}
+func NewBackground(telemetry Telemetry) Context {
+	return New(context.Background(), telemetry)
+}
 
-// 	logger = logger.WithField(TransactionIDLoggerFieldKey, transactionID)
-// 	return &ExecutionContext{
-// 		context:       ctx,
-// 		Logger:        logger,
-// 		transactionID: transactionID,
-// 	}, nil
-// }
+func (c contextImpl) Logger() logging.Logger {
+	return c.logger
+}
 
-// NewExecutionContextFromMetadata creates a new execution context and pulls the transaction id from the metadata of the gRPC context.
-// This function will return an error if the transaction id is empty.
-// NOTE: Only call this when handling a gRPC request.
-func NewExecutionContextFromContextWithMetadata(ctx context.Context, logger l.Logger) (*ExecutionContext, l.Error) {
-	md, ok := metadata.FromIncomingContext(ctx)
+func (c contextImpl) SpanByName(name string) (Context, trace.Span) {
+	ctx, span := c.tracer.Start(c, name)
+	for key, value := range c.fields {
+		span.SetAttributes(
+			attribute.String(key, value.(string)),
+		)
+	}
+	c.context = ctx
+	c.logger = c.logger.WithContext(ctx)
+	c.span = span
+	return c, span
+}
+
+func (c contextImpl) Span() (Context, trace.Span) {
+	return c.SpanByName(getCallerName())
+}
+
+// With methods
+
+func (c contextImpl) WithError(err error) Context {
+	c.logger = c.logger.WithError(err)
+	if c.span != nil {
+		c.span.RecordError(err, trace.WithStackTrace(true))
+		c.span.SetStatus(codes.Error, err.Error())
+	}
+	return c
+}
+
+func (c contextImpl) WithField(key string, value interface{}) Context {
+	c.logger = c.logger.WithField(key, value)
+	c.fields[key] = value
+	if c.span != nil {
+		c.span.SetAttributes(
+			attribute.String(key, value.(string)),
+		)
+	}
+	return c
+}
+
+func (c contextImpl) WithFields(fields logging.Fields) Context {
+	c.logger = c.logger.WithFields(fields)
+	if c.span != nil {
+		for key, value := range fields {
+			c.fields[key] = value
+			c.span.SetAttributes(
+				attribute.String(key, value.(string)),
+			)
+		}
+	}
+	return c
+}
+
+// context.Context interface methods
+
+func (c contextImpl) Deadline() (deadline time.Time, ok bool) {
+	return c.context.Deadline()
+}
+
+func (c contextImpl) Done() <-chan struct{} {
+	return c.context.Done()
+}
+
+func (c contextImpl) Err() error {
+	return c.context.Err()
+}
+
+func (c contextImpl) Value(key any) any {
+	return c.context.Value(key)
+}
+
+// helpers
+
+func getCallerName() string {
+	pc, _, _, ok := runtime.Caller(2)
 	if !ok {
-		return nil, logger.WrapError(errors.New(MetadataNotFoundInCTX))
+		return "unknown"
 	}
-
-	idList := md["transaction_id"]
-	if len(idList) == 0 {
-		return nil, logger.WrapError(errors.New(TransactionIDNotSetInMetadata))
-	}
-	transID := idList[0]
-
-	logger = logger.WithField(TransactionIDLoggerFieldKey, transID)
-	return &ExecutionContext{
-		context:       ctx,
-		Logger:        logger,
-		transactionID: transID,
-	}, nil
-}
-
-func (c *ExecutionContext) GetContext() context.Context {
-	return metadata.NewOutgoingContext(c.context, metadata.Pairs("transaction_Id", c.GetTransactionID()))
-}
-
-func (c *ExecutionContextWithoutTransactionID) GetContext() context.Context {
-	return c.context
-}
-
-func (c *ExecutionContext) GetTransactionID() (string) {
-	return c.transactionID
+	fn := runtime.FuncForPC(pc).Name()
+	return fn[strings.LastIndex(fn, ".")+1:]
 }
