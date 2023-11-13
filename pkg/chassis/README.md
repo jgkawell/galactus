@@ -1,3 +1,5 @@
+[![Go Report Card](https://goreportcard.com/badge/github.com/jgkawell/galactus/pkg/chassis)](https://goreportcard.com/badge/github.com/jgkawell/galactus/pkg/chassis)
+
 # chassis
 
 TODO: Write a project description
