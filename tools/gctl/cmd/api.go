@@ -20,7 +20,7 @@ var apiBuildCmd = &cobra.Command{
 var apiCleanCmd = &cobra.Command{
 	Use:   "clean",
 	Short: "Clean up all compiled (generated) protobuf files",
-	RunE: api.Clean,
+	RunE:  api.Clean,
 }
 
 var apiInitCmd = &cobra.Command{

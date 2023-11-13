@@ -17,7 +17,7 @@ var cfgFile string
 var rootCmd = &cobra.Command{
 	Use:   "gctl",
 	Short: "gctl (Galactus Controller) is the built-in CLI for managing everything in Galactus",
-	Long:  `gctl (Galactus Controller) is the built-in CLI for managing everything in Galactus.
+	Long: `gctl (Galactus Controller) is the built-in CLI for managing everything in Galactus.
 It does everything from generate code from Protobufs to spin up your local infrastructure for
 development.`,
 }

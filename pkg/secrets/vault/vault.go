@@ -101,5 +101,5 @@ func splitKey(key string) (path string, attribute string) {
 	path = strings.Join(segments[:len(segments)-1], "/")
 	// attribute is the last segment
 	attribute = segments[len(segments)-1]
-	return path,  attribute
+	return path, attribute
 }

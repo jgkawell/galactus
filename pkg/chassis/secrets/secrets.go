@@ -6,7 +6,6 @@ import (
 	"github.com/jgkawell/galactus/pkg/chassis/env"
 )
 
-
 type Client interface {
 	// Initialize will initialize the client with the given configuration
 	Initialize(ctx context.Context, config env.Reader) (err error)

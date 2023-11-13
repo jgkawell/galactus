@@ -26,7 +26,7 @@ func NewError(err error, message string) error {
 // and keep logger fields from the root of the call stack
 type Error interface {
 	error
-	// Unwrap returns the underlying error. If wrapping has occured it will take the shape of:
+	// Unwrap returns the underlying error. If wrapping has occurred it will take the shape of:
 	//   "[main.FunctionA]->[module/package1.FunctionB]->[module/package2.FunctionC]->[original error message]"
 	Unwrap() error
 	// Fields returns the logger fields from the context of the root error (the lowest `logger.WrapError()` call on the call stack).
@@ -35,7 +35,8 @@ type Error interface {
 }
 
 // Error returns the error message as a string in the form of:
-//   "[main.FunctionA]->[module/package1.FunctionB]->[module/package2.FunctionC]->[original error message]"
+//
+//	"[main.FunctionA]->[module/package1.FunctionB]->[module/package2.FunctionC]->[original error message]"
 func (r customError) Error() string {
 	var frames []string
 	// add first frame to stack
@@ -53,8 +54,9 @@ func (r customError) Error() string {
 	return strings.Join(frames, "->")
 }
 
-// Unwrap returns the underlying error. If wrapping has occured it will take the shape of:
-//   "[main.FunctionA]->[module/package1.FunctionB]->[module/package2.FunctionC]->[original error message]"
+// Unwrap returns the underlying error. If wrapping has occurred it will take the shape of:
+//
+//	"[main.FunctionA]->[module/package1.FunctionB]->[module/package2.FunctionC]->[original error message]"
 func (r customError) Unwrap() error {
 	return r.cause
 }

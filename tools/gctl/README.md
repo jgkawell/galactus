@@ -1,4 +1,6 @@
-# `gctl`
+[![Go Report Card](https://goreportcard.com/badge/github.com/jgkawell/galactus/tools/gctl)](https://goreportcard.com/report/github.com/jgkawell/galactus/tools/gctl)
+
+# gctl
 
 `gctl` (Galactus Controller) is the built-in CLI for managing everything in Galactus. It does everything from generate code from Protobufs to spin up your local infrastructure for development.
 

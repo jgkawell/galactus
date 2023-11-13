@@ -1,16 +1,20 @@
-## gctl docs
+## gctl config
 
-Generate docs for gctl
+Initialize the gctl configuration
+
+### Synopsis
+
+Initialize the gctl configuration. Be sure to run
+this from the root of the galactus repository
 
 ```
-gctl docs [flags]
+gctl config [flags]
 ```
 
 ### Options
 
 ```
-  -h, --help         help for docs
-  -o, --out string   the directory to write docs to (default "./docs")
+  -h, --help   help for config
 ```
 
 ### Options inherited from parent commands
