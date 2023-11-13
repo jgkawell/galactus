@@ -1,4 +1,4 @@
-[![Go Report Card](https://goreportcard.com/badge/github.com/jgkawell/galactus/pkg/chassis)](https://goreportcard.com/badge/github.com/jgkawell/galactus/pkg/chassis)
+[![Go Report Card](https://goreportcard.com/badge/github.com/jgkawell/galactus/pkg/chassis)](https://goreportcard.com/report/github.com/jgkawell/galactus/pkg/chassis)
 
 # chassis
 
