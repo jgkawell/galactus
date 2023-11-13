@@ -1,3 +1,5 @@
+[![Go Report Card](https://goreportcard.com/badge/github.com/jgkawell/galactus/pkg/logging)](https://goreportcard.com/report/github.com/jgkawell/galactus/pkg/logging)
+
 # logging
 
 ## Overview
@@ -8,7 +10,7 @@ This logger should be used for **ALL** go microservices so that logging consiste
 
 ## Understanding log levels
 
-Each log level in the custom logger here also has a preceeding comment explaining how it is defined. Make sure to know and follow these definitions so that log levels are consistent across all microservices.
+Each log level in the custom logger here also has a preceding comment explaining how it is defined. Make sure to know and follow these definitions so that log levels are consistent across all microservices.
 
 For example:
 
