@@ -31,10 +31,8 @@ func Report(cmd *cobra.Command, args []string) (err error) {
 
 	// run ineffassign
 	output.Println("Running ineffassign...")
-	err = e.ExecuteCommand(ctx, "ineffassign", output.Cyan, exec.Command("ineffassign", "./..."))
-	if err != nil {
-		return err
-	}
+	// squash error because ineffassign returns non-zero exit code when it finds issues
+	_ = e.ExecuteCommand(ctx, "ineffassign", output.Cyan, exec.Command("ineffassign", "./..."))
 
 	// run misspell
 	output.Println("Running misspell...")
