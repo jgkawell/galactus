@@ -161,8 +161,8 @@ func (w *wrapper) Subscribe(ctx context.Context, params messagebus.SubscribePara
 		case tag := <-ncancel:
 			msg = fmt.Sprintf("channel with tag (%s) cancelled: ", tag)
 		}
-		// TODO: do something with this message
-		msg = fmt.Sprintf("%s", msg)
+		// TODO: return an error (from the message above) to a channel given back to the caller
+		fmt.Println(msg)
 	}()
 
 	// watch for messages on this channel
