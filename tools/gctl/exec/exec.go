@@ -60,7 +60,6 @@ func ExecuteCommand(ctx context.Context, name string, c output.Color, cmd *exec.
 	return nil
 }
 
-
 // ExecuteCommandReturnStdout executes a command and returns the output of stdout as a string.
 // It does not print the output to the console. This can be used to get the output of a command
 // such as generating a password using a tool like gcloud.

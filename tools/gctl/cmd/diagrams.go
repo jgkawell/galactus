@@ -18,7 +18,7 @@ var diagramsBuildCmd = &cobra.Command{
 Defaults to PNGs but can take any file type from here: https://plantuml.com/command-line
 Make sure to only include the type and not include the '-t'. For example, to create
 PDFs use the flag '-f=pdf' NOT '-f=-tpdf'`,
-	RunE:  diagrams.Build,
+	RunE: diagrams.Build,
 }
 
 var diagramsCleanCmd = &cobra.Command{

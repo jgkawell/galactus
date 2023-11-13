@@ -20,7 +20,7 @@ type processor struct {
 func NewProcessor(processorFunc func(filePath string)) Processor {
 
 	p := &processor{
-		wg: sync.WaitGroup{},
+		wg:   sync.WaitGroup{},
 		jobs: make(chan string),
 	}
 
