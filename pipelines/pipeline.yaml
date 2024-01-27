@@ -31,3 +31,17 @@ spec:
       workspaces:
         - name: source
           workspace: shared-data
+    - name: go-service
+      runAfter: ['fetch-source']
+      taskRef:
+        name: go-service
+      workspaces:
+        - name: source
+          workspace: shared-data
+      params:
+        - name: domain
+          value: core
+        - name: name
+          value: registry
+        - name: version
+          value: v1
