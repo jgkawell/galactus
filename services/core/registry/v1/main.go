@@ -32,11 +32,14 @@ func main() {
 		},
 		DaoLayerConfig: &chassis.DaoLayerConfig{
 			CreateDaoLayer: func(b chassis.MainBuilder) {
-				db.Client().AutoMigrate(
+				err := db.Client().AutoMigrate(
 					&pb.RegistrationORM{},
 					&pb.ServerORM{},
 					&pb.ConsumerORM{},
 				)
+				if err != nil {
+					b.GetLogger().WithError(err).Fatal("failed to migrate database")
+				}
 			},
 		},
 		ServiceLayerConfig: &chassis.ServiceLayerConfig{
