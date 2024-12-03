@@ -1,6 +1,8 @@
 # galactus
 
-**NOTE**: This project is still in a pre-alpha state. Basic functionality when running locally will mostly work, but MANY features are not yet implemented and some aspects may be completely non-functional. Some future features will include:
+**NOTE**: `galactus` has been superceded by my work on the [Draft framework](https://github.com/steady-bytes/draft). I suggest following the work there as it has all the same value as `galactus` and more!
+
+This project is still in a pre-alpha state. Basic functionality when running locally will mostly work, but MANY features are not yet implemented and some aspects may be completely non-functional. Some future features will include:
 
 - Better documentation/"getting started" pages
 - "Easy" remote setup using Terraform
